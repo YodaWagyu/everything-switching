@@ -18,9 +18,13 @@ def get_openai_client() -> OpenAI:
         OpenAI: Authenticated OpenAI client
     """
     try:
-        api_key = st.secrets["OPENAI_API_KEY"]
+        api_key = st.secrets["openai"]["api_key"]
         client = OpenAI(api_key=api_key)
         return client
+    except KeyError:
+        st.error("❌ OpenAI API key not found in secrets. Please add it to Streamlit Cloud secrets.")
+        st.info("Add `[openai]` section with `api_key = \"sk-...\"` to your secrets")
+        return None
     except Exception as e:
         st.error(f"❌ Failed to initialize OpenAI client: {str(e)}")
         return None
@@ -225,133 +229,63 @@ def generate_sankey_insights(
     period2_label: str = "Period 2"
 ) -> Optional[str]:
     """
-    Generate AI insights for Sankey diagram (customer flow)
+    Generate insights focused on overall flow patterns
     
     Args:
         df (pd.DataFrame): Raw query results
-        category (str): Category name
+        category (str): Category analyzed
         period1_label (str): Label for period 1
         period2_label (str): Label for period 2
     
     Returns:
-        Optional[str]: AI-generated insights
+        Optional[str]: AI-generated Sankey-focused insights
     """
     client = get_openai_client()
     if not client:
         return None
     
     try:
-        total_customers = df['customers'].sum()
-        
-        # Flow statistics
+        # Analyze flow patterns
         stayed = df[df['move_type'] == 'stayed']['customers'].sum()
         switched = df[df['move_type'] == 'switched']['customers'].sum()
-        new_to_cat = df[df['move_type'] == 'new_to_category']['customers'].sum()
-        lost = df[df['move_type'] == 'lost_from_category']['customers'].sum()
+        new_customers = df[df['move_type'] == 'new']['customers'].sum()
+        gone = df[df['move_type'] == 'gone']['customers'].sum()
+        total = stayed + switched + new_customers + gone
         
-        # Top switching paths
+        # Top switching flows
         top_switches = df[df['move_type'] == 'switched'].nlargest(5, 'customers')[
-            ['prod_2024', 'prod_2025', 'customers']\
+            ['prod_2024', 'prod_2025', 'customers']
         ]
         
         prompt = f"""Analyze customer flow patterns for {category}:
 
-**Overall Flow ({period1_label} to {period2_label}):**
-- Total Customers: {total_customers:,}
-- Stayed with same brand: {stayed:,} ({stayed/total_customers*100:.1f}%)
-- Switched brands: {switched:,} ({switched/total_customers*100:.1f}%)
-- New to category: {new_to_cat:,} ({new_to_cat/total_customers*100:.1f}%)
-- Lost from category: {lost:,} ({lost/total_customers*100:.1f}%)
+**Overall Flow:**
+- Stayed Loyal: {stayed:,} ({stayed/total*100:.1f}%)
+- Switched Brands: {switched:,} ({switched/total*100:.1f}%)
+- New to Category: {new_customers:,} ({new_customers/total*100:.1f}%)
+- Left Category: {gone:,} ({gone/total*100:.1f}%)
 
-**Top Switching Paths:**
+**Top 5 Switching Paths:**
 {top_switches.to_string(index=False)}
 
-Provide a brief summary (2-3 sentences) covering:
-1. Overall loyalty vs switching behavior
-2. Most significant flow patterns
-3. One key insight
+Provide 2-3 key insights about:
+1. Customer loyalty vs mobility
+2. Most significant switching patterns
+3. Strategic implications
 """
 
         response = client.chat.completions.create(
             model=config.OPENAI_MODEL,
             messages=[
-                {"role": "system", "content": "You are a customer behavior analyst. Provide concise, actionable insights."},
+                {"role": "system", "content": "You are a customer behavior analyst."},
                 {"role": "user", "content": prompt}
             ],
             temperature=config.OPENAI_TEMPERATURE,
-            max_tokens=300
+            max_tokens=400
         )
         
         return response.choices[0].message.content
         
     except Exception as e:
         st.error(f"❌ Failed to generate Sankey insights: {str(e)}")
-        return None
-
-
-def generate_heatmap_insights(
-    df: pd.DataFrame,
-    summary_df: pd.DataFrame,
-    category: str
-) -> Optional[str]:
-    """
-    Generate AI insights for competitive matrix heatmap
-    
-    Args:
-        df (pd.DataFrame): Raw query results
-        summary_df (pd.DataFrame): Brand summary data
-        category (str): Category name
-    
-    Returns:
-        Optional[str]: AI-generated insights
-    """
-    client = get_openai_client()
-    if not client:
-        return None
-    
-    try:
-        # Find biggest competitive threats (who steals most customers)
-        stealing_flows = df[
-            (df['move_type'] == 'switched') & 
-            (df['prod_2024'] != 'MIXED') &
-            (df['prod_2025'] != 'MIXED') &
-            (df['prod_2024'] != 'NEW_TO_CATEGORY') &
-            (df['prod_2025'] != 'LOST_FROM_CATEGORY')
-        ].nlargest(5, 'customers')[['prod_2024', 'prod_2025', 'customers']]
-        
-        # Brand performance
-        top_gainers = summary_df.nlargest(2, 'Net_Movement')[['Brand', 'Net_Movement']]
-        top_losers = summary_df.nsmallest(2, 'Net_Movement')[['Brand', 'Net_Movement']]
-        
-        prompt = f"""Analyze competitive dynamics for {category}:
-
-**Top Competitive Threats (Brand A to Brand B):**
-{stealing_flows.to_string(index=False)}
-
-**Top Gainers:**
-{top_gainers.to_string(index=False)}
-
-**Top Losers:**
-{top_losers.to_string(index=False)}
-
-Provide a brief competitive analysis (2-3 sentences) focusing on:
-1. Which brand is the biggest threat/winner
-2. Most vulnerable brand
-3. One strategic insight
-"""
-
-        response = client.chat.completions.create(
-            model=config.OPENAI_MODEL,
-            messages=[
-                {"role": "system", "content": "You are a competitive strategy analyst. Focus on competitive dynamics and threats."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=config.OPENAI_TEMPERATURE,
-            max_tokens=300
-        )
-        
-        return response.choices[0].message.content
-        
-    except Exception as e:
-        st.error(f"❌ Failed to generate heatmap insights: {str(e)}")
         return None

@@ -252,8 +252,10 @@ def show_debug_query(query: str):
     Args:
         query (str): SQL query to display
     """
-    with st.expander("🔍 View Generated SQL Query"):
-        st.code(query, language="sql")
+    # Hidden in production - uncomment to debug
+    # with st.expander("🔍 View Generated SQL Query"):
+    #     st.code(query, language="sql")
+    pass
 
 
 def get_brand_color(brand: str) -> str:
