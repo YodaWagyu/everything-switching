@@ -19,7 +19,7 @@ def get_bigquery_client() -> bigquery.Client:
     """
     try:
         credentials = service_account.Credentials.from_service_account_info(
-            st.secrets["gcp_service_account"]
+            st.secrets["bigquery"]
         )
         client = bigquery.Client(credentials=credentials)
         return client
@@ -86,6 +86,44 @@ def get_distinct_categories() -> list:
         return []
 
 
+def get_categories() -> list:
+    """
+    Alias for get_distinct_categories for compatibility
+    
+    Returns:
+        list: List of unique category names
+    """
+    return get_distinct_categories()
+
+
+def get_subcategories(category: str) -> list:
+    """
+    Get distinct subcategories for a specific category
+    
+    Args:
+        category (str): Category name to filter by
+        
+    Returns:
+        list: List of unique subcategory names
+    """
+    # Escape single quotes
+    category_escaped = category.replace("'", "''")
+    
+    query = f"""
+    SELECT DISTINCT SubCategoryName
+    FROM `commercial-prod-375618.pcb_data_prod.PCB_PRODUCT_MASTER`
+    WHERE CategoryName = '{category_escaped}'
+      AND SubCategoryName IS NOT NULL
+    ORDER BY SubCategoryName
+    """
+    
+    try:
+        df, _ = execute_query(query)
+        return df['SubCategoryName'].tolist()
+    except:
+        return []
+
+
 def get_brands_by_category(category: str) -> list:
     """
     Get distinct brands for a specific category
@@ -96,10 +134,13 @@ def get_brands_by_category(category: str) -> list:
     Returns:
         list: List of unique brand names
     """
+    # Escape single quotes
+    category_escaped = category.replace("'", "''")
+    
     query = f"""
     SELECT DISTINCT Brand
     FROM `commercial-prod-375618.pcb_data_prod.PCB_PRODUCT_MASTER`
-    WHERE CategoryName = '{category}'
+    WHERE CategoryName = '{category_escaped}'
       AND Brand IS NOT NULL
     ORDER BY Brand
     """
