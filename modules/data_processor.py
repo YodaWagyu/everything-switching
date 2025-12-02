@@ -7,6 +7,53 @@ import pandas as pd
 from typing import Dict, List, Tuple
 
 
+def aggregate_to_brand_level(df: pd.DataFrame, product_master_lookup: Dict[str, str] = None) -> pd.DataFrame:
+    """
+    Aggregate product-level switching data to brand-level
+    
+    Args:
+        df: Product-level switching dataframe with columns: prod_2024, prod_2025, customers, move_type
+        product_master_lookup: Optional dict mapping product names to brands
+    
+    Returns:
+        Brand-level switching dataframe with same structure
+    """
+    # If no lookup provided, try to extract brand from product name
+    df_agg = df.copy()
+    
+    # If we have a lookup, use it
+    if product_master_lookup:
+        df_agg['brand_2024'] = df_agg['prod_2024'].map(product_master_lookup)
+        df_agg['brand_2025'] = df_agg['prod_2025'].map(product_master_lookup)
+    else:
+        # Fallback: try to extract brand (first word)
+        # Keep special categories as-is
+        special_categories = {'NEW_TO_CATEGORY', 'LOST_FROM_CATEGORY', 'MIXED'}
+        
+        def extract_brand(product_name):
+            if product_name in special_categories:
+                return product_name
+            # Extract first word as brand
+            parts = product_name.split()
+            return parts[0] if parts else product_name
+        
+        df_agg['brand_2024'] = df_agg['prod_2024'].apply(extract_brand)
+        df_agg['brand_2025'] = df_agg['prod_2025'].apply(extract_brand)
+    
+    # Aggregate to brand level
+    brand_df = df_agg.groupby(['brand_2024', 'brand_2025', 'move_type']).agg({
+        'customers': 'sum'
+    }).reset_index()
+    
+    # Rename to match expected columns
+    brand_df = brand_df.rename(columns={
+        'brand_2024': 'prod_2024',
+        'brand_2025': 'prod_2025'
+    })
+    
+    return brand_df
+
+
 def calculate_brand_summary(df: pd.DataFrame) -> pd.DataFrame:
     """Calculate movement summary for each brand"""
     

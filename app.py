@@ -131,11 +131,39 @@ if run_analysis or st.session_state.query_executed:
         st.markdown("---")
     display_category = selected_categories[0] if selected_categories else None
     utils.display_filter_summary(analysis_mode, period1_start.strftime("%Y-%m-%d"), period1_end.strftime("%Y-%m-%d"), period2_start.strftime("%Y-%m-%d"), period2_end.strftime("%Y-%m-%d"), display_category, selected_brands, product_name_contains, primary_threshold, len(utils.parse_barcode_mapping(barcode_mapping_text)) if analysis_mode == "Custom Type" else 0)
+    
+    st.markdown("---")
+    st.markdown("### 📊 Graph Display Level")
+    col_toggle1, col_toggle2 = st.columns([3, 1])
+    with col_toggle1:
+        display_level = st.radio(
+            "Choose how to display graphs:",
+            ["Brand Level", "Product Level"],
+            horizontal=True,
+            help="Switch between aggregated brand view and detailed product view. You can change this anytime!",
+            key="display_level_toggle"
+        )
+    with col_toggle2:
+        if display_level == "Brand Level":
+            st.success("📊 Brand View")
+        else:
+            st.info("🔬 Product View")
+    
+    st.markdown("---")
+    
+    # Determine which data to use for visualizations based on display level
+    if display_level == "Brand Level":
+        # Aggregate product data to brand level
+        df_for_viz = data_processor.aggregate_to_brand_level(df)
+    else:
+        # Use original product-level data
+        df_for_viz = df
+    
     st.markdown("## 📊 Section 1: Customer Flow")
-    labels, sources, targets, values = data_processor.prepare_sankey_data(df)
+    labels, sources, targets, values = data_processor.prepare_sankey_data(df_for_viz)
     st.plotly_chart(visualizations.create_sankey_diagram(labels, sources, targets, values), use_container_width=True)
     st.markdown("## 🔥 Section 2: Competitive Matrix")
-    st.plotly_chart(visualizations.create_competitive_heatmap(data_processor.prepare_heatmap_data(df)), use_container_width=True)
+    st.plotly_chart(visualizations.create_competitive_heatmap(data_processor.prepare_heatmap_data(df_for_viz)), use_container_width=True)
     st.markdown("## 🎯 Section 3: Brand Deep Dive")
     available_brands_for_analysis = summary_df['Brand'].tolist()
     if available_brands_for_analysis:
@@ -183,7 +211,34 @@ if run_analysis or st.session_state.query_executed:
     st.markdown("## 🤖 AI-Powered Insights")
     if st.button("✨ Generate Complete Analysis"):
         ai_category = selected_categories[0] if selected_categories else None
-        insights = ai_analyzer.generate_insights(df, summary_df, ai_category, selected_brands, analysis_mode, f"{period1_start} to {period1_end}", f"{period2_start} to {period2_end}")
+        
+        # Extract brands for highlighting
+        # If user filtered by brands, use those; otherwise extract from data
+        brands_for_ai = selected_brands if selected_brands else []
+        
+        # If no brands filtered, extract unique brands from data for highlighting
+        if not brands_for_ai:
+            special_categories = {'NEW_TO_CATEGORY', 'LOST_FROM_CATEGORY', 'MIXED'}
+            all_items = set()
+            all_items.update(df['prod_2024'].unique())
+            all_items.update(df['prod_2025'].unique())
+            
+            # Extract brands (first word) from products
+            for item in all_items:
+                if item not in special_categories:
+                    # Extract brand (first word)
+                    brand = item.split()[0] if item.split() else item
+                    brands_for_ai.append(brand)
+            
+            # Remove duplicates and limit to top brands by customer count
+            brands_for_ai = list(set(brands_for_ai))
+            # Limit to top 10 brands for highlighting (avoid too many colors)
+            if len(brands_for_ai) > 10:
+                brand_customers = df.groupby(df['prod_2024'].apply(lambda x: x.split()[0] if x.split() and x not in special_categories else x))['customers'].sum()
+                top_brands = brand_customers.nlargest(10).index.tolist()
+                brands_for_ai = [b for b in brands_for_ai if b in top_brands]
+        
+        insights = ai_analyzer.generate_insights(df, summary_df, ai_category, brands_for_ai, analysis_mode, f"{period1_start} to {period1_end}", f"{period2_start} to {period2_end}")
         if insights:
             st.markdown(insights, unsafe_allow_html=True)
 else:
