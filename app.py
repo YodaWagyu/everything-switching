@@ -60,7 +60,7 @@ if selected_categories:
 brands_text = st.sidebar.text_input("🏷️ Brands", placeholder="เช่น NIVEA, VASELINE, CITRA", help="Enter brand names separated by commas")
 selected_brands = [b.strip() for b in brands_text.split(',') if b.strip()] if brands_text else []
 
-product_name_contains = st.sidebar.text_input("🔎 Product Contains", placeholder="เช่น โลชั่น")
+product_name_contains = st.sidebar.text_input("🔎 Product Contains", placeholder="เช่น โลชั่น, ครีม, นม", help="ใส่คำค้นหาได้หลายคำคั่นด้วยคอมม่า (OR condition)")
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 🎯 Threshold")

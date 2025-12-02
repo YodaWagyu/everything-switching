@@ -104,10 +104,22 @@ def build_switching_query(
     else:
         brand_filter = ""
     
-    # Build product name filter
+    # Build product name filter - supports multiple keywords with comma separation
     if product_name_contains and product_name_contains.strip():
-        escaped_product = product_name_contains.replace("'", "''")
-        product_filter = f"AND pm.ProductName LIKE '%{escaped_product}%'"
+        # Split by comma and clean up each term
+        keywords = [k.strip() for k in product_name_contains.split(',') if k.strip()]
+        
+        if keywords:
+            # Build OR conditions for multiple keywords
+            conditions = []
+            for keyword in keywords:
+                escaped_keyword = keyword.replace("'", "''")
+                conditions.append(f"pm.ProductName LIKE '%{escaped_keyword}%'")
+            
+            # Combine with OR
+            product_filter = f"AND ({' OR '.join(conditions)})"
+        else:
+            product_filter = ""
     else:
         product_filter = ""
     
