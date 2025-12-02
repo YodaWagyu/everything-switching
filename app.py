@@ -155,9 +155,12 @@ if run_analysis or st.session_state.query_executed:
     if display_level == "Brand Level":
         # Aggregate product data to brand level
         df_for_viz = data_processor.aggregate_to_brand_level(df)
+        # Recalculate summary for aggregated data
+        summary_df_for_viz = data_processor.calculate_brand_summary(df_for_viz)
     else:
         # Use original product-level data
         df_for_viz = df
+        summary_df_for_viz = summary_df
     
     st.markdown("## 📊 Section 1: Customer Flow")
     labels, sources, targets, values = data_processor.prepare_sankey_data(df_for_viz)
@@ -165,16 +168,16 @@ if run_analysis or st.session_state.query_executed:
     st.markdown("## 🔥 Section 2: Competitive Matrix")
     st.plotly_chart(visualizations.create_competitive_heatmap(data_processor.prepare_heatmap_data(df_for_viz)), use_container_width=True)
     st.markdown("## 🎯 Section 3: Brand Deep Dive")
-    available_brands_for_analysis = summary_df['Brand'].tolist()
+    available_brands_for_analysis = summary_df_for_viz['Brand'].tolist()
     if available_brands_for_analysis:
         selected_focus_brand = st.selectbox("Select brand", available_brands_for_analysis, key="focus_brand")
         if selected_focus_brand:
-            st.plotly_chart(visualizations.create_waterfall_chart(data_processor.prepare_waterfall_data(df, selected_focus_brand), selected_focus_brand), use_container_width=True)
+            st.plotly_chart(visualizations.create_waterfall_chart(data_processor.prepare_waterfall_data(df_for_viz, selected_focus_brand), selected_focus_brand), use_container_width=True)
     st.markdown("## 📋 Section 4: Summary Tables & Charts")
     tab1, tab2, tab3, tab4 = st.tabs(["📊 Summary", "📈 Charts", "📄 Raw", "📥 Export"])
     with tab1:
         st.markdown("### Brand Movement Summary")
-        display_summary = visualizations.create_summary_table_display(summary_df)
+        display_summary = visualizations.create_summary_table_display(summary_df_for_viz)
         def make_table(df):
             c = {'2024_Total':'#FF9800','Stayed':'#FFB74D','Stayed_%':'#FFB74D','Switch_Out':'#EF5350','Switch_Out_%':'#EF5350','Gone':'#E57373','Gone_%':'#E57373','Total_Out':'#D32F2F','Switch_In':'#66BB6A','New_Customer':'#81C784','Total_In':'#4CAF50','2025_Total':'#42A5F5','Net_Movement':'#1E88E5'}
             h = '<table style="width:100%; font-size:11px"><thead><tr>'
@@ -195,7 +198,7 @@ if run_analysis or st.session_state.query_executed:
             st.plotly_chart(visualizations.create_movement_type_pie(df), use_container_width=True)
         with c2:
             metric = st.selectbox("Metric", ['Net_Movement','Total_In','Total_Out','Stayed'])
-            st.plotly_chart(visualizations.create_brand_comparison_bar(summary_df, metric), use_container_width=True)
+            st.plotly_chart(visualizations.create_brand_comparison_bar(summary_df_for_viz, metric), use_container_width=True)
     with tab3:
         st.markdown("### Raw Data")
         st.dataframe(df, use_container_width=True, height=400)
@@ -205,9 +208,9 @@ if run_analysis or st.session_state.query_executed:
         st.markdown("### Export")
         c1, c2 = st.columns(2)
         with c1:
-            st.download_button("📊 Excel", utils.create_excel_export(df, summary_df), f"switching_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
+            st.download_button("📊 Excel", utils.create_excel_export(df_for_viz, summary_df_for_viz), f"switching_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
         with c2:
-            st.download_button("📄 CSV", df.to_csv(index=False), f"switching_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv", "text/csv", use_container_width=True)
+            st.download_button("📄 CSV", df_for_viz.to_csv(index=False), f"switching_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv", "text/csv", use_container_width=True)
     st.markdown("## 🤖 AI-Powered Insights")
     if st.button("✨ Generate Complete Analysis"):
         ai_category = selected_categories[0] if selected_categories else None
@@ -238,7 +241,7 @@ if run_analysis or st.session_state.query_executed:
                 top_brands = brand_customers.nlargest(10).index.tolist()
                 brands_for_ai = [b for b in brands_for_ai if b in top_brands]
         
-        insights = ai_analyzer.generate_insights(df, summary_df, ai_category, brands_for_ai, analysis_mode, f"{period1_start} to {period1_end}", f"{period2_start} to {period2_end}")
+        insights = ai_analyzer.generate_insights(df_for_viz, summary_df_for_viz, ai_category, brands_for_ai, analysis_mode, f"{period1_start} to {period1_end}", f"{period2_start} to {period2_end}")
         if insights:
             st.markdown(insights, unsafe_allow_html=True)
 else:

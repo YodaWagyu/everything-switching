@@ -159,18 +159,18 @@ Write your analysis in Thai language with a casual, friendly tone. Structure you
 
 ## Executive Summary
 
-[2-3 ประโยคสรุปสิ่งที่น่าสนใจที่สุด พูดแบบสบายๆ เหมือนคุยกับเพื่อน ใส่ตัวเลขและเปอร์เซ็นต์เสมอ]
+[2-3 ประโยคสรุปสิ่งที่น่าสนใจที่สุด พูดแบบสบายๆ เหมือนคุยกับเพื่อน ใส่ตัวเล ขและเปอร์เซ็นต์เสมอ]
 
 ## Key Findings
 
 - [ข้อค้นพบที่ 1: ใครได้/เสียลูกค้าไปเยอะ **ต้องมีตัวเลขจริง + เปอร์เซ็นต์ในวงเล็บ** เช่น "NIVEA ได้ลูกค้าเพิ่ม 1,500 คน (+20%)"]
 - [ข้อค้นพบที่ 2: รูปแบบการย้ายที่เด่นชัด **ระบุจำนวนลูกค้าและเปอร์เซ็นต์** เช่น "ลูกค้าย้ายจาก X ไป Y 800 คน (15% ของ X)"]
-- [ข้อค้นพบที่ 3: เทรนด์ที่น่าสนใจ **ใส่ตัวเลขเสมอ**]
-- [ข้อค้นพบเพิ่มเติม 2-3 ข้อ **ทุกข้อต้องมีตัวเลข**]
+- [ข้อค้นพบที่ 3: เทรนด์หรือ composition **ใส่ breakdown** เช่น "สินค้าประเภท AHA คิดเป็น 65% ของลูกค้าทั้งหมด ส่วนอื่นๆ 35%"]
+- [ข้อค้นพบเพิ่มเติม 2-3 ข้อ **ทุกข้อต้องมีตัวเลข และ composition ถ้าเป็นไปได้**]
 
 ## Strategic Recommendations
 
-- [คำแนะนำที่ 1: เฉพาะเจาะจง **อ้างอิงตัวเลขจากข้อมูล** เช่น "เน้นรักษา X เพราะมีลูกค้าเยอะที่สุด 5,000 คน"]
+- [คำแนะนำที่ 1: เฉพาะเจาะจง **อ้างอิงตัวเลขจากข้อมูล** เช่น "เน้นรักษา X เพราะมีลูกค้าเยอะที่สุด 5,000 คน (40% ของตลาด)"]
 - [คำแนะนำที่ 2: **มีตัวเลขประกอบ**]
 - [คำแนะนำที่ 3: **มีตัวเลขประกอบ**]
 - [คำแนะนำที่ 4 (ถ้ามี)]
@@ -181,9 +181,11 @@ Write your analysis in Thai language with a casual, friendly tone. Structure you
 - DO NOT use "แบรนด์" or "สินค้า" before product/brand names
 - Mention names directly (e.g., "NIVEA ได้ลูกค้าเพิ่ม 1,500 คน (+20%)" not "แบรนด์ NIVEA ได้ลูกค้าเพิ่ม")
 - **ALWAYS include specific numbers with percentages in parentheses** (e.g., "1,500 คน (+20%)", "หาย 800 คน (-15%)")
+- **When discussing trends or patterns, include composition/breakdown** (e.g., "สินค้า AHA คิดเป็น 65%, ส่วนอื่นๆ 35%")
 - NEVER use vague terms like "เล็กน้อย", "เยอะ", "พอสมควร" - use actual numbers instead
 - Use format: "[number with comma] คน ([+/-][percentage]%)" - Example: "2,500 คน (+15%)" or "1,200 คน (-10%)"
 - When mentioning any gain/loss, ALWAYS backup with specific customer count and percentage
+- Calculate compositions from the data provided - DO NOT make up numbers
 
 """
 
