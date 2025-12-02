@@ -62,6 +62,8 @@ selected_brands = [b.strip() for b in brands_text.split(',') if b.strip()] if br
 
 product_name_contains = st.sidebar.text_input("🔎 Product Contains", placeholder="เช่น โลชั่น, ครีม, นม", help="ใส่คำค้นหาได้หลายคำคั่นด้วยคอมม่า (OR condition)")
 
+product_name_not_contains = st.sidebar.text_input("🚫 Product NOT Contains", placeholder="เช่น PM_, PROMO", help="กรองสินค้าที่มีคำนี้ออก (AND NOT condition)")
+
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 🎯 Threshold")
 primary_threshold = st.sidebar.slider("Primary %", float(config.MIN_PRIMARY_THRESHOLD*100), float(config.MAX_PRIMARY_THRESHOLD*100), float(config.DEFAULT_PRIMARY_THRESHOLD*100), step=5.0) / 100.0
@@ -92,7 +94,8 @@ if run_analysis or st.session_state.query_executed:
             period2_end.strftime("%Y-%m-%d"), 
             selected_category, 
             selected_brands, 
-            product_name_contains or None, 
+            product_name_contains or None,
+            product_name_not_contains or None,
             primary_threshold, 
             barcode_mapping_text if analysis_mode == "Custom Type" else None,
             store_filter_type,

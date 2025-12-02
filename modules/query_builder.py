@@ -59,6 +59,7 @@ def build_switching_query(
     category: str,
     brands: list,
     product_name_contains: Optional[str] = None,
+    product_name_not_contains: Optional[str] = None,
     primary_threshold: float = 0.60,
     barcode_mapping: Optional[str] = None,
     store_filter_type: str = "All Store",
@@ -75,7 +76,8 @@ def build_switching_query(
         period2_end (str): End date for period 2 (YYYY-MM-DD)
         category (str): Category name to filter
         brands (list): List of brand names to filter
-        product_name_contains (str, optional): Text to search in product names
+        product_name_contains (str, optional): Text to search in product names (OR condition)
+        product_name_not_contains (str, optional): Text to exclude from product names (AND NOT condition)
         primary_threshold (float): Threshold for primary item (0.0 to 1.0)
         barcode_mapping (str, optional): Custom barcode mapping for Custom Type mode
         store_filter_type (str): "All Store" or "Same Store"
@@ -123,6 +125,25 @@ def build_switching_query(
     else:
         product_filter = ""
     
+    # Build product name NOT filter - exclude products containing these keywords
+    if product_name_not_contains and product_name_not_contains.strip():
+        # Split by comma and clean up each term
+        exclude_keywords = [k.strip() for k in product_name_not_contains.split(',') if k.strip()]
+        
+        if exclude_keywords:
+            # Build AND NOT conditions for multiple keywords
+            not_conditions = []
+            for keyword in exclude_keywords:
+                escaped_keyword = keyword.replace("'", "''")
+                not_conditions.append(f"pm.ProductName NOT LIKE '%{escaped_keyword}%'")
+            
+            # Combine with AND
+            product_not_filter = f"AND {' AND '.join(not_conditions)}"
+        else:
+            product_not_filter = ""
+    else:
+        product_not_filter = ""
+    
     # Build store opening date filter
     if store_filter_type == "Same Store" and store_opening_cutoff:
         store_filter = f"AND br.openingdate <= '{store_opening_cutoff}'"
@@ -162,6 +183,7 @@ WITH base AS (
   WHERE pm.CategoryName = '{category_escaped}'
     {brand_filter}
     {product_filter}
+    {product_not_filter}
     {store_filter}
     AND (
       a.Date BETWEEN start_2024 AND end_2024 OR

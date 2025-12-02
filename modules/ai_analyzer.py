@@ -75,8 +75,11 @@ def highlight_brands_in_text(text: str, brands: list) -> str:
         if not brand:
             continue
         color = brand_color_map[brand]
-        # Use regex with word boundaries to match whole words
-        pattern = re.compile(rf'\b({re.escape(brand)})\b', re.IGNORECASE)
+        # Use case-insensitive replacement
+        # Escape the brand name for regex but be more flexible with matching
+        escaped_brand = re.escape(brand)
+        # Match brand name surrounded by word boundaries or start/end of line
+        pattern = re.compile(rf'(?<![a-zA-Z0-9])({escaped_brand})(?![a-zA-Z0-9])', re.IGNORECASE)
         highlighted_text = pattern.sub(
             rf'<span style="background-color: {color}; color: #000; padding: 2px 6px; border-radius: 3px; font-weight: 600;">\1</span>',
             highlighted_text
@@ -130,12 +133,12 @@ def generate_insights(
         ]
         
         # Build the prompt
-        prompt = f"""You are a retail analytics expert analyzing customer brand/product switching patterns.
+        prompt = f"""You are a retail analytics expert analyzing customer switching patterns in a casual, friendly tone.
 
 **Analysis Context:**
 - Category: {category}
 - Analysis Type: {analysis_mode}
-- Brands Analyzed: {', '.join(brands) if brands else 'All'}
+- Items Analyzed: {', '.join(brands) if brands else 'All'}
 - Comparison: {period1_label} vs {period2_label}
 - Total Customers: {total_customers:,}
 
@@ -152,18 +155,24 @@ def generate_insights(
 {top_flows.to_string(index=False)}
 
 **Your Task:**
-Provide a comprehensive analysis with the following sections:
+Provide a casual, easy-to-read analysis in Thai with these sections (keep headers in English):
 
-1. Executive Summary (2-3 sentences highlighting the most important finding)
+1. **Executive Summary** - 2-3 ประโยคสรุปสิ่งที่น่าสนใจที่สุด พูดแบบสบายๆ เหมือนคุยกับเพื่อน
 
-2. Key Findings (3-5 bullet points covering):
-   - Major winners and losers
-   - Significant switching patterns
-   - Notable trends
+2. **Key Findings** - 3-5 ข้อค้นพบสำคัญ:
+   - ใครได้/เสียลูกค้าไปเยอะ พูดถึงชื่อโดยตรงเลย ไม่ต้องใส่คำว่า "แบรนด์" หรือ "สินค้า" นำหน้า
+   - รูปแบบการย้ายที่เด่นชัด
+   - เทรนด์ที่น่าสนใจ
 
-3. Strategic Recommendations (3-4 actionable recommendations based on the data)
+3. **Strategic Recommendations** - 3-4 ข้อแนะนำที่เป็นประโยชน์ ใช้ภาษาแบบสบายๆ
 
-Format your response in clean markdown. Be specific with numbers. Focus on actionable insights.
+**Important Guidelines:**
+- Use a casual, conversational Thai tone (like talking to a colleague, not a formal report)
+- When mentioning product/brand names, use them directly without prefixing with "แบรนด์" or "สินค้า"
+- Keep section headers in English but content in Thai
+- Be specific with numbers and insights
+- Make it easy and enjoyable to read
+
 """
 
         # Call OpenAI API
