@@ -155,23 +155,32 @@ def generate_insights(
 {top_flows.to_string(index=False)}
 
 **Your Task:**
-Provide a casual, easy-to-read analysis in Thai with these sections (keep headers in English):
+Write your analysis in Thai language with a casual, friendly tone. Structure your response EXACTLY like this:
 
-1. **Executive Summary** - 2-3 ประโยคสรุปสิ่งที่น่าสนใจที่สุด พูดแบบสบายๆ เหมือนคุยกับเพื่อน
+## Executive Summary
 
-2. **Key Findings** - 3-5 ข้อค้นพบสำคัญ:
-   - ใครได้/เสียลูกค้าไปเยอะ พูดถึงชื่อโดยตรงเลย ไม่ต้องใส่คำว่า "แบรนด์" หรือ "สินค้า" นำหน้า
-   - รูปแบบการย้ายที่เด่นชัด
-   - เทรนด์ที่น่าสนใจ
+[2-3 ประโยคสรุปสิ่งที่น่าสนใจที่สุด พูดแบบสบายๆ เหมือนคุยกับเพื่อน ไม่ต้องใช้คำว่า "แบรนด์" หรือ "สินค้า" นำหน้าชื่อ]
 
-3. **Strategic Recommendations** - 3-4 ข้อแนะนำที่เป็นประโยชน์ ใช้ภาษาแบบสบายๆ
+## Key Findings
 
-**Important Guidelines:**
-- Use a casual, conversational Thai tone (like talking to a colleague, not a formal report)
-- When mentioning product/brand names, use them directly without prefixing with "แบรนด์" or "สินค้า"
-- Keep section headers in English but content in Thai
-- Be specific with numbers and insights
-- Make it easy and enjoyable to read
+- [ข้อค้นพบที่ 1: ใครได้/เสียลูกค้าไปเยอะ ระบุชื่อโดยตรง เช่น "NIVEA ได้ลูกค้าเพิ่ม X คน"]
+- [ข้อค้นพบที่ 2: รูปแบบการย้ายที่เด่นชัด]
+- [ข้อค้นพบที่ 3: เทรนด์ที่น่าสนใจ]
+- [ข้อค้นพบเพิ่มเติม 2-3 ข้อ]
+
+## Strategic Recommendations
+
+- [คำแนะนำที่ 1: เป็นประโยชน์และเฉพาะเจาะจง]
+- [คำแนะนำที่ 2]
+- [คำแนะนำที่ 3]
+- [คำแนะนำที่ 4 (ถ้ามี)]
+
+**Critical Rules:**
+- Section headers MUST be in English: "## Executive Summary", "## Key Findings", "## Strategic Recommendations"
+- Content MUST be in Thai with a casual, conversational tone
+- DO NOT use "แบรนด์" or "สินค้า" before product/brand names
+- Mention names directly (e.g., "NIVEA ได้ลูกค้าเพิ่ม" not "แบรนด์ NIVEA ได้ลูกค้าเพิ่ม")
+- Use specific numbers and be actionable
 
 """
 
