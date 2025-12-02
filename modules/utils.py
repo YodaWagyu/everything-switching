@@ -247,15 +247,13 @@ def display_filter_summary(
 
 def show_debug_query(query: str):
     """
-    Display the SQL query in an expandable section for debugging
+    Store the SQL query in session state for later viewing
     
     Args:
         query (str): SQL query to display
     """
-    # Hidden in production - uncomment to debug
-    # with st.expander("🔍 View Generated SQL Query"):
-    #     st.code(query, language="sql")
-    pass
+    # Store query in session state for later viewing
+    st.session_state.last_executed_query = query
 
 
 def get_brand_color(brand: str) -> str:

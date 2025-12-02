@@ -18,16 +18,16 @@ st.sidebar.markdown("---")
 st.sidebar.markdown("### 📅 Before Period")
 col1, col2 = st.sidebar.columns(2)
 with col1:
-    period1_start = st.date_input("Start", datetime.now() - timedelta(days=365), key="before_start")
+    period1_start = st.date_input("Start", datetime(2024, 1, 1), key="before_start")
 with col2:
-    period1_end = st.date_input("End", datetime.now() - timedelta(days=275), key="before_end")
+    period1_end = st.date_input("End", datetime(2024, 1, 31), key="before_end")
 
 st.sidebar.markdown("### 📅 After Period")
 col3, col4 = st.sidebar.columns(2)
 with col3:
-    period2_start = st.date_input("Start", datetime.now() - timedelta(days=90), key="after_start")
+    period2_start = st.date_input("Start", datetime(2025, 1, 1), key="after_start")
 with col4:
-    period2_end = st.date_input("End", datetime.now(), key="after_end")
+    period2_end = st.date_input("End", datetime(2025, 1, 31), key="after_end")
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 🏪 Store Filter")
@@ -57,10 +57,10 @@ if selected_categories:
     all_subcategories = list(set(all_subcategories))
     selected_subcategories = st.sidebar.multiselect("📁 SubCategory", all_subcategories)
 
-brands_text = st.sidebar.text_input("🏷️ Brands", placeholder="e.g., NIVEA, VASELINE, CITRA", help="Enter brand names separated by commas")
+brands_text = st.sidebar.text_input("🏷️ Brands", placeholder="เช่น NIVEA, VASELINE, CITRA", help="Enter brand names separated by commas")
 selected_brands = [b.strip() for b in brands_text.split(',') if b.strip()] if brands_text else []
 
-product_name_contains = st.sidebar.text_input("🔎 Product Contains", placeholder="e.g., lotion")
+product_name_contains = st.sidebar.text_input("🔎 Product Contains", placeholder="เช่น โลชั่น")
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 🎯 Threshold")
@@ -78,6 +78,12 @@ run_analysis = st.sidebar.button("🚀 Run Analysis", type="primary", use_contai
 if run_analysis or st.session_state.query_executed:
     if run_analysis:
         selected_category = selected_categories[0] if selected_categories else None
+        
+        # Validate required fields
+        if not selected_category:
+            st.error("⚠️ Please select at least one category to run the analysis.")
+            st.stop()
+        
         query = query_builder.build_switching_query(
             analysis_mode, 
             period1_start.strftime("%Y-%m-%d"), 
@@ -106,7 +112,19 @@ if run_analysis or st.session_state.query_executed:
         st.stop()
     if gb_processed > 0:
         st.markdown("---")
-        utils.display_cost_info(gb_processed)
+        col_cost1, col_cost2 = st.columns([3, 1])
+        with col_cost1:
+            utils.display_cost_info(gb_processed)
+        with col_cost2:
+            st.markdown("")  # Spacer
+            if st.button("🔍 View SQL Query", use_container_width=True):
+                st.session_state.show_query = not st.session_state.get('show_query', False)
+        
+        # Show query if button clicked
+        if st.session_state.get('show_query', False) and 'last_executed_query' in st.session_state:
+            with st.expander("📝 Executed SQL Query", expanded=True):
+                st.code(st.session_state.last_executed_query, language="sql")
+        
         st.markdown("---")
     display_category = selected_categories[0] if selected_categories else None
     utils.display_filter_summary(analysis_mode, period1_start.strftime("%Y-%m-%d"), period1_end.strftime("%Y-%m-%d"), period2_start.strftime("%Y-%m-%d"), period2_end.strftime("%Y-%m-%d"), display_category, selected_brands, product_name_contains, primary_threshold, len(utils.parse_barcode_mapping(barcode_mapping_text)) if analysis_mode == "Custom Type" else 0)
