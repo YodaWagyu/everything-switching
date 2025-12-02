@@ -182,7 +182,7 @@ if run_analysis or st.session_state.query_executed:
         ai_category = selected_categories[0] if selected_categories else None
         insights = ai_analyzer.generate_insights(df, summary_df, ai_category, selected_brands, analysis_mode, f"{period1_start} to {period1_end}", f"{period2_start} to {period2_end}")
         if insights:
-            st.markdown(insights)
+            st.markdown(insights, unsafe_allow_html=True)
 else:
     st.info("👈 Configure and click **Run Analysis**")
 st.markdown("---")

@@ -8,6 +8,7 @@ from openai import OpenAI
 import pandas as pd
 from typing import Optional
 import config
+import re
 
 
 def get_openai_client() -> OpenAI:
@@ -28,6 +29,60 @@ def get_openai_client() -> OpenAI:
     except Exception as e:
         st.error(f"❌ Failed to initialize OpenAI client: {str(e)}")
         return None
+
+
+def highlight_brands_in_text(text: str, brands: list) -> str:
+    """
+    Highlight brand and product names with distinct colors in markdown text
+    
+    Args:
+        text (str): AI-generated text
+        brands (list): List of brands to highlight
+    
+    Returns:
+        str: Text with HTML color highlights
+    """
+    if not brands or not text:
+        return text
+    
+    # Define color palette for brands
+    brand_colors = [
+        '#FF6B6B',  # Red
+        '#4ECDC4',  # Teal
+        '#45B7D1',  # Sky Blue
+        '#FFA07A',  # Light Salmon
+        '#98D8C8',  # Mint
+        '#F7DC6F',  # Yellow
+        '#BB8FCE',  # Purple
+        '#85C1E2',  # Light Blue
+        '#F8B88B',  # Peach
+        '#92DCE5',  # Aqua
+    ]
+    
+    highlighted_text = text
+    
+    # Create brand to color mapping
+    brand_color_map = {}
+    for i, brand in enumerate(brands):
+        color = brand_colors[i % len(brand_colors)]
+        brand_color_map[brand] = color
+    
+    # Sort brands by length (longest first) to avoid partial matches
+    sorted_brands = sorted(brands, key=len, reverse=True)
+    
+    # Highlight each brand
+    for brand in sorted_brands:
+        if not brand:
+            continue
+        color = brand_color_map[brand]
+        # Use regex with word boundaries to match whole words
+        pattern = re.compile(rf'\b({re.escape(brand)})\b', re.IGNORECASE)
+        highlighted_text = pattern.sub(
+            rf'<span style="background-color: {color}; color: #000; padding: 2px 6px; border-radius: 3px; font-weight: 600;">\1</span>',
+            highlighted_text
+        )
+    
+    return highlighted_text
 
 
 def generate_insights(
@@ -116,14 +171,19 @@ Format your response in clean markdown. Be specific with numbers. Focus on actio
             response = client.chat.completions.create(
                 model=config.OPENAI_MODEL,
                 messages=[
-                    {"role": "system", "content": "You are a retail analytics expert specializing in customer behavior and brand switching analysis. Provide clear, actionable insights based on data."},
-                    {"role": "user", "content": prompt}
+                    {"role": "system", "content": "You are a retail analytics expert specializing in customer behavior and brand switching analysis. Provide clear, actionable insights based on data. Always respond in Thai language (ภาษาไทย)."},
+                    {"role": "user", "content": prompt + "\n\n**IMPORTANT: Please respond in Thai language (ภาษาไทย) only.**"}
                 ],
                 temperature=config.OPENAI_TEMPERATURE,
                 max_tokens=config.OPENAI_MAX_TOKENS
             )
-        
+
         insights = response.choices[0].message.content
+        
+        # Highlight brands in the response
+        if brands:
+            insights = highlight_brands_in_text(insights, brands)
+        
         return insights
         
     except Exception as e:
@@ -208,8 +268,8 @@ Provide a brief analysis (3-4 sentences) focusing on:
         response = client.chat.completions.create(
             model=config.OPENAI_MODEL,
             messages=[
-                {"role": "system", "content": "You are a brand strategist analyzing customer movement patterns."},
-                {"role": "user", "content": prompt}
+                {"role": "system", "content": "You are a brand strategist analyzing customer movement patterns. Always respond in Thai language (ภาษาไทย)."},
+                {"role": "user", "content": prompt + "\n\n**IMPORTANT: Please respond in Thai language (ภาษาไทย) only.**"}
             ],
             temperature=config.OPENAI_TEMPERATURE,
             max_tokens=500
@@ -277,8 +337,8 @@ Provide 2-3 key insights about:
         response = client.chat.completions.create(
             model=config.OPENAI_MODEL,
             messages=[
-                {"role": "system", "content": "You are a customer behavior analyst."},
-                {"role": "user", "content": prompt}
+                {"role": "system", "content": "You are a customer behavior analyst. Always respond in Thai language (ภาษาไทย)."},
+                {"role": "user", "content": prompt + "\n\n**IMPORTANT: Please respond in Thai language (ภาษาไทย) only.**"}
             ],
             temperature=config.OPENAI_TEMPERATURE,
             max_tokens=400
