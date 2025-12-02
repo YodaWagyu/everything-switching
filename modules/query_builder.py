@@ -134,11 +134,11 @@ def build_switching_query(
             # Build AND NOT conditions for multiple keywords
             not_conditions = []
             for keyword in exclude_keywords:
-                # Escape SQL wildcards and single quotes
+                # Escape single quotes for SQL
                 escaped_keyword = keyword.replace("'", "''")
-                # Escape SQL LIKE wildcards: _ and %
-                escaped_keyword = escaped_keyword.replace('_', r'\_').replace('%', r'\%')
-                not_conditions.append(f"pm.ProductName NOT LIKE '%{escaped_keyword}%' ESCAPE '\\\\'")
+                # Escape SQL LIKE wildcards: _ and % with double backslash
+                escaped_keyword = escaped_keyword.replace('_', '\\\\_').replace('%', '\\\\%')
+                not_conditions.append(f"pm.ProductName NOT LIKE '%{escaped_keyword}%'")
             
             # Combine with AND
             product_not_filter = f"AND {' AND '.join(not_conditions)}"
