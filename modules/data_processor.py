@@ -21,27 +21,35 @@ def aggregate_to_brand_level(df: pd.DataFrame, product_master_lookup: Dict[str, 
     # If no lookup provided, try to extract brand from product name
     df_agg = df.copy()
     
+    # Keep special categories as-is
+    special_categories = {'NEW_TO_CATEGORY', 'LOST_FROM_CATEGORY', 'MIXED'}
+    
+    def extract_brand(product_name):
+        # Handle None, NaN, or empty values
+        if pd.isna(product_name) or not product_name:
+            return 'Unknown'
+        
+        # Convert to string if not already
+        product_name = str(product_name).strip()
+        
+        if product_name in special_categories:
+            return product_name
+        
+        # Extract first word as brand
+        parts = product_name.split()
+        return parts[0] if parts else 'Unknown'
+    
     # If we have a lookup, use it
     if product_master_lookup:
-        df_agg['brand_2024'] = df_agg['prod_2024'].map(product_master_lookup)
-        df_agg['brand_2025'] = df_agg['prod_2025'].map(product_master_lookup)
+        df_agg['brand_2024'] = df_agg['prod_2024'].map(product_master_lookup).fillna('Unknown')
+        df_agg['brand_2025'] = df_agg['prod_2025'].map(product_master_lookup).fillna('Unknown')
     else:
         # Fallback: try to extract brand (first word)
-        # Keep special categories as-is
-        special_categories = {'NEW_TO_CATEGORY', 'LOST_FROM_CATEGORY', 'MIXED'}
-        
-        def extract_brand(product_name):
-            if product_name in special_categories:
-                return product_name
-            # Extract first word as brand
-            parts = product_name.split()
-            return parts[0] if parts else product_name
-        
         df_agg['brand_2024'] = df_agg['prod_2024'].apply(extract_brand)
         df_agg['brand_2025'] = df_agg['prod_2025'].apply(extract_brand)
     
     # Aggregate to brand level
-    brand_df = df_agg.groupby(['brand_2024', 'brand_2025', 'move_type']).agg({
+    brand_df = df_agg.groupby(['brand_2024', 'brand_2025', 'move_type'], dropna=False).agg({
         'customers': 'sum'
     }).reset_index()
     

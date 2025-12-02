@@ -159,28 +159,31 @@ Write your analysis in Thai language with a casual, friendly tone. Structure you
 
 ## Executive Summary
 
-[2-3 ประโยคสรุปสิ่งที่น่าสนใจที่สุด พูดแบบสบายๆ เหมือนคุยกับเพื่อน ไม่ต้องใช้คำว่า "แบรนด์" หรือ "สินค้า" นำหน้าชื่อ]
+[2-3 ประโยคสรุปสิ่งที่น่าสนใจที่สุด พูดแบบสบายๆ เหมือนคุยกับเพื่อน ใส่ตัวเลขและเปอร์เซ็นต์เสมอ]
 
 ## Key Findings
 
-- [ข้อค้นพบที่ 1: ใครได้/เสียลูกค้าไปเยอะ ระบุชื่อโดยตรง เช่น "NIVEA ได้ลูกค้าเพิ่ม X คน"]
-- [ข้อค้นพบที่ 2: รูปแบบการย้ายที่เด่นชัด]
-- [ข้อค้นพบที่ 3: เทรนด์ที่น่าสนใจ]
-- [ข้อค้นพบเพิ่มเติม 2-3 ข้อ]
+- [ข้อค้นพบที่ 1: ใครได้/เสียลูกค้าไปเยอะ **ต้องมีตัวเลขจริง + เปอร์เซ็นต์ในวงเล็บ** เช่น "NIVEA ได้ลูกค้าเพิ่ม 1,500 คน (+20%)"]
+- [ข้อค้นพบที่ 2: รูปแบบการย้ายที่เด่นชัด **ระบุจำนวนลูกค้าและเปอร์เซ็นต์** เช่น "ลูกค้าย้ายจาก X ไป Y 800 คน (15% ของ X)"]
+- [ข้อค้นพบที่ 3: เทรนด์ที่น่าสนใจ **ใส่ตัวเลขเสมอ**]
+- [ข้อค้นพบเพิ่มเติม 2-3 ข้อ **ทุกข้อต้องมีตัวเลข**]
 
 ## Strategic Recommendations
 
-- [คำแนะนำที่ 1: เป็นประโยชน์และเฉพาะเจาะจง]
-- [คำแนะนำที่ 2]
-- [คำแนะนำที่ 3]
+- [คำแนะนำที่ 1: เฉพาะเจาะจง **อ้างอิงตัวเลขจากข้อมูล** เช่น "เน้นรักษา X เพราะมีลูกค้าเยอะที่สุด 5,000 คน"]
+- [คำแนะนำที่ 2: **มีตัวเลขประกอบ**]
+- [คำแนะนำที่ 3: **มีตัวเลขประกอบ**]
 - [คำแนะนำที่ 4 (ถ้ามี)]
 
 **Critical Rules:**
 - Section headers MUST be in English: "## Executive Summary", "## Key Findings", "## Strategic Recommendations"
 - Content MUST be in Thai with a casual, conversational tone
 - DO NOT use "แบรนด์" or "สินค้า" before product/brand names
-- Mention names directly (e.g., "NIVEA ได้ลูกค้าเพิ่ม" not "แบรนด์ NIVEA ได้ลูกค้าเพิ่ม")
-- Use specific numbers and be actionable
+- Mention names directly (e.g., "NIVEA ได้ลูกค้าเพิ่ม 1,500 คน (+20%)" not "แบรนด์ NIVEA ได้ลูกค้าเพิ่ม")
+- **ALWAYS include specific numbers with percentages in parentheses** (e.g., "1,500 คน (+20%)", "หาย 800 คน (-15%)")
+- NEVER use vague terms like "เล็กน้อย", "เยอะ", "พอสมควร" - use actual numbers instead
+- Use format: "[number with comma] คน ([+/-][percentage]%)" - Example: "2,500 คน (+15%)" or "1,200 คน (-10%)"
+- When mentioning any gain/loss, ALWAYS backup with specific customer count and percentage
 
 """
 
