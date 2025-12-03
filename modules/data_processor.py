@@ -180,3 +180,56 @@ def get_top_flows(df: pd.DataFrame, n: int = 10) -> pd.DataFrame:
     top['prod_2024'] = top['prod_2024'].replace({'NEW_TO_CATEGORY': 'New Customers', 'LOST_FROM_CATEGORY': 'Gone'})
     top['prod_2025'] = top['prod_2025'].replace({'NEW_TO_CATEGORY': 'New Customers', 'LOST_FROM_CATEGORY': 'Gone'})
     return top
+
+
+def get_brand_switching_summary(df: pd.DataFrame, top_n: int = 20) -> pd.DataFrame:
+    """
+    Get detailed brand switching flows with percentages
+    
+    Args:
+        df: Switching dataframe
+        top_n: Number of top switching flows to return
+    
+    Returns:
+        DataFrame with columns: From_Brand, To_Brand, Customers, Pct_of_From_Brand
+    """
+    # Filter only switched movements (exclude stayed, new, gone)
+    switched_df = df[df['move_type'] == 'switched'].copy()
+    
+    # Remove NEW_TO_CATEGORY and LOST_FROM_CATEGORY
+    switched_df = switched_df[
+        (switched_df['prod_2024'] != 'NEW_TO_CATEGORY') &
+        (switched_df['prod_2024'] != 'LOST_FROM_CATEGORY') &
+        (switched_df['prod_2025'] != 'NEW_TO_CATEGORY') &
+        (switched_df['prod_2025'] != 'LOST_FROM_CATEGORY')
+    ].copy()
+    
+    if len(switched_df) == 0:
+        return pd.DataFrame(columns=['From_Brand', 'To_Brand', 'Customers', 'Pct_of_From_Brand'])
+    
+    # Calculate baseline for each from_brand (total customers in 2024)
+    brand_2024_totals = df.groupby('prod_2024')['customers'].sum().to_dict()
+    
+    # Prepare switching summary
+    switching_data = []
+    for _, row in switched_df.iterrows():
+        from_brand = row['prod_2024']
+        to_brand = row['prod_2025']
+        customers = row['customers']
+        
+        # Calculate percentage of source brand
+        from_brand_total = brand_2024_totals.get(from_brand, 0)
+        pct_of_from = (customers / from_brand_total * 100) if from_brand_total > 0 else 0
+        
+        switching_data.append({
+            'From_Brand': from_brand,
+            'To_Brand': to_brand,
+            'Customers': customers,
+            'Pct_of_From_Brand': round(pct_of_from, 2)
+        })
+    
+    # Create DataFrame and sort by customers
+    switching_summary = pd.DataFrame(switching_data)
+    switching_summary = switching_summary.sort_values('Customers', ascending=False).head(top_n)
+    
+    return switching_summary

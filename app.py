@@ -179,7 +179,7 @@ if run_analysis or st.session_state.query_executed:
         if selected_focus_brand:
             st.plotly_chart(visualizations.create_waterfall_chart(data_processor.prepare_waterfall_data(df_display, selected_focus_brand), selected_focus_brand), use_container_width=True)
     st.markdown("## 📋 Section 4: Summary Tables & Charts")
-    tab1, tab2, tab3, tab4 = st.tabs(["📊 Summary", "📈 Charts", "📄 Raw", "📥 Export"])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(["📊 Summary", "🔄 Brand Switching", "📈 Charts", "📄 Raw", "📥 Export"])
     with tab1:
         st.markdown("### Brand Movement Summary")
         display_summary = visualizations.create_summary_table_display(summary_df)
@@ -197,19 +197,43 @@ if run_analysis or st.session_state.query_executed:
                 h += '</tr>'
             return h + '</tbody></table>'
         st.markdown(make_table(display_summary), unsafe_allow_html=True)
+    
     with tab2:
+        st.markdown("### 🔄 Brand Switching Details")
+        st.caption("Top brand-to-brand switching flows (excluding New/Gone customers)")
+        
+        switching_summary = data_processor.get_brand_switching_summary(df_display, top_n=20)
+        
+        if len(switching_summary) > 0:
+            # Format the display
+            switching_display = switching_summary.copy()
+            switching_display['Customers'] = switching_display['Customers'].apply(lambda x: f"{x:,.0f}")
+            switching_display['Pct_of_From_Brand'] = switching_display['Pct_of_From_Brand'].apply(lambda x: f"{x:.2f}%")
+            switching_display = switching_display.rename(columns={
+                'From_Brand': 'From Brand',
+                'To_Brand': 'To Brand',
+                'Pct_of_From_Brand': '% of From Brand'
+            })
+            
+            st.dataframe(switching_display, use_container_width=True, height=600, hide_index=True)
+            
+            st.info("💡 **คำอธิบาย:** % of From Brand = จำนวนลูกค้าที่ย้ายจาก Brand นั้น / ลูกค้าทั้งหมดของ Brand ในช่วง Before Period")
+        else:
+            st.warning("⚠️ ไม่พบข้อมูลการ switch ระหว่าง brand")
+    
+    with tab3:
         c1, c2 = st.columns(2)
         with c1:
             st.plotly_chart(visualizations.create_movement_type_pie(df_display), use_container_width=True)
         with c2:
             metric = st.selectbox("Metric", ['Net_Movement','Total_In','Total_Out','Stayed'])
             st.plotly_chart(visualizations.create_brand_comparison_bar(summary_df, metric), use_container_width=True)
-    with tab3:
+    with tab4:
         st.markdown("### Raw Data")
         st.dataframe(df_display, use_container_width=True, height=400)
         st.markdown("### Top 10 Flows")
         st.dataframe(data_processor.get_top_flows(df_display, n=10), use_container_width=True)
-    with tab4:
+    with tab5:
         st.markdown("### Export")
         c1, c2 = st.columns(2)
         with c1:
