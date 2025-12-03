@@ -184,16 +184,36 @@ if run_analysis or st.session_state.query_executed:
         st.markdown("### Brand Movement Summary")
         display_summary = visualizations.create_summary_table_display(summary_df)
         def make_table(df):
-            c = {'2024_Total':'#FF9800','Stayed':'#FFB74D','Stayed_%':'#FFB74D','Switch_Out':'#EF5350','Switch_Out_%':'#EF5350','Gone':'#E57373','Gone_%':'#E57373','Total_Out':'#D32F2F','Switch_In':'#66BB6A','New_Customer':'#81C784','Total_In':'#4CAF50','2025_Total':'#42A5F5','Net_Movement':'#1E88E5'}
-            h = '<table style="width:100%; font-size:11px"><thead><tr>'
+            # Define colors and column widths for better balance
+            c = {
+                '2024_Total':'#FF9800','Stayed':'#FFB74D','Stayed_%':'#FFB74D',
+                'Switch_Out':'#EF5350','Switch_Out_%':'#EF5350',
+                'Gone':'#E57373','Gone_%':'#E57373','Total_Out':'#D32F2F',
+                'Switch_In':'#66BB6A','New_Customer':'#81C784','Total_In':'#4CAF50',
+                '2025_Total':'#42A5F5','Net_Movement':'#1E88E5'
+            }
+            
+            # Define balanced column widths (% based)
+            col_widths = {
+                'Brand': '10%',
+                '2024_Total': '6%', 'Stayed': '5%', 'Stayed_%': '5%',
+                'Switch_Out': '6%', 'Switch_Out_%': '6%',
+                'Gone': '5%', 'Gone_%': '5%', 'Total_Out': '6%',
+                'Switch_In': '6%', 'New_Customer': '8%', 'Total_In': '6%',
+                '2025_Total': '6%', 'Net_Movement': '8%'
+            }
+            
+            h = '<table style="width:100%; font-size:12px; border-collapse: collapse;"><thead><tr>'
             for col in df.columns:
-                h += f'<th style="background:{c.get(col,"#607D8B")}; color:white; padding:8px; vertical-align:middle; text-align:center">{col.replace("_"," ")}</th>'
+                width = col_widths.get(col, '6%')
+                h += f'<th style="background:{c.get(col,"#607D8B")}; color:white; padding:10px; vertical-align:middle; text-align:center; width:{width}; white-space:nowrap;">{col.replace("_"," ")}</th>'
             h += '</tr></thead><tbody>'
             for _, row in df.iterrows():
-                h += '<tr>'
+                h += '<tr style="border-bottom: 1px solid #e0e0e0;">'
                 for i, (col, v) in enumerate(row.items()):
                     fmt = f"{v:.1f}%" if isinstance(v,(int,float)) and '%' in col else f"{v:,.0f}" if isinstance(v,(int,float)) else str(v)
-                    h += f'<td style="padding:6px; text-align:{"left" if i==0 else "right"}">{fmt}</td>'
+                    align = "left" if i == 0 else "center"
+                    h += f'<td style="padding:8px; text-align:{align}; vertical-align:middle;">{fmt}</td>'
                 h += '</tr>'
             return h + '</tbody></table>'
         st.markdown(make_table(display_summary), unsafe_allow_html=True)
@@ -205,18 +225,88 @@ if run_analysis or st.session_state.query_executed:
         switching_summary = data_processor.get_brand_switching_summary(df_display, top_n=20)
         
         if len(switching_summary) > 0:
-            # Format the display
-            switching_display = switching_summary.copy()
-            switching_display['Customers'] = switching_display['Customers'].apply(lambda x: f"{x:,.0f}")
-            switching_display['Pct_of_From_Brand'] = switching_display['Pct_of_From_Brand'].apply(lambda x: f"{x:.2f}%")
-            switching_display = switching_display.rename(columns={
-                'From_Brand': 'From Brand',
-                'To_Brand': 'To Brand',
-                'Pct_of_From_Brand': '% of From Brand'
-            })
+            # Create styled HTML table
+            html_table = '''
+            <style>
+                .switching-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    font-size: 14px;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                }
+                .switching-table thead th {
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    padding: 12px;
+                    text-align: center;
+                    font-weight: 600;
+                    position: sticky;
+                    top: 0;
+                }
+                .switching-table tbody tr {
+                    border-bottom: 1px solid #e0e0e0;
+                    transition: background-color 0.2s;
+                }
+                .switching-table tbody tr:hover {
+                    background-color: #f5f5f5;
+                }
+                .switching-table tbody td {
+                    padding: 10px 12px;
+                    text-align: center;
+                    vertical-align: middle;
+                }
+                .switching-table tbody tr:nth-child(even) {
+                    background-color: #fafafa;
+                }
+                .from-brand {
+                    background-color: #ffebee !important;
+                    font-weight: 600;
+                    color: #c62828;
+                }
+                .to-brand {
+                    background-color: #e8f5e9 !important;
+                    font-weight: 600;
+                    color: #2e7d32;
+                }
+                .customers-col {
+                    font-weight: 600;
+                    color: #1565c0;
+                }
+                .pct-col {
+                    color: #f57c00;
+                    font-weight: 500;
+                }
+            </style>
+            <div style="max-height: 600px; overflow-y: auto;">
+                <table class="switching-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 30%;">From Brand</th>
+                            <th style="width: 30%;">To Brand</th>
+                            <th style="width: 20%;">Customers</th>
+                            <th style="width: 20%;">% of From Brand</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            '''
             
-            st.dataframe(switching_display, use_container_width=True, height=600, hide_index=True)
+            for _, row in switching_summary.iterrows():
+                html_table += f'''
+                    <tr>
+                        <td class="from-brand">{row['From_Brand']}</td>
+                        <td class="to-brand">{row['To_Brand']}</td>
+                        <td class="customers-col">{row['Customers']:,.0f}</td>
+                        <td class="pct-col">{row['Pct_of_From_Brand']:.2f}%</td>
+                    </tr>
+                '''
             
+            html_table += '''
+                    </tbody>
+                </table>
+            </div>
+            '''
+            
+            st.markdown(html_table, unsafe_allow_html=True)
             st.info("💡 **คำอธิบาย:** % of From Brand = จำนวนลูกค้าที่ย้ายจาก Brand นั้น / ลูกค้าทั้งหมดของ Brand ในช่วง Before Period")
         else:
             st.warning("⚠️ ไม่พบข้อมูลการ switch ระหว่าง brand")
