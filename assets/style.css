@@ -8,20 +8,25 @@ body,
     color: #1a1a1a;
 }
 
-/* Global Styles */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-
-html,
-body,
-[class*="css"] {
-    font-family: 'Inter', sans-serif;
-    color: #1a1a1a;
-}
-
 /* Main App Background */
 .stApp {
     background-color: #f8f9fa;
     background-image: none;
+}
+
+/* Sidebar Toggle Button (Chevron) - Force White */
+[data-testid="stSidebarCollapsedControl"] {
+    color: white !important;
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    border-radius: 8px;
+}
+
+[data-testid="stSidebarCollapsedControl"]:hover {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+[data-testid="stSidebarCollapsedControl"] svg {
+    fill: white !important;
 }
 
 /* Sidebar Styling - Dark Teal Premium */

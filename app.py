@@ -63,17 +63,32 @@ if 'query_executed' not in st.session_state:
     st.session_state.query_executed = False
 
 
-st.sidebar.markdown("### 🎯 Analysis Mode")
+st.sidebar.markdown("""
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+        <span style="font-size: 18px; font-weight: 700; color: white;">Analysis Mode</span>
+    </div>
+""", unsafe_allow_html=True)
 analysis_mode = st.sidebar.radio("Select mode", config.ANALYSIS_MODES, label_visibility="collapsed")
 
-st.sidebar.markdown("### 📅 Before Period")
+st.sidebar.markdown("""
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px; margin-top: 20px;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-2.01.89-2.01 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg>
+        <span style="font-size: 18px; font-weight: 700; color: white;">Before Period</span>
+    </div>
+""", unsafe_allow_html=True)
 col1, col2 = st.sidebar.columns(2)
 with col1:
     period1_start = st.date_input("Start", datetime(2024, 1, 1), key="before_start")
 with col2:
     period1_end = st.date_input("End", datetime(2024, 1, 31), key="before_end")
 
-st.sidebar.markdown("### 📅 After Period")
+st.sidebar.markdown("""
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px; margin-top: 20px;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-2.01.89-2.01 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg>
+        <span style="font-size: 18px; font-weight: 700; color: white;">After Period</span>
+    </div>
+""", unsafe_allow_html=True)
 col3, col4 = st.sidebar.columns(2)
 with col3:
     period2_start = st.date_input("Start", datetime(2025, 1, 1), key="after_start")
@@ -81,7 +96,12 @@ with col4:
     period2_end = st.date_input("End", datetime(2025, 1, 31), key="after_end")
 
 st.sidebar.markdown("---")
-st.sidebar.markdown("### 🏪 Store Filter")
+st.sidebar.markdown("""
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px; margin-top: 20px;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M20 4H4v2h16V4zm1 10v-2l-1-5H4l-1 5v2h1v6h10v-6h4v6h2v-6h1zm-9 4H6v-4h6v4z"/></svg>
+        <span style="font-size: 18px; font-weight: 700; color: white;">Store Filter</span>
+    </div>
+""", unsafe_allow_html=True)
 store_filter_type = st.sidebar.radio("Store Type", ["All Store", "Same Store"], label_visibility="collapsed")
 
 store_opening_cutoff = None
@@ -95,9 +115,14 @@ if store_filter_type == "Same Store":
     ).strftime("%Y-%m-%d")
 
 st.sidebar.markdown("---")
-st.sidebar.markdown("### 🔍 Filters")
+st.sidebar.markdown("""
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px; margin-top: 20px;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"/></svg>
+        <span style="font-size: 18px; font-weight: 700; color: white;">Filters</span>
+    </div>
+""", unsafe_allow_html=True)
 available_categories = bigquery_client.get_categories()
-selected_categories = st.sidebar.multiselect("📂 Category", available_categories, default=[available_categories[0]] if available_categories else [])
+selected_categories = st.sidebar.multiselect("Category", available_categories, default=[available_categories[0]] if available_categories else [])
 
 selected_subcategories = []
 if selected_categories:
@@ -106,23 +131,33 @@ if selected_categories:
         subcats = bigquery_client.get_subcategories(cat)
         all_subcategories.extend(subcats)
     all_subcategories = list(set(all_subcategories))
-    selected_subcategories = st.sidebar.multiselect("📁 SubCategory", all_subcategories)
+    selected_subcategories = st.sidebar.multiselect("SubCategory", all_subcategories)
 
-brands_text = st.sidebar.text_input("🏷️ Brands", placeholder="เช่น NIVEA, VASELINE, CITRA", help="Enter brand names separated by commas")
+brands_text = st.sidebar.text_input("Brands", placeholder="เช่น NIVEA, VASELINE, CITRA", help="Enter brand names separated by commas")
 selected_brands = [b.strip() for b in brands_text.split(',') if b.strip()] if brands_text else []
 
-product_name_contains = st.sidebar.text_input("🔎 Product Contains", placeholder="เช่น โลชั่น, ครีม, นม", help="ใส่คำค้นหาได้หลายคำคั่นด้วยคอมม่า (OR condition)")
+product_name_contains = st.sidebar.text_input("Product Contains", placeholder="เช่น โลชั่น, ครีม, นม", help="ใส่คำค้นหาได้หลายคำคั่นด้วยคอมม่า (OR condition)")
 
-product_name_not_contains = st.sidebar.text_input("🚫 Product NOT Contains", placeholder="เช่น PM_, PROMO", help="กรองสินค้าที่มีคำนี้ออก (AND NOT condition)")
+product_name_not_contains = st.sidebar.text_input("Product NOT Contains", placeholder="เช่น PM_, PROMO", help="กรองสินค้าที่มีคำนี้ออก (AND NOT condition)")
 
 st.sidebar.markdown("---")
-st.sidebar.markdown("### 🎯 Threshold")
+st.sidebar.markdown("""
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px; margin-top: 20px;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/></svg>
+        <span style="font-size: 18px; font-weight: 700; color: white;">Threshold</span>
+    </div>
+""", unsafe_allow_html=True)
 primary_threshold = st.sidebar.slider("Primary %", float(config.MIN_PRIMARY_THRESHOLD*100), float(config.MAX_PRIMARY_THRESHOLD*100), float(config.DEFAULT_PRIMARY_THRESHOLD*100), step=5.0) / 100.0
 
 barcode_mapping_text = ""
 if analysis_mode == "Custom Type":
     st.sidebar.markdown("---")
-    st.sidebar.markdown("### 🗂️ Barcode Mapping")
+    st.sidebar.markdown("""
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px; margin-top: 20px;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/></svg>
+        <span style="font-size: 18px; font-weight: 700; color: white;">Barcode Mapping</span>
+    </div>
+""", unsafe_allow_html=True)
     barcode_mapping_text = st.sidebar.text_area("Paste barcode mapping", barcode_mapping_text, height=150, placeholder="barcode,product_type", help="Format: barcode,product_type (one per line)")
 
 st.sidebar.markdown("---")
@@ -267,8 +302,8 @@ if run_analysis or st.session_state.query_executed:
             }
             
             # Build table with rich styling
-            h = '<div style="box-shadow: 0 4px 12px rgba(0,0,0,0.25); border-radius: 8px; overflow: hidden; width: fit-content; max-width: 100%;">'
-            h += '<table style="width:100%; font-size:12px; border-collapse: collapse; margin: 0; padding: 0;"><thead><tr>'
+            h = '<div style="box-shadow: 0 4px 12px rgba(0,0,0,0.25); border-radius: 8px; overflow: hidden; width: 100%;">'
+            h += '<table style="width:100%; font-size:12px; border-collapse: collapse; margin: 0; padding: 0; table-layout: fixed;"><thead><tr>'
             
             for col in df.columns:
                 width = col_widths.get(col, '6%')
