@@ -43,7 +43,7 @@ def create_competitive_heatmap(heatmap_df: pd.DataFrame) -> go.Figure:
         colorscale='Blues', 
         text=heatmap_df.values, 
         texttemplate='%{text:,}',
-        textfont={"size": 11, "color": "#000000"}
+        textfont={"size": 12}  # ไม่กำหนดสี ให้ plotly เลือกเอง
     ))
     fig.update_layout(
         title="Competitive Matrix",
