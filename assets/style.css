@@ -224,20 +224,20 @@ li[data-baseweb="tag"] {
 }
 
 /* ==========================================================================
-   SIDEBAR EXPANDER STYLING - WHITE TEXT ON DARK BACKGROUND
+   SIDEBAR EXPANDER STYLING - IMPROVED CONTRAST
    ========================================================================== */
 
 /* Expander Container */
 [data-testid="stSidebar"] [data-testid="stExpander"] {
     background-color: transparent !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
     border-radius: 8px !important;
     margin-bottom: 10px !important;
 }
 
-/* Expander Summary (Header) - Dark background with white text */
+/* Expander Summary (Header) - Lighter background for better contrast */
 [data-testid="stSidebar"] [data-testid="stExpander"] summary {
-    background-color: rgba(255, 255, 255, 0.05) !important;
+    background-color: rgba(255, 255, 255, 0.15) !important;
     color: white !important;
     font-weight: 600 !important;
     padding: 12px !important;
@@ -245,9 +245,9 @@ li[data-baseweb="tag"] {
 }
 
 [data-testid="stSidebar"] [data-testid="stExpander"] summary:hover {
-    background-color: rgba(255, 255, 255, 0.1) !important;
-    color: #4db6ac !important;
-    /* Light Teal hover */
+    background-color: rgba(255, 255, 255, 0.25) !important;
+    color: #a7f3d0 !important;
+    /* Light green tint for hover */
 }
 
 /* Expander Icon - Force white */

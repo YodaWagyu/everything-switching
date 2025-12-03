@@ -257,23 +257,28 @@ def calculate_executive_kpis(summary_df: pd.DataFrame, summary_df_full: pd.DataF
     total_movement = summary_df['2024_Total'].sum()
     
     # 2. Biggest Winner (Max Net Movement > 0) - FROM FULL DATA
-    winners = summary_df_full[summary_df_full['Net_Movement'] > 0]
-    if len(winners) > 0:
-        biggest_winner = winners.loc[winners['Net_Movement'].idxmax()]
-        winner_name = biggest_winner['Brand']
-        winner_val = biggest_winner['Net_Movement']
+    # Only show if there are multiple brands to compare
+    if len(summary_df_full) > 1:
+        winners = summary_df_full[summary_df_full['Net_Movement'] > 0]
+        if len(winners) > 0:
+            biggest_winner = winners.loc[winners['Net_Movement'].idxmax()]
+            winner_name = biggest_winner['Brand']
+            winner_val = biggest_winner['Net_Movement']
+        else:
+            winner_name = "N/A"
+            winner_val = 0
     else:
-        winner_name = "None"
+        winner_name = "N/A"
         winner_val = 0
         
     # 3. Biggest Loser (Min Net Movement) - FROM FULL DATA
-    if len(summary_df_full) > 0:
-        # If only one brand and it's positive, still show it as "loser" (relative to itself)
+    # Only show if there are multiple brands to compare
+    if len(summary_df_full) > 1:
         biggest_loser = summary_df_full.loc[summary_df_full['Net_Movement'].idxmin()]
         loser_name = biggest_loser['Brand']
         loser_val = biggest_loser['Net_Movement']
     else:
-        loser_name = "None"
+        loser_name = "N/A"
         loser_val = 0
         
     # 4. Overall Churn Rate (Total Gone + Switch Out / Total Period 1) - FROM FILTERED DATA
