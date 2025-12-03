@@ -221,9 +221,37 @@ def show_login_page():
     
     with col1:
         st.markdown("""
-            <div style="margin-bottom: 30px; font-weight: 700; font-size: 18px; color: #0f3d3e; display: flex; align-items: center; gap: 10px;">
-                <span style="font-size: 24px;">🔄</span> Everything Switching
+            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 40px;">
+                <!-- Logo Mark -->
+                <div style="
+                    width: 40px; 
+                    height: 40px; 
+                    background: #0f3d3e; 
+                    border-radius: 10px; 
+                    display: flex; 
+                    align-items: center; 
+                    justify-content: center;
+                    color: white;
+                    font-family: 'Inter', sans-serif;
+                    font-weight: 800;
+                    font-size: 16px;
+                    letter-spacing: -1px;
+                    box-shadow: 0 4px 10px rgba(15, 61, 62, 0.2);
+                ">
+                    ES
+                </div>
+                <!-- Brand Name -->
+                <div style="
+                    font-family: 'Inter', sans-serif; 
+                    font-weight: 700; 
+                    font-size: 20px; 
+                    color: #0f3d3e; 
+                    letter-spacing: -0.5px;
+                ">
+                    Everything Switching
+                </div>
             </div>
+            
             <div class="welcome-header">Welcome Back</div>
             <div class="welcome-sub">
                 Please enter your password to access the dashboard.
