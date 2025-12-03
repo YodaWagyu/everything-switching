@@ -184,16 +184,25 @@ if run_analysis or st.session_state.query_executed:
         st.markdown("### Brand Movement Summary")
         display_summary = visualizations.create_summary_table_display(summary_df)
         def make_table(df):
-            # Define colors and column widths for better balance
-            c = {
-                '2024_Total':'#FF9800','Stayed':'#FFB74D','Stayed_%':'#FFB74D',
-                'Switch_Out':'#EF5350','Switch_Out_%':'#EF5350',
-                'Gone':'#E57373','Gone_%':'#E57373','Total_Out':'#D32F2F',
-                'Switch_In':'#66BB6A','New_Customer':'#81C784','Total_In':'#4CAF50',
-                '2025_Total':'#42A5F5','Net_Movement':'#1E88E5'
+            # Define rich gradient colors for each column group
+            gradient_colors = {
+                'Brand': 'linear-gradient(135deg, #2c3e50 0%, #34495e 100%)',
+                '2024_Total': 'linear-gradient(135deg, #e67e22 0%, #d35400 100%)',
+                'Stayed': 'linear-gradient(135deg, #f39c12 0%, #e67e22 100%)',
+                'Stayed_%': 'linear-gradient(135deg, #f39c12 0%, #e67e22 100%)',
+                'Switch_Out': 'linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)',
+                'Switch_Out_%': 'linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)',
+                'Gone': 'linear-gradient(135deg, #ec7063 0%, #e74c3c 100%)',
+                'Gone_%': 'linear-gradient(135deg, #ec7063 0%, #e74c3c 100%)',
+                'Total_Out': 'linear-gradient(135deg, #c0392b 0%, #922b21 100%)',
+                'Switch_In': 'linear-gradient(135deg, #27ae60 0%, #1e8449 100%)',
+                'New_Customer': 'linear-gradient(135deg, #52be80 0%, #27ae60 100%)',
+                'Total_In': 'linear-gradient(135deg, #1e8449 0%, #145a32 100%)',
+                '2025_Total': 'linear-gradient(135deg, #3498db 0%, #2874a6 100%)',
+                'Net_Movement': 'linear-gradient(135deg, #2874a6 0%, #1b4f72 100%)'
             }
             
-            # Define balanced column widths (% based)
+            # Define balanced column widths
             col_widths = {
                 'Brand': '10%',
                 '2024_Total': '6%', 'Stayed': '5%', 'Stayed_%': '5%',
@@ -203,19 +212,44 @@ if run_analysis or st.session_state.query_executed:
                 '2025_Total': '6%', 'Net_Movement': '8%'
             }
             
-            h = '<table style="width:100%; font-size:12px; border-collapse: collapse;"><thead><tr>'
+            # Build table with rich styling
+            h = '<div style="box-shadow: 0 4px 12px rgba(0,0,0,0.25); border-radius: 8px; overflow: hidden;">'
+            h += '<table style="width:100%; font-size:12px; border-collapse: collapse;"><thead><tr>'
+            
             for col in df.columns:
                 width = col_widths.get(col, '6%')
-                h += f'<th style="background:{c.get(col,"#607D8B")}; color:white; padding:10px; vertical-align:middle; text-align:center; width:{width}; white-space:nowrap;">{col.replace("_"," ")}</th>'
+                gradient = gradient_colors.get(col, 'linear-gradient(135deg, #607D8B 0%, #455A64 100%)')
+                h += f'''<th style="
+                    background: {gradient}; 
+                    color: white; 
+                    padding: 12px; 
+                    vertical-align: middle; 
+                    text-align: center; 
+                    width: {width}; 
+                    white-space: nowrap;
+                    border-right: 1px solid rgba(255,255,255,0.15);
+                    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+                    font-weight: 600;
+                ">{col.replace("_"," ")}</th>'''
+            
             h += '</tr></thead><tbody>'
-            for _, row in df.iterrows():
-                h += '<tr style="border-bottom: 1px solid #e0e0e0;">'
+            
+            for idx, row in df.iterrows():
+                # Alternate row colors with hover effect
+                bg_color = '#fafafa' if idx % 2 == 0 else '#ffffff'
+                h += f'<tr style="border-bottom: 1px solid #e0e0e0; transition: all 0.2s;" onmouseover="this.style.backgroundColor=\'#f0f0f0\'; this.style.transform=\'scale(1.005)\';" onmouseout="this.style.backgroundColor=\'{bg_color}\'; this.style.transform=\'scale(1)\';">'
+                
                 for i, (col, v) in enumerate(row.items()):
                     fmt = f"{v:.1f}%" if isinstance(v,(int,float)) and '%' in col else f"{v:,.0f}" if isinstance(v,(int,float)) else str(v)
                     align = "left" if i == 0 else "center"
-                    h += f'<td style="padding:8px; text-align:{align}; vertical-align:middle;">{fmt}</td>'
+                    font_weight = "600" if i == 0 else "normal"
+                    h += f'<td style="padding: 10px; text-align: {align}; vertical-align: middle; font-weight: {font_weight};">{fmt}</td>'
+                
                 h += '</tr>'
-            return h + '</tbody></table>'
+            
+            h += '</tbody></table></div>'
+            return h
+        
         st.markdown(make_table(display_summary), unsafe_allow_html=True)
     
     with tab2:
