@@ -55,86 +55,98 @@ def show_login_page():
     # Custom CSS for Login Page ONLY
     st.markdown("""
         <style>
-            /* Deep Blue Gradient Background (Matches Logout Button) */
+            /* Premium Dark Gradient Background */
             .stApp {
-                background: linear-gradient(135deg, #2874a6 0%, #1b4f72 100%) !important;
+                background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%) !important;
             }
             
-            /* Login Card - Glassmorphism with White Text */
-            .login-container {
-                max-width: 400px;
-                margin: 100px auto;
-                padding: 40px;
-                background: rgba(255, 255, 255, 0.1);
+            /* Hide the separate card HTML if it exists (cleanup) */
+            .login-card { display: none; }
+            
+            /* The Form IS the Card */
+            [data-testid="stForm"] {
+                background: rgba(255, 255, 255, 0.03);
+                backdrop-filter: blur(20px);
+                -webkit-backdrop-filter: blur(20px);
                 border-radius: 24px;
-                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
-                backdrop-filter: blur(10px);
-                border: 1px solid rgba(255, 255, 255, 0.2);
-                animation: fadeInUp 0.6s ease-out;
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+                padding: 50px 40px;
             }
             
-            .login-title {
-                font-size: 32px;
-                font-weight: 700;
-                color: #ffffff !important;
-                background: none !important;
-                -webkit-text-fill-color: #ffffff !important;
-                margin-bottom: 10px;
-                text-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            }
-            
-            .login-subtitle {
-                color: rgba(255, 255, 255, 0.8);
-                font-size: 16px;
-                font-weight: 400;
-            }
-            
-            /* Input Label Styling */
-            .stTextInput label {
+            /* Input Styling - Sleek & Minimal */
+            .stTextInput > div > div > input {
+                background-color: rgba(0, 0, 0, 0.2) !important;
+                border: 1px solid rgba(255, 255, 255, 0.1) !important;
                 color: white !important;
+                border-radius: 12px !important;
+                padding: 16px 20px !important;
+                font-size: 16px !important;
+                transition: all 0.3s ease;
             }
             
-            /* Button Styling - White variant for contrast */
+            .stTextInput > div > div > input:focus {
+                background-color: rgba(0, 0, 0, 0.4) !important;
+                border-color: #4facfe !important;
+                box-shadow: 0 0 0 2px rgba(79, 172, 254, 0.3) !important;
+            }
+            
+            /* Hide Input Label */
+            .stTextInput label {
+                display: none;
+            }
+            
+            /* Button Styling - Gradient Pill */
             .stButton > button {
-                background: white !important;
-                color: #2874a6 !important;
+                background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%) !important;
+                color: #000000 !important;
                 border: none;
-                font-weight: 700 !important;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                border-radius: 50px !important; /* Pill shape */
+                padding: 16px !important;
+                font-weight: 800 !important;
+                letter-spacing: 1px;
+                text-transform: uppercase;
+                font-size: 14px !important;
+                transition: all 0.3s ease !important;
+                box-shadow: 0 10px 30px rgba(0, 242, 254, 0.3);
+                width: 100%;
+                margin-top: 10px;
             }
             
             .stButton > button:hover {
-                background: #f8f9fa !important;
-                transform: translateY(-1px);
-                box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+                transform: translateY(-2px);
+                box-shadow: 0 15px 40px rgba(0, 242, 254, 0.5);
+                filter: brightness(1.1);
             }
             
-            /* Input Field Styling */
-            .stTextInput > div > div > input {
-                background-color: rgba(255, 255, 255, 0.9);
-                border: none;
-                color: #1a1a1a;
-            }
+            /* Hide Streamlit elements */
+            #MainMenu {visibility: hidden;}
+            footer {visibility: hidden;}
+            header {visibility: hidden;}
         </style>
     """, unsafe_allow_html=True)
 
-    # Center the login card using columns
+    # Use columns to center the card
     col1, col2, col3 = st.columns([1, 2, 1])
     
     with col2:
-        st.markdown("""
-            <div class="login-container">
-                <div class="login-header">
-                    <div class="login-title">Everything Switching</div>
-                    <div class="login-subtitle">Premium Analytics Dashboard</div>
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
-        
         with st.form("login_form"):
-            password = st.text_input("Access Password", type="password", placeholder="Enter your secure password")
-            st.markdown("<br>", unsafe_allow_html=True)
-            submit = st.form_submit_button("Sign In", use_container_width=True)
+            # Header Content INSIDE the form for perfect unification
+            st.markdown("""
+                <div style="text-align: center; margin-bottom: 40px;">
+                    <div style="font-size: 64px; margin-bottom: 20px; filter: drop-shadow(0 0 20px rgba(79, 172, 254, 0.4));">🔄</div>
+                    <h1 style="color: white; font-family: 'Inter', sans-serif; font-weight: 800; font-size: 32px; margin: 0; letter-spacing: -1px; text-shadow: 0 2px 10px rgba(0,0,0,0.5);">Everything Switching</h1>
+                    <div style="height: 4px; width: 40px; background: linear-gradient(90deg, #4facfe, #00f2fe); margin: 15px auto; border-radius: 2px;"></div>
+                    <p style="color: rgba(255,255,255,0.6); font-family: 'Inter', sans-serif; font-size: 14px; margin-top: 10px; font-weight: 400; letter-spacing: 1px; text-transform: uppercase;">Premium Analytics Dashboard</p>
+                </div>
+            """, unsafe_allow_html=True)
+            
+            # Input with placeholder acting as label
+            password = st.text_input("Password", type="password", placeholder="Enter your secure access key", label_visibility="collapsed")
+            
+            st.markdown("<div style='height: 10px'></div>", unsafe_allow_html=True)
+            
+            submit = st.form_submit_button("ENTER DASHBOARD", use_container_width=True)
             
             if submit:
                 if password:
@@ -142,9 +154,9 @@ def show_login_page():
                     if success:
                         st.session_state["authenticated"] = True
                         st.session_state["role"] = role
-                        st.success(f"Welcome back! Signing you in...")
+                        st.success(f"Access Granted")
                         st.rerun()
                     else:
-                        st.error("Incorrect password. Please try again.")
+                        st.error("Access Denied: Invalid Key")
                 else:
-                    st.warning("Please enter your password.")
+                    st.warning("Please enter access key")
