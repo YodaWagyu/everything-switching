@@ -106,9 +106,9 @@ if run_analysis or st.session_state.query_executed:
         st.session_state.results_df = df
         st.session_state.gb_processed = gb_processed
         st.session_state.query_executed = True
-        st.session_state.summary_df = data_processor.calculate_brand_summary(df)
+        # Don't calculate summary_df yet - wait until after view mode toggle
+    
     df = st.session_state.results_df
-    summary_df = st.session_state.summary_df
     gb_processed = st.session_state.gb_processed
     if df is None or len(df) == 0:
         st.warning("⚠️ No data")
@@ -160,12 +160,12 @@ if run_analysis or st.session_state.query_executed:
         # Apply client-side filter
         df_display = brand_filter.filter_dataframe_by_brands(df, selected_brands, filter_mode)
         
-        # Recalculate summary for the filtered view
-        summary_df = data_processor.calculate_brand_summary(df_display)
-        
         # Show filter description
         if filter_mode == 'full':
             st.info(f"💡 **Full View**: Showing where **{', '.join(selected_brands)}** customers went (all destination brands visible)")
+    
+    # Calculate summary AFTER determining df_display (this ensures AI gets correct data)
+    summary_df = data_processor.calculate_brand_summary(df_display)
     
     # Use df_display for all visualizations
     labels, sources, targets, values = data_processor.prepare_sankey_data(df_display)
