@@ -213,8 +213,8 @@ if run_analysis or st.session_state.query_executed:
             }
             
             # Build table with rich styling
-            h = '<div style="box-shadow: 0 4px 12px rgba(0,0,0,0.25); border-radius: 8px; overflow: hidden; display: inline-block; width: 100%;">'
-            h += '<table style="width:100%; font-size:12px; border-collapse: collapse; display: block;"><thead><tr>'
+            h = '<div style="box-shadow: 0 4px 12px rgba(0,0,0,0.25); border-radius: 8px; overflow: hidden; width: fit-content; max-width: 100%;">'
+            h += '<table style="width:100%; font-size:12px; border-collapse: collapse; margin: 0; padding: 0;"><thead><tr>'
             
             for col in df.columns:
                 width = col_widths.get(col, '6%')
