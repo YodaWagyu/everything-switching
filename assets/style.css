@@ -222,3 +222,32 @@ li[data-baseweb="tag"] {
     fill: white !important;
     color: white !important;
 }
+
+/* ==========================================================================
+   SIDEBAR EXPANDER STYLING - WHITE TEXT ON DARK BACKGROUND
+   ========================================================================== */
+
+/* Expander Summary (Header) - Force white text */
+[data-testid="stSidebar"] [data-testid="stExpander"] summary {
+    color: white !important;
+    font-weight: 600 !important;
+}
+
+[data-testid="stSidebar"] [data-testid="stExpander"] summary:hover {
+    color: #4db6ac !important;
+    /* Light Teal hover */
+}
+
+/* Expander Icon - Force white */
+[data-testid="stSidebar"] [data-testid="stExpander"] svg {
+    fill: white !important;
+    stroke: white !important;
+}
+
+/* Expander border */
+[data-testid="stSidebar"] [data-testid="stExpander"] {
+    background-color: transparent !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 8px !important;
+    margin-bottom: 10px !important;
+}

@@ -289,14 +289,6 @@ def calculate_executive_kpis(summary_df: pd.DataFrame) -> Dict:
         'loser_val': loser_val,
         'churn_rate': churn_rate,
         'net_category_movement': net_category_movement,
-    return {
-        'total_movement': total_movement,
-        'winner_name': winner_name,
-        'winner_val': winner_val,
-        'loser_name': loser_name,
-        'loser_val': loser_val,
-        'churn_rate': churn_rate,
-        'net_category_movement': net_category_movement,
         'total_new': total_new,
         'total_gone': total_gone
     }
