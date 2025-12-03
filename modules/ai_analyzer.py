@@ -132,7 +132,7 @@ def generate_insights(
             ['prod_2024', 'prod_2025', 'customers']
         ]
         
-        # Build the prompt
+        # Build the prompt with CLEAR brand-by-brand breakdown
         prompt = f"""You are a retail analytics expert analyzing customer switching patterns in a casual, friendly tone.
 
 **Analysis Context:**
@@ -144,6 +144,19 @@ def generate_insights(
 
 **Movement Breakdown:**
 {chr(10).join([f"- {k}: {v:,} customers ({v/total_customers*100:.1f}%)" for k, v in movement_breakdown.items()])}
+
+**Brand-by-Brand Summary:**
+{summary_df.to_string(index=False)}
+
+**IMPORTANT:** The table above shows EACH BRAND separately. Each row is ONE brand with its OWN metrics.
+For example, if COLGATE row shows:
+- 2024_Total: 170,466
+- Gone: 105,914 
+- Switch_Out: 2,264
+
+This means COLGATE specifically (NOT all brands combined) had 170,466 customers in 2024, lost 105,914 to "Gone", and 2,264 switched to other brands.
+
+DO NOT sum up the "Gone" column or any other column across all brands unless you're explicitly talking about total market movement.
 
 **Top 3 Gainers (Net Movement):**
 {top_gainers.to_string(index=False)}
@@ -159,7 +172,7 @@ Write your analysis in Thai language with a casual, friendly tone. Structure you
 
 ## Executive Summary
 
-[2-3 ประโยคสรุปสิ่งที่น่าสนใจที่สุด พูดแบบสบายๆ เหมือนคุยกับเพื่อน ใส่ตัวเล ขและเปอร์เซ็นต์เสมอ]
+[2-3 ประโยคสรุปสิ่งที่น่าสนใจที่สุด พูดแบบสบายๆ เหมือนคุยกับเพื่อน ใส่ตัวเลขและเปอร์เซ็นต์เสมอ]
 
 ## Key Findings
 
@@ -185,6 +198,7 @@ Write your analysis in Thai language with a casual, friendly tone. Structure you
 - NEVER use vague terms like "เล็กน้อย", "เยอะ", "พอสมควร" - use actual numbers instead
 - Use format: "[number with comma] คน ([+/-][percentage]%)" - Example: "2,500 คน (+15%)" or "1,200 คน (-10%)"
 - When mentioning any gain/loss, ALWAYS backup with specific customer count and percentage
+- **READ VALUES FROM THE CORRECT BRAND ROW** - Don't sum columns across brands unless explicitly describing total market
 - Calculate compositions from the data provided - DO NOT make up numbers
 
 """
