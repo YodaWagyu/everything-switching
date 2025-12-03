@@ -30,9 +30,15 @@ def filter_dataframe_by_brands(df: pd.DataFrame, brands: List[str], mode: str = 
         # Full view: Show COLGATE → ALL BRANDS flows
         df_full = filter_dataframe_by_brands(df, ['COLGATE'], mode='full')
     """
-    if not brands or mode == 'full':
-        # Full mode: return all data (no filtering on Period 2)
+    if not brands:
+        # No brand filter: return all data
         return df.copy()
+    
+    if mode == 'full':
+        # Full View: Show where selected brands went
+        # Filter prod_2024 to selected brands only
+        # Keep ALL prod_2025 destinations visible
+        return df[df['prod_2024'].isin(brands)].copy()
     
     # Filtered mode: apply symmetric filter (remove non-filtered brands from Period 2)
     # IMPORTANT: Do NOT include MIXED in special categories for filtered view
