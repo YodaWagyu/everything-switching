@@ -158,6 +158,34 @@ This means COLGATE specifically (NOT all brands combined) had 170,466 customers 
 
 DO NOT sum up the "Gone" column or any other column across all brands unless you're explicitly talking about total market movement.
 
+**TEMPORAL CONTEXT - READ CAREFULLY:**
+This is a COHORT analysis comparing TWO time periods:
+- **Before Period ({period1_label})**: Our BASELINE - customers who purchased in this period
+- **After Period ({period2_label})**: Where did those baseline customers go?
+
+Column meanings:
+- **2024_Total**: Customers in Before Period (BASELINE)
+- **Stayed**: Customers from Before Period who came back in After Period
+- **Switch_Out**: Customers from Before Period who switched to other brands in After Period
+- **Gone**: Customers from Before Period who did NOT purchase in After Period (left category)
+- **Switch_In**: NEW customers in After Period who came from other brands
+- **New_Customer**: NEW customers in After Period who were not in the category during Before Period
+- **2025_Total**: Total customers in After Period
+
+**CRITICAL - How to describe movements:**
+❌ WRONG: "COLGATE เสียลูกค้าไป 105,914 คน ในปี 2024" (This implies loss happened IN 2024)
+✅ CORRECT: "ลูกค้าที่เคยมา COLGATE ในช่วง Before Period จำนวน 105,914 คน ในช่วง After Period ไม่กลับมาแล้ว (Gone)" 
+✅ OR: "COLGATE สูญเสียลูกค้าเก่า 105,914 คน (ไม่กลับมาในช่วง After Period)"
+
+**Percentage Guidelines:**
+- The table ALREADY contains pre-calculated percentages in columns ending with "_%"
+- **ALWAYS use these pre-calculated percentages** - DO NOT calculate your own
+- Column meanings:
+  - **Gone_%**, **Switch_Out_%**, **Stayed_%**: Calculated from 2024_Total (Before Period baseline)
+  - **Switch_In_%**, **New_Customer_%**: Calculated as share of Total_In
+- Example: If table shows "Gone: 105,914" and "Gone_%: 62.1", say "Gone 105,914 คน (62.1%)" - use the 62.1% from the table
+- NEVER calculate percentages yourself - always use the values from "_%"columns
+
 **Top 3 Gainers (Net Movement):**
 {top_gainers.to_string(index=False)}
 
@@ -193,11 +221,18 @@ Write your analysis in Thai language with a casual, friendly tone. Structure you
 - Content MUST be in Thai with a casual, conversational tone
 - DO NOT use "แบรนด์" or "สินค้า" before product/brand names
 - Mention names directly (e.g., "NIVEA ได้ลูกค้าเพิ่ม 1,500 คน (+20%)" not "แบรนด์ NIVEA ได้ลูกค้าเพิ่ม")
-- **ALWAYS include specific numbers with percentages in parentheses** (e.g., "1,500 คน (+20%)", "หาย 800 คน (-15%)")
+- **ALWAYS use pre-calculated percentages from "_%" columns** - DO NOT calculate your own
+- **When describing Gone/Switch_Out**, use CORRECT temporal phrasing:
+  ❌ WRONG: "COLGATE เสียลูกค้าไป 105,914 คน ในปี 2024" or "ในช่วงปี 2024"
+  ✅ CORRECT: "ลูกค้าเก่าของ COLGATE 105,914 คน (80.7%) ไม่กลับมาในช่วง After Period"
+  ✅ CORRECT: "COLGATE สูญเสียลูกค้าเก่า 105,914 คน (80.7%)"
+- **When describing New_Customer**, use the pre-calculated percentage:
+  ❌ WRONG: "ได้ลูกค้าใหม่ 147,409 คน (+112.3%)" (Don't calculate new percentages)
+  ✅ CORRECT: "มีลูกค้าใหม่เข้ามา 147,409 คน (86.5% ของลูกค้าทั้งหมดใน After Period)" (Use New_Customer_% from table)
 - **When discussing trends or patterns, include composition/breakdown** (e.g., "สินค้า AHA คิดเป็น 65%, ส่วนอื่นๆ 35%")
 - NEVER use vague terms like "เล็กน้อย", "เยอะ", "พอสมควร" - use actual numbers instead
-- Use format: "[number with comma] คน ([+/-][percentage]%)" - Example: "2,500 คน (+15%)" or "1,200 คน (-10%)"
-- When mentioning any gain/loss, ALWAYS backup with specific customer count and percentage
+- Use format: "[number with comma] คน ([percentage]%)" - Example: "2,500 คน (15%)" or "1,200 คน (10%)"
+- When mentioning any gain/loss, ALWAYS backup with specific customer count and percentage FROM THE TABLE
 - **READ VALUES FROM THE CORRECT BRAND ROW** - Don't sum columns across brands unless explicitly describing total market
 - Calculate compositions from the data provided - DO NOT make up numbers
 
