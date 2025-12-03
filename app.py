@@ -250,6 +250,12 @@ if run_analysis or st.session_state.query_executed:
     # Calculate summary AFTER determining df_display (this ensures AI gets correct data)
     summary_df = data_processor.calculate_brand_summary(df_display)
     
+    # DEBUG: Show what brands are in summary
+    if selected_brands:
+        st.write("🔍 DEBUG - summary_df brands:")
+        st.write(f"- Brands: {sorted(summary_df['Brand'].unique())}")
+        st.write(f"- Total Movement (sum of 2024_Total): {summary_df['2024_Total'].sum():,}")
+    
     # For Winner/Loser: Use different data based on View Mode
     # Filtered View: Use filtered data only (df_display)
     # Full View: Use full category data (df) to see competitive landscape
@@ -257,6 +263,9 @@ if run_analysis or st.session_state.query_executed:
     if selected_brands and filter_mode == 'full':
         # Full View: Show all brands in category for Winner/Loser
         summary_df_full = data_processor.calculate_brand_summary(df)
+        st.write("🔍 DEBUG - summary_df_full (from df):")
+        st.write(f"- Brands: {sorted(summary_df_full['Brand'].unique())}")
+        st.write(f"- Total Movement: {summary_df_full['2024_Total'].sum():,}")
     else:
         # Filtered View or No Filter: Use filtered data for Winner/Loser
         summary_df_full = summary_df
