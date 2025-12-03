@@ -554,8 +554,16 @@ if run_analysis or st.session_state.query_executed:
         else:
             st.warning("⚠️ ไม่พบข้อมูลการ switch ระหว่าง brand")
     
+    # Tab 3: Loyalty (moved from tab6)
     with tab3:
-        st.markdown("### 📈 Market Overview")
+        st.markdown("### � Cohort & Loyalty Analysis")
+        st.caption("Analysis of customer retention and churn behavior between the two periods.")
+        
+        cohort_metrics = data_processor.calculate_cohort_metrics(df_display)
+    
+    # Tab 4: Charts (moved from tab3)
+    with tab4:
+        st.markdown("### �📈 Market Overview")
         c1, c2 = st.columns(2)
         with c1:
             st.plotly_chart(visualizations.create_movement_type_pie(df_display), use_container_width=True)
@@ -580,24 +588,22 @@ if run_analysis or st.session_state.query_executed:
         # Create and display chart
         fig_net_flow = visualizations.create_net_gain_loss_chart(df_display, target_brand)
         st.plotly_chart(fig_net_flow, use_container_width=True)
-    with tab4:
+    
+    # Tab 5: Raw (moved from tab4)
+    with tab5:
         st.markdown("### Raw Data")
         st.dataframe(df_display, use_container_width=True, height=400)
         st.markdown("### Top 10 Flows")
         st.dataframe(data_processor.get_top_flows(df_display, n=10), use_container_width=True)
-    with tab5:
+    
+    # Tab 6: Export (moved from tab5)
+    with tab6:
         st.markdown("### Export")
         c1, c2 = st.columns(2)
         with c1:
             st.download_button("📊 Excel", utils.create_excel_export(df_display, summary_df), f"switching_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
         with c2:
             st.download_button("📄 CSV", df_display.to_csv(index=False), f"switching_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv", "text/csv", use_container_width=True)
-            
-    with tab6:
-        st.markdown("### 👥 Cohort & Loyalty Analysis")
-        st.caption("Analysis of customer retention and churn behavior between the two periods.")
-        
-        cohort_metrics = data_processor.calculate_cohort_metrics(df_display)
         
         if cohort_metrics:
             c1, c2, c3 = st.columns(3)
