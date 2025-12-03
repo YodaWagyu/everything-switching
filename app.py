@@ -225,57 +225,80 @@ if run_analysis or st.session_state.query_executed:
         switching_summary = data_processor.get_brand_switching_summary(df_display, top_n=20)
         
         if len(switching_summary) > 0:
-            # Create styled HTML table
-            html_table = '''
+            # Build HTML table with proper string escaping
+            table_rows = ""
+            for _, row in switching_summary.iterrows():
+                table_rows += f"""
+                    <tr>
+                        <td class="from-brand">{row['From_Brand']}</td>
+                        <td class="to-brand">{row['To_Brand']}</td>
+                        <td class="customers-col">{row['Customers']:,.0f}</td>
+                        <td class="pct-col">{row['Pct_of_From_Brand']:.2f}%</td>
+                    </tr>
+                """
+            
+            html_table = f"""
             <style>
-                .switching-table {
+                .switching-table {{
                     width: 100%;
                     border-collapse: collapse;
                     font-size: 14px;
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                }
-                .switching-table thead th {
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+                }}
+                .switching-table thead th {{
                     color: white;
                     padding: 12px;
                     text-align: center;
                     font-weight: 600;
                     position: sticky;
                     top: 0;
-                }
-                .switching-table tbody tr {
+                    border-right: 1px solid rgba(255,255,255,0.2);
+                }}
+                .switching-table thead th:nth-child(1) {{
+                    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+                }}
+                .switching-table thead th:nth-child(2) {{
+                    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+                }}
+                .switching-table thead th:nth-child(3) {{
+                    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+                }}
+                .switching-table thead th:nth-child(4) {{
+                    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+                }}
+                .switching-table tbody tr {{
                     border-bottom: 1px solid #e0e0e0;
                     transition: background-color 0.2s;
-                }
-                .switching-table tbody tr:hover {
+                }}
+                .switching-table tbody tr:hover {{
                     background-color: #f5f5f5;
-                }
-                .switching-table tbody td {
+                }}
+                .switching-table tbody td {{
                     padding: 10px 12px;
                     text-align: center;
                     vertical-align: middle;
-                }
-                .switching-table tbody tr:nth-child(even) {
+                }}
+                .switching-table tbody tr:nth-child(even) {{
                     background-color: #fafafa;
-                }
-                .from-brand {
+                }}
+                .from-brand {{
                     background-color: #ffebee !important;
                     font-weight: 600;
                     color: #c62828;
-                }
-                .to-brand {
+                }}
+                .to-brand {{
                     background-color: #e8f5e9 !important;
                     font-weight: 600;
                     color: #2e7d32;
-                }
-                .customers-col {
+                }}
+                .customers-col {{
                     font-weight: 600;
                     color: #1565c0;
-                }
-                .pct-col {
+                }}
+                .pct-col {{
                     color: #f57c00;
                     font-weight: 500;
-                }
+                }}
             </style>
             <div style="max-height: 600px; overflow-y: auto;">
                 <table class="switching-table">
@@ -288,23 +311,11 @@ if run_analysis or st.session_state.query_executed:
                         </tr>
                     </thead>
                     <tbody>
-            '''
-            
-            for _, row in switching_summary.iterrows():
-                html_table += f'''
-                    <tr>
-                        <td class="from-brand">{row['From_Brand']}</td>
-                        <td class="to-brand">{row['To_Brand']}</td>
-                        <td class="customers-col">{row['Customers']:,.0f}</td>
-                        <td class="pct-col">{row['Pct_of_From_Brand']:.2f}%</td>
-                    </tr>
-                '''
-            
-            html_table += '''
+                        {table_rows}
                     </tbody>
                 </table>
             </div>
-            '''
+            """
             
             st.markdown(html_table, unsafe_allow_html=True)
             st.info("💡 **คำอธิบาย:** % of From Brand = จำนวนลูกค้าที่ย้ายจาก Brand นั้น / ลูกค้าทั้งหมดของ Brand ในช่วง Before Period")
