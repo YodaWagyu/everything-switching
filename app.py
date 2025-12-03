@@ -22,12 +22,10 @@ with st.sidebar:
 if 'query_executed' not in st.session_state:
     st.session_state.query_executed = False
 
-st.sidebar.header("⚙️ Configuration")
 
 st.sidebar.markdown("### 🎯 Analysis Mode")
 analysis_mode = st.sidebar.radio("Select mode", config.ANALYSIS_MODES, label_visibility="collapsed")
 
-st.sidebar.markdown("---")
 st.sidebar.markdown("### 📅 Before Period")
 col1, col2 = st.sidebar.columns(2)
 with col1:
