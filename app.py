@@ -150,8 +150,6 @@ if run_analysis or st.session_state.query_executed:
     display_category = selected_categories[0] if selected_categories else None
     utils.display_filter_summary(analysis_mode, period1_start.strftime("%Y-%m-%d"), period1_end.strftime("%Y-%m-%d"), period2_start.strftime("%Y-%m-%d"), period2_end.strftime("%Y-%m-%d"), display_category, selected_brands, product_name_contains, primary_threshold, len(utils.parse_barcode_mapping(barcode_mapping_text)) if analysis_mode == "Custom Type" else 0)
     
-    st.markdown("---")
-    
     st.markdown("## 📊 Section 1: Customer Flow")
     
     # Apply brand filtering based on view mode toggle (only shown when brands are filtered)
