@@ -143,10 +143,8 @@ if run_analysis or st.session_state.query_executed:
             if st.session_state.get('show_query', False) and 'last_executed_query' in st.session_state:
                 with st.expander("📝 Executed SQL Query", expanded=True):
                     st.code(st.session_state.last_executed_query, language="sql")
-        
-            st.markdown("---")
     else:
-        # User-only: Just show simple separator
+        # User sees no cost/query sections
         st.markdown("---")
     
     display_category = selected_categories[0] if selected_categories else None
