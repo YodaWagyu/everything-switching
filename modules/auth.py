@@ -52,6 +52,29 @@ def logout():
 
 def show_login_page():
     """Display login page with split-screen design (White Form / Dark Teal Info)"""
+    import random
+    
+    # Random Quotes for the Right Panel
+    quotes = [
+        {
+            "text": "Understanding why customers leave is the first step to keeping them.",
+            "author": "Customer Retention Strategy"
+        },
+        {
+            "text": "In the world of data, every switch tells a story. Listen to it.",
+            "author": "Data Intelligence"
+        },
+        {
+            "text": "Brand loyalty is earned. Analytics helps you keep it.",
+            "author": "Market Insights"
+        },
+        {
+            "text": "Turn customer movement into your competitive advantage.",
+            "author": "Competitive Analysis"
+        }
+    ]
+    selected_quote = random.choice(quotes)
+
     # Custom CSS for Split-Screen
     st.markdown("""
         <style>
@@ -76,13 +99,13 @@ def show_login_page():
                 border-radius: 24px;
                 box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
                 overflow: hidden;
-                min-height: 700px;
+                min-height: 600px;
             }
             
             /* Left Column (Form) - White */
             [data-testid="stColumn"]:nth-of-type(1) {
                 background: white;
-                padding: 60px !important;
+                padding: 80px !important;
                 display: flex;
                 flex-direction: column;
                 justify-content: center;
@@ -91,7 +114,7 @@ def show_login_page():
             /* Right Column (Info) - Dark Teal */
             [data-testid="stColumn"]:nth-of-type(2) {
                 background: linear-gradient(135deg, #0f3d3e 0%, #1a5f60 100%);
-                padding: 60px !important;
+                padding: 80px !important;
                 display: flex;
                 flex-direction: column;
                 justify-content: center;
@@ -102,7 +125,7 @@ def show_login_page():
             /* Typography - Left */
             .welcome-header {
                 font-family: 'Inter', sans-serif;
-                font-size: 36px;
+                font-size: 32px;
                 font-weight: 700;
                 color: #1a1a1a;
                 margin-bottom: 10px;
@@ -119,9 +142,9 @@ def show_login_page():
             /* Typography - Right */
             .info-header {
                 font-family: 'Inter', sans-serif;
-                font-size: 42px;
+                font-size: 36px;
                 font-weight: 700;
-                line-height: 1.2;
+                line-height: 1.3;
                 margin-bottom: 30px;
             }
             
@@ -132,7 +155,7 @@ def show_login_page():
             }
             
             .quote-text {
-                font-size: 16px;
+                font-size: 18px;
                 line-height: 1.6;
                 opacity: 0.9;
                 font-style: italic;
@@ -142,6 +165,9 @@ def show_login_page():
                 margin-top: 15px;
                 font-weight: 600;
                 font-size: 14px;
+                opacity: 0.7;
+                text-transform: uppercase;
+                letter-spacing: 1px;
             }
             
             /* Input Styling */
@@ -170,7 +196,7 @@ def show_login_page():
                 font-weight: 600 !important;
                 font-size: 16px !important;
                 width: 100%;
-                margin-top: 20px;
+                margin-top: 10px;
                 transition: all 0.2s;
             }
             
@@ -185,7 +211,7 @@ def show_login_page():
                 color: #333 !important;
                 font-weight: 500;
                 margin-bottom: 8px;
-                display: block !important; /* Show label for this design */
+                display: block !important;
             }
         </style>
     """, unsafe_allow_html=True)
@@ -195,26 +221,20 @@ def show_login_page():
     
     with col1:
         st.markdown("""
-            <div style="margin-bottom: 20px; font-weight: 700; font-size: 20px; color: #0f3d3e;">
-                🔄 Everything Switching
+            <div style="margin-bottom: 30px; font-weight: 700; font-size: 18px; color: #0f3d3e; display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 24px;">🔄</span> Everything Switching
             </div>
-            <div class="welcome-header">Welcome Back!</div>
+            <div class="welcome-header">Welcome Back</div>
             <div class="welcome-sub">
-                Sign in to access your dashboard and continue analyzing brand movements.
+                Please enter your password to access the dashboard.
             </div>
         """, unsafe_allow_html=True)
         
         with st.form("login_form"):
-            # Using a dummy email field for visual match, but only password works
-            st.text_input("Email", placeholder="Enter your email", disabled=True, value="demo@everythingswitching.com")
-            
             password = st.text_input("Password", type="password", placeholder="Enter your access key")
             
-            st.markdown("""
-                <div style="text-align: right; margin-top: -10px; margin-bottom: 10px;">
-                    <a href="#" style="color: #0f3d3e; font-size: 12px; text-decoration: none;">Forgot Password?</a>
-                </div>
-            """, unsafe_allow_html=True)
+            # Spacing
+            st.markdown("<div style='height: 10px'></div>", unsafe_allow_html=True)
             
             submit = st.form_submit_button("Sign In", use_container_width=True)
             
@@ -230,32 +250,14 @@ def show_login_page():
                         st.error("Invalid Access Key")
                 else:
                     st.warning("Please enter key")
-                    
-        st.markdown("""
-            <div style="margin-top: 30px; text-align: center; color: #666; font-size: 14px;">
-                Don't have an account? <a href="#" style="color: #0f3d3e; font-weight: 600; text-decoration: none;">Sign Up</a>
-            </div>
-        """, unsafe_allow_html=True)
 
     with col2:
-        st.markdown("""
+        st.markdown(f"""
             <div class="info-header">
-                Revolutionize Analytics with<br>Smarter Insights
-            </div>
-            <div style="font-size: 18px; opacity: 0.8; line-height: 1.6;">
-                "Everything Switching has completely transformed our market analysis process. It's reliable, efficient, and ensures our strategies are always data-driven."
+                Unlock Market Insights<br>with Precision Data
             </div>
             <div class="quote-box">
-                <div class="quote-author">Michael Carter</div>
-                <div style="font-size: 12px; opacity: 0.7;">Lead Analyst at DataCore</div>
-            </div>
-            
-            <div style="margin-top: 100px; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 30px;">
-                <div style="font-size: 12px; letter-spacing: 1px; text-transform: uppercase; opacity: 0.6; margin-bottom: 20px;">
-                    Trusted by Industry Leaders
-                </div>
-                <div style="display: flex; gap: 20px; opacity: 0.7; font-size: 24px;">
-                    <span>⚡</span> <span>🌊</span> <span>🚀</span> <span>💎</span>
-                </div>
+                <div class="quote-text">"{selected_quote['text']}"</div>
+                <div class="quote-author">{selected_quote['author']}</div>
             </div>
         """, unsafe_allow_html=True)
