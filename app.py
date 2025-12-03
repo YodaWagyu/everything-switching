@@ -560,6 +560,54 @@ if run_analysis or st.session_state.query_executed:
         st.caption("Analysis of customer retention and churn behavior between the two periods.")
         
         cohort_metrics = data_processor.calculate_cohort_metrics(df_display)
+        
+        if cohort_metrics:
+            c1, c2, c3 = st.columns(3)
+            with c1:
+                retention_rate_fmt = f"{cohort_metrics['retention_rate']:.1f}"
+                st.markdown(f"""
+                <div class="premium-card" style="padding: 20px; text-align: center; border-left: 5px solid #2e7d32;">
+                    <div style="font-size: 16px; color: #666; margin-bottom: 5px;">Retention Rate</div>
+                    <div style="font-size: 32px; font-weight: 800; color: #2e7d32;">{retention_rate_fmt}%</div>
+                    <div style="font-size: 12px; color: #666;">Customers who stayed with same brand</div>
+                </div>
+                """, unsafe_allow_html=True)
+            with c2:
+                switch_rate_fmt = f"{cohort_metrics['switch_rate']:.1f}"
+                st.markdown(f"""
+                <div class="premium-card" style="padding: 20px; text-align: center; border-left: 5px solid #f57c00;">
+                    <div style="font-size: 16px; color: #666; margin-bottom: 5px;">Switch Rate</div>
+                    <div style="font-size: 32px; font-weight: 800; color: #f57c00;">{switch_rate_fmt}%</div>
+                    <div style="font-size: 12px; color: #666;">Customers who switched brands</div>
+                </div>
+                """, unsafe_allow_html=True)
+            with c3:
+                churn_rate_fmt_2 = f"{cohort_metrics['churn_rate']:.1f}"
+                st.markdown(f"""
+                <div class="premium-card" style="padding: 20px; text-align: center; border-left: 5px solid #c62828;">
+                    <div style="font-size: 16px; color: #666; margin-bottom: 5px;">Churn Rate</div>
+                    <div style="font-size: 32px; font-weight: 800; color: #c62828;">{churn_rate_fmt_2}%</div>
+                    <div style="font-size: 12px; color: #666;">Customers lost from category</div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+            st.markdown("#### Customer Base Composition")
+            comp_data = pd.DataFrame({
+                'Type': ['Retained', 'Switched', 'Churned'],
+                'Customers': [cohort_metrics['stayed_customers'], cohort_metrics['switch_out_customers'], cohort_metrics['gone_customers']]
+            })
+            fig_comp = go.Figure(data=[go.Bar(
+                x=comp_data['Type'], 
+                y=comp_data['Customers'],
+                marker_color=['#2e7d32', '#f57c00', '#c62828'],
+                text=comp_data['Customers'],
+                texttemplate='%{text:,}',
+                textposition='auto'
+            )])
+            fig_comp.update_layout(title="Customer Fate (From Period 1)", height=400, plot_bgcolor='white')
+            st.plotly_chart(fig_comp, use_container_width=True)
+        else:
+            st.info("No data available for cohort analysis.")
     
     # Tab 4: Charts (moved from tab3)
     with tab4:
@@ -604,55 +652,7 @@ if run_analysis or st.session_state.query_executed:
             st.download_button("📊 Excel", utils.create_excel_export(df_display, summary_df), f"switching_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
         with c2:
             st.download_button("📄 CSV", df_display.to_csv(index=False), f"switching_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv", "text/csv", use_container_width=True)
-        
-        if cohort_metrics:
-            c1, c2, c3 = st.columns(3)
-            with c1:
-                retention_rate_fmt = f"{cohort_metrics['retention_rate']:.1f}"
-                st.markdown(f"""
-                <div class="premium-card" style="padding: 20px; text-align: center; border-left: 5px solid #2e7d32;">
-                    <div style="font-size: 16px; color: #666; margin-bottom: 5px;">Retention Rate</div>
-                    <div style="font-size: 32px; font-weight: 800; color: #2e7d32;">{retention_rate_fmt}%</div>
-                    <div style="font-size: 12px; color: #666;">Customers who stayed with same brand</div>
-                </div>
-                """, unsafe_allow_html=True)
-            with c2:
-                switch_rate_fmt = f"{cohort_metrics['switch_rate']:.1f}"
-                st.markdown(f"""
-                <div class="premium-card" style="padding: 20px; text-align: center; border-left: 5px solid #f57c00;">
-                    <div style="font-size: 16px; color: #666; margin-bottom: 5px;">Switch Rate</div>
-                    <div style="font-size: 32px; font-weight: 800; color: #f57c00;">{switch_rate_fmt}%</div>
-                    <div style="font-size: 12px; color: #666;">Customers who switched brands</div>
-                </div>
-                """, unsafe_allow_html=True)
-            with c3:
-                churn_rate_fmt_2 = f"{cohort_metrics['churn_rate']:.1f}"
-                st.markdown(f"""
-                <div class="premium-card" style="padding: 20px; text-align: center; border-left: 5px solid #c62828;">
-                    <div style="font-size: 16px; color: #666; margin-bottom: 5px;">Churn Rate</div>
-                    <div style="font-size: 32px; font-weight: 800; color: #c62828;">{churn_rate_fmt_2}%</div>
-                    <div style="font-size: 12px; color: #666;">Customers lost from category</div>
-                </div>
-                """, unsafe_allow_html=True)
-                
-            st.markdown("#### Customer Base Composition")
-            # Simple bar chart for composition
-            comp_data = pd.DataFrame({
-                'Type': ['Retained', 'Switched', 'Churned'],
-                'Customers': [cohort_metrics['stayed_customers'], cohort_metrics['switch_out_customers'], cohort_metrics['gone_customers']]
-            })
-            fig_comp = go.Figure(data=[go.Bar(
-                x=comp_data['Type'], 
-                y=comp_data['Customers'],
-                marker_color=['#2e7d32', '#f57c00', '#c62828'],
-                text=comp_data['Customers'],
-                texttemplate='%{text:,}',
-                textposition='auto'
-            )])
-            fig_comp.update_layout(title="Customer Fate (From Period 1)", height=400, plot_bgcolor='white')
-            st.plotly_chart(fig_comp, use_container_width=True)
-        else:
-            st.info("No data available for cohort analysis.")
+    
     st.markdown("""
     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; margin-top: 40px;">
         <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="#0f3d3e"><path d="M12 2c-5.52 0-10 4.48-10 10s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/></svg>
