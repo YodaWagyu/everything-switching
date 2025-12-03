@@ -36,10 +36,33 @@ def create_sankey_diagram(labels: List[str], sources: List[int], targets: List[i
 
 def create_competitive_heatmap(heatmap_df: pd.DataFrame) -> go.Figure:
     """Create heatmap"""
-    fig = go.Figure(data=go.Heatmap(z=heatmap_df.values, x=heatmap_df.columns, y=heatmap_df.index,
-                                     colorscale='Blues', text=heatmap_df.values, texttemplate='%{text:,}',
-                                     textfont={"size": 10}))
-    fig.update_layout(title="Competitive Matrix", height=600)
+    fig = go.Figure(data=go.Heatmap(
+        z=heatmap_df.values, 
+        x=heatmap_df.columns, 
+        y=heatmap_df.index,
+        colorscale='Blues', 
+        text=heatmap_df.values, 
+        texttemplate='%{text:,}',
+        textfont={"size": 11, "color": "#1a1a1a"}
+    ))
+    fig.update_layout(
+        title={
+            "text": "Competitive Matrix",
+            "font": {"size": 18, "color": "#1a1a1a", "family": "Arial"}
+        },
+        height=600,
+        xaxis={
+            "tickfont": {"size": 13, "color": "#000000", "family": "Arial"},
+            "titlefont": {"size": 14, "color": "#000000"},
+            "tickmode": "linear",
+        },
+        yaxis={
+            "tickfont": {"size": 13, "color": "#000000", "family": "Arial"},
+            "titlefont": {"size": 14, "color": "#000000"},
+            "tickmode": "linear",
+        },
+        font={"family": "Arial", "color": "#1a1a1a"}
+    )
     return fig
 
 
