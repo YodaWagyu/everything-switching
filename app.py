@@ -6,6 +6,16 @@ import config
 
 st.set_page_config(page_title="Everything-Switching", page_icon="🔄", layout="wide")
 
+# Load Custom CSS
+def load_css():
+    try:
+        with open('assets/style.css') as f:
+            st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+    except FileNotFoundError:
+        pass
+
+load_css()
+
 # Authentication check
 if not auth.is_authenticated():
     auth.show_login_page()

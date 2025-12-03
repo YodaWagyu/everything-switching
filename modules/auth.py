@@ -51,23 +51,41 @@ def logout():
 
 
 def show_login_page():
-    """Display login page"""
-    st.title("🔐 Brand Switching Analysis")
-    st.markdown("### Login")
+    """Display login page with premium design"""
+    # Load custom CSS for login page
+    try:
+        with open('assets/style.css') as f:
+            st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+    except FileNotFoundError:
+        pass
+
+    # Center the login card using columns
+    col1, col2, col3 = st.columns([1, 2, 1])
     
-    with st.form("login_form"):
-        password = st.text_input("Password", type="password", help="Enter your access password")
-        submit = st.form_submit_button("Login", use_container_width=True)
+    with col2:
+        st.markdown("""
+            <div class="login-container">
+                <div class="login-header">
+                    <div class="login-title">Everything Switching</div>
+                    <div class="login-subtitle">Premium Analytics Dashboard</div>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
         
-        if submit:
-            if password:
-                success, role = authenticate(password)
-                if success:
-                    st.session_state["authenticated"] = True
-                    st.session_state["role"] = role
-                    st.success(f"✅ Login successful!")
-                    st.rerun()
+        with st.form("login_form"):
+            password = st.text_input("Access Password", type="password", placeholder="Enter your secure password")
+            st.markdown("<br>", unsafe_allow_html=True)
+            submit = st.form_submit_button("Sign In", use_container_width=True)
+            
+            if submit:
+                if password:
+                    success, role = authenticate(password)
+                    if success:
+                        st.session_state["authenticated"] = True
+                        st.session_state["role"] = role
+                        st.success(f"Welcome back! Signing you in...")
+                        st.rerun()
+                    else:
+                        st.error("Incorrect password. Please try again.")
                 else:
-                    st.error("❌ Invalid password. Please try again.")
-            else:
-                st.warning("⚠️ Please enter a password.")
+                    st.warning("Please enter your password.")
