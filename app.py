@@ -3,6 +3,8 @@ import streamlit as st
 from datetime import datetime, timedelta
 from modules import bigquery_client, data_processor, visualizations, utils, query_builder, ai_analyzer, auth
 import config
+import pandas as pd
+import plotly.graph_objects as go
 
 st.set_page_config(page_title="Everything-Switching", page_icon="🔄", layout="wide")
 
@@ -207,33 +209,57 @@ if run_analysis or st.session_state.query_executed:
     display_category = selected_categories[0] if selected_categories else None
     utils.display_filter_summary(analysis_mode, period1_start.strftime("%Y-%m-%d"), period1_end.strftime("%Y-%m-%d"), period2_start.strftime("%Y-%m-%d"), period2_end.strftime("%Y-%m-%d"), display_category, selected_brands, product_name_contains, primary_threshold, len(utils.parse_barcode_mapping(barcode_mapping_text)) if analysis_mode == "Custom Type" else 0)
     
-    # --- Executive KPIs ---
+    # Placeholder for Executive KPIs - will be calculated after filtering
+    # Will be rendered after filtering
+    
+    st.markdown("""
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; margin-top: 30px;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="#0f3d3e"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
+        <span style="font-size: 24px; font-weight: 800; color: #0f3d3e;">Section 1: Customer Flow</span>
+    </div>
+""", unsafe_allow_html=True)
+    
+    # Apply brand filtering based on view mode toggle (only shown when brands are filtered)
+    df_display = df  # Default to full data
+    
+    if selected_brands:
+        from modules import brand_filter
+        
+        # Show view mode toggle
+        col_toggle, col_spacer = st.columns([4, 6])
+        with col_toggle:
+            view_mode = st.radio(
+                "🔍 View Mode",
+                options=['🔒 Filtered View', '🔓 Full View'],
+                index=0,  # Default to Filtered (backward compatible)
+                horizontal=True,
+                help="🔒 Filtered: Same-brand comparison (e.g., COLGATE ↔ COLGATE) | 🔓 Full: See where filtered brands went (e.g., COLGATE → All Brands)",
+                key="view_mode_toggle"
+            )
+        
+        # Determine filter mode from selection
+        filter_mode = 'filtered' if '🔒' in view_mode else 'full'
+        
+        # Apply client-side filter
+        df_display = brand_filter.filter_dataframe_by_brands(df, selected_brands, filter_mode)
+        
+        # Show filter description
+        if filter_mode == 'full':
+            st.info(f"💡 **Full View**: Showing where **{', '.join(selected_brands)}** customers went (all destination brands visible)")
+    
+    # Calculate summary AFTER determining df_display (this ensures AI gets correct data)
+    summary_df = data_processor.calculate_brand_summary(df_display)
+    
+    # --- Executive KPIs (Now using filtered data) ---
+    kpis = data_processor.calculate_executive_kpis(summary_df)
+    
+    # Render Executive Summary Section at the top (but calculated here after filtering)
     st.markdown("""
     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; margin-top: 10px;">
         <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="#0f3d3e"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/></svg>
         <span style="font-size: 24px; font-weight: 800; color: #0f3d3e;">Executive Summary</span>
     </div>
     """, unsafe_allow_html=True)
-    
-    # Calculate KPIs
-    # We need summary_df for this. It's calculated later in the code, so we need to move it up or calculate a temp one.
-    # The original code calculates summary_df inside the view toggle block. 
-    # Let's calculate it here for the KPIs.
-    
-    # Aggregate to brand level first if needed
-    if analysis_mode == "Product Switch":
-        df_brand = data_processor.aggregate_to_brand_level(df)
-        kpi_summary_df = data_processor.calculate_brand_summary(df_brand)
-    else:
-        # For Brand Switch, df is already brand level (mostly), but let's ensure structure
-        # Actually, df from query for Brand Switch is product level? No, query aggregates.
-        # Let's check query_builder.py... Brand Switch query returns from_brand, to_brand.
-        # Wait, calculate_brand_summary expects prod_2024, prod_2025 columns.
-        # If Analysis Mode is Brand Switch, the columns are likely already Brands.
-        # Let's assume df has 'prod_2024' and 'prod_2025' as per data_processor expectations.
-        kpi_summary_df = data_processor.calculate_brand_summary(df)
-
-    kpis = data_processor.calculate_executive_kpis(kpi_summary_df)
     
     if kpis:
         k1, k2, k3, k4, k5 = st.columns(5)
@@ -285,49 +311,11 @@ if run_analysis or st.session_state.query_executed:
             churn_rate_fmt = f"{kpis['churn_rate']:.1f}"
             st.markdown(f"""
             <div class="premium-card" style="padding: 15px; text-align: center;">
-                <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Churn Rate</div>
+                <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Attrition Rate</div>
                 <div style="font-size: 24px; font-weight: 800; color: #c62828;">{churn_rate_fmt}%</div>
-                <div style="font-size: 12px; color: #666;">Total Gone / Total</div>
+                <div style="font-size: 12px; color: #666;">Lost / Total Base</div>
             </div>
             """, unsafe_allow_html=True)
-    
-    st.markdown("""
-    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; margin-top: 30px;">
-        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="#0f3d3e"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
-        <span style="font-size: 24px; font-weight: 800; color: #0f3d3e;">Section 1: Customer Flow</span>
-    </div>
-""", unsafe_allow_html=True)
-    
-    # Apply brand filtering based on view mode toggle (only shown when brands are filtered)
-    df_display = df  # Default to full data
-    
-    if selected_brands:
-        from modules import brand_filter
-        
-        # Show view mode toggle
-        col_toggle, col_spacer = st.columns([4, 6])
-        with col_toggle:
-            view_mode = st.radio(
-                "🔍 View Mode",
-                options=['🔒 Filtered View', '🔓 Full View'],
-                index=0,  # Default to Filtered (backward compatible)
-                horizontal=True,
-                help="🔒 Filtered: Same-brand comparison (e.g., COLGATE ↔ COLGATE) | 🔓 Full: See where filtered brands went (e.g., COLGATE → All Brands)",
-                key="view_mode_toggle"
-            )
-        
-        # Determine filter mode from selection
-        filter_mode = 'filtered' if '🔒' in view_mode else 'full'
-        
-        # Apply client-side filter
-        df_display = brand_filter.filter_dataframe_by_brands(df, selected_brands, filter_mode)
-        
-        # Show filter description
-        if filter_mode == 'full':
-            st.info(f"💡 **Full View**: Showing where **{', '.join(selected_brands)}** customers went (all destination brands visible)")
-    
-    # Calculate summary AFTER determining df_display (this ensures AI gets correct data)
-    summary_df = data_processor.calculate_brand_summary(df_display)
     
     # Use df_display for all visualizations
     labels, sources, targets, values = data_processor.prepare_sankey_data(df_display)
