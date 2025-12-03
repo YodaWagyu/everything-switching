@@ -51,151 +51,172 @@ def logout():
 
 
 def show_login_page():
-    """Display login page with premium centered card design"""
-    # Custom CSS for Login Page
+    """Display login page with split-screen design (White Form / Dark Teal Info)"""
+    # Custom CSS for Split-Screen
     st.markdown("""
         <style>
-            /* Global Background - Dark Teal/Slate Radial */
+            /* Global Background */
             .stApp {
-                background-color: #1e293b;
-                background-image: radial-gradient(circle at 50% 50%, #243b55 0%, #141e30 100%);
+                background-color: #f8f9fa;
             }
             
             /* Hide default elements */
             #MainMenu, footer, header {visibility: hidden;}
             
-            /* Center the card container */
-            [data-testid="stVerticalBlock"] {
-                align-items: center;
+            /* Main Container */
+            .block-container {
+                padding-top: 2rem;
+                padding-bottom: 2rem;
+                max-width: 1200px;
             }
             
-            /* The Login Card Container */
-            [data-testid="stForm"] {
-                background: rgba(30, 41, 59, 0.7);
-                backdrop-filter: blur(20px);
-                -webkit-backdrop-filter: blur(20px);
-                border-radius: 20px;
-                border: 1px solid rgba(255, 255, 255, 0.05);
-                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-                padding: 60px 50px;
-                width: 100%;
-                max-width: 500px;
-                margin: 0 auto;
+            /* The Split Card Container */
+            [data-testid="stHorizontalBlock"] {
+                background: white;
+                border-radius: 24px;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+                overflow: hidden;
+                min-height: 700px;
             }
             
-            /* Input Styling - Light Gray/Silver as per image */
+            /* Left Column (Form) - White */
+            [data-testid="stColumn"]:nth-of-type(1) {
+                background: white;
+                padding: 60px !important;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+            }
+            
+            /* Right Column (Info) - Dark Teal */
+            [data-testid="stColumn"]:nth-of-type(2) {
+                background: linear-gradient(135deg, #0f3d3e 0%, #1a5f60 100%);
+                padding: 60px !important;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                color: white;
+                position: relative;
+            }
+            
+            /* Typography - Left */
+            .welcome-header {
+                font-family: 'Inter', sans-serif;
+                font-size: 36px;
+                font-weight: 700;
+                color: #1a1a1a;
+                margin-bottom: 10px;
+            }
+            
+            .welcome-sub {
+                font-family: 'Inter', sans-serif;
+                font-size: 16px;
+                color: #666;
+                margin-bottom: 40px;
+                line-height: 1.5;
+            }
+            
+            /* Typography - Right */
+            .info-header {
+                font-family: 'Inter', sans-serif;
+                font-size: 42px;
+                font-weight: 700;
+                line-height: 1.2;
+                margin-bottom: 30px;
+            }
+            
+            .quote-box {
+                margin-top: 40px;
+                border-left: 4px solid rgba(255,255,255,0.3);
+                padding-left: 20px;
+            }
+            
+            .quote-text {
+                font-size: 16px;
+                line-height: 1.6;
+                opacity: 0.9;
+                font-style: italic;
+            }
+            
+            .quote-author {
+                margin-top: 15px;
+                font-weight: 600;
+                font-size: 14px;
+            }
+            
+            /* Input Styling */
             .stTextInput > div > div > input {
-                background-color: #cbd5e1 !important; /* Light gray */
-                border: 1px solid #94a3b8 !important;
-                color: #0f172a !important; /* Dark text */
+                background-color: white !important;
+                border: 1px solid #e0e0e0 !important;
+                color: #333 !important;
                 border-radius: 8px !important;
-                padding: 14px 20px !important;
-                font-size: 15px !important;
+                padding: 12px 16px !important;
                 height: 50px;
-            }
-            
-            .stTextInput > div > div > input::placeholder {
-                color: #64748b !important;
+                font-size: 16px;
             }
             
             .stTextInput > div > div > input:focus {
-                background-color: #e2e8f0 !important;
-                border-color: #38bdf8 !important;
-                box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2) !important;
+                border-color: #0f3d3e !important;
+                box-shadow: 0 0 0 2px rgba(15, 61, 62, 0.1) !important;
             }
             
-            /* Button Styling - White with Dark Text */
+            /* Button Styling */
             .stButton > button {
-                background: #ffffff !important;
-                color: #0f172a !important;
+                background: #0f3d3e !important; /* Dark Teal */
+                color: white !important;
                 border: none;
                 border-radius: 8px !important;
                 height: 50px;
-                font-weight: 700 !important;
-                font-size: 14px !important;
-                letter-spacing: 0.5px;
-                text-transform: uppercase;
+                font-weight: 600 !important;
+                font-size: 16px !important;
                 width: 100%;
-                margin-top: 15px;
+                margin-top: 20px;
                 transition: all 0.2s;
-                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             }
             
             .stButton > button:hover {
-                background: #f8fafc !important;
+                background: #165253 !important;
                 transform: translateY(-1px);
-                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+                box-shadow: 0 4px 12px rgba(15, 61, 62, 0.2);
             }
             
-            /* Hide Label */
+            /* Hide Labels */
             .stTextInput label {
-                display: none;
+                color: #333 !important;
+                font-weight: 500;
+                margin-bottom: 8px;
+                display: block !important; /* Show label for this design */
             }
         </style>
     """, unsafe_allow_html=True)
 
-    # Centering Layout
-    col1, col2, col3 = st.columns([1, 2, 1])
+    # Split Layout: Left (Form) - Right (Info)
+    col1, col2 = st.columns([1, 1.2])
     
-    with col2:
+    with col1:
+        st.markdown("""
+            <div style="margin-bottom: 20px; font-weight: 700; font-size: 20px; color: #0f3d3e;">
+                🔄 Everything Switching
+            </div>
+            <div class="welcome-header">Welcome Back!</div>
+            <div class="welcome-sub">
+                Sign in to access your dashboard and continue analyzing brand movements.
+            </div>
+        """, unsafe_allow_html=True)
+        
         with st.form("login_form"):
-            # Header Content
+            # Using a dummy email field for visual match, but only password works
+            st.text_input("Email", placeholder="Enter your email", disabled=True, value="demo@everythingswitching.com")
+            
+            password = st.text_input("Password", type="password", placeholder="Enter your access key")
+            
             st.markdown("""
-                <div style="text-align: center; margin-bottom: 40px;">
-                    <!-- Icon Box -->
-                    <div style="
-                        width: 60px; 
-                        height: 60px; 
-                        background: linear-gradient(135deg, #0ea5e9, #0284c7); 
-                        border-radius: 12px; 
-                        margin: 0 auto 25px auto;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        font-size: 32px;
-                        box-shadow: 0 10px 25px -5px rgba(14, 165, 233, 0.5);
-                        border: 2px solid rgba(255,255,255,0.1);
-                    ">
-                        🔄
-                    </div>
-                    
-                    <!-- Title -->
-                    <h1 style="
-                        color: white; 
-                        font-family: 'Inter', sans-serif; 
-                        font-weight: 800; 
-                        font-size: 32px; 
-                        margin: 0 0 15px 0; 
-                        letter-spacing: -0.5px;
-                    ">Everything Switching</h1>
-                    
-                    <!-- Separator -->
-                    <div style="
-                        width: 30px; 
-                        height: 4px; 
-                        background: #0ea5e9; 
-                        margin: 0 auto 15px auto; 
-                        border-radius: 2px;
-                    "></div>
-                    
-                    <!-- Subtitle -->
-                    <p style="
-                        color: #94a3b8; 
-                        font-family: 'Inter', sans-serif; 
-                        font-size: 12px; 
-                        font-weight: 600; 
-                        letter-spacing: 1.5px; 
-                        text-transform: uppercase;
-                        margin: 0;
-                    ">Premium Analytics Dashboard</p>
+                <div style="text-align: right; margin-top: -10px; margin-bottom: 10px;">
+                    <a href="#" style="color: #0f3d3e; font-size: 12px; text-decoration: none;">Forgot Password?</a>
                 </div>
             """, unsafe_allow_html=True)
             
-            # Input
-            password = st.text_input("Password", type="password", placeholder="Enter your secure access key", label_visibility="collapsed")
-            
-            # Button
-            submit = st.form_submit_button("ENTER DASHBOARD", use_container_width=True)
+            submit = st.form_submit_button("Sign In", use_container_width=True)
             
             if submit:
                 if password:
@@ -209,3 +230,32 @@ def show_login_page():
                         st.error("Invalid Access Key")
                 else:
                     st.warning("Please enter key")
+                    
+        st.markdown("""
+            <div style="margin-top: 30px; text-align: center; color: #666; font-size: 14px;">
+                Don't have an account? <a href="#" style="color: #0f3d3e; font-weight: 600; text-decoration: none;">Sign Up</a>
+            </div>
+        """, unsafe_allow_html=True)
+
+    with col2:
+        st.markdown("""
+            <div class="info-header">
+                Revolutionize Analytics with<br>Smarter Insights
+            </div>
+            <div style="font-size: 18px; opacity: 0.8; line-height: 1.6;">
+                "Everything Switching has completely transformed our market analysis process. It's reliable, efficient, and ensures our strategies are always data-driven."
+            </div>
+            <div class="quote-box">
+                <div class="quote-author">Michael Carter</div>
+                <div style="font-size: 12px; opacity: 0.7;">Lead Analyst at DataCore</div>
+            </div>
+            
+            <div style="margin-top: 100px; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 30px;">
+                <div style="font-size: 12px; letter-spacing: 1px; text-transform: uppercase; opacity: 0.6; margin-bottom: 20px;">
+                    Trusted by Industry Leaders
+                </div>
+                <div style="display: flex; gap: 20px; opacity: 0.7; font-size: 24px;">
+                    <span>⚡</span> <span>🌊</span> <span>🚀</span> <span>💎</span>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
