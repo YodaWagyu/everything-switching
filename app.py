@@ -96,7 +96,6 @@ with col4:
     period2_end = st.date_input("End", datetime(2025, 1, 31), key="after_end")
 
 st.sidebar.markdown("---")
-st.sidebar.markdown("""
 with st.sidebar.expander("🏪 Store Settings", expanded=True):
     store_filter_type = st.radio("Store Type", ["All Store", "Same Store"], label_visibility="collapsed")
 
