@@ -271,15 +271,16 @@ def calculate_executive_kpis(summary_df: pd.DataFrame) -> Dict:
         loser_name = "None"
         loser_val = 0
         
-    # 4. Overall Churn Rate (Total Gone / Total Period 1)
+    # 4. Overall Churn Rate (Total Gone + Switch Out / Total Period 1)
     total_gone = summary_df['Gone'].sum()
-    churn_rate = (total_gone / total_movement * 100) if total_movement > 0 else 0
+    total_switch_out = summary_df['Switch_Out'].sum()
+    churn_rate = ((total_gone + total_switch_out) / total_movement * 100) if total_movement > 0 else 0
     
-    # 5. Net Movement Category Level (Total New - Total Gone)
-    # Note: Switch In/Out cancels out at category level if we consider closed system, 
-    # but here we care about New vs Gone for the category growth
+    # 5. Net Movement Category Level 
+    # Formula: (New + Switch In) - (Switch Out + Gone)
     total_new = summary_df['New_Customer'].sum()
-    net_category_movement = total_new - total_gone
+    total_switch_in = summary_df['Switch_In'].sum()
+    net_category_movement = (total_new + total_switch_in) - (total_switch_out + total_gone)
     
     return {
         'total_movement': total_movement,

@@ -227,13 +227,25 @@ li[data-baseweb="tag"] {
    SIDEBAR EXPANDER STYLING - WHITE TEXT ON DARK BACKGROUND
    ========================================================================== */
 
-/* Expander Summary (Header) - Force white text */
+/* Expander Container */
+[data-testid="stSidebar"] [data-testid="stExpander"] {
+    background-color: transparent !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 8px !important;
+    margin-bottom: 10px !important;
+}
+
+/* Expander Summary (Header) - Dark background with white text */
 [data-testid="stSidebar"] [data-testid="stExpander"] summary {
+    background-color: rgba(255, 255, 255, 0.05) !important;
     color: white !important;
     font-weight: 600 !important;
+    padding: 12px !important;
+    border-radius: 8px !important;
 }
 
 [data-testid="stSidebar"] [data-testid="stExpander"] summary:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
     color: #4db6ac !important;
     /* Light Teal hover */
 }
@@ -242,12 +254,4 @@ li[data-baseweb="tag"] {
 [data-testid="stSidebar"] [data-testid="stExpander"] svg {
     fill: white !important;
     stroke: white !important;
-}
-
-/* Expander border */
-[data-testid="stSidebar"] [data-testid="stExpander"] {
-    background-color: transparent !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    border-radius: 8px !important;
-    margin-bottom: 10px !important;
 }
