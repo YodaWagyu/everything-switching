@@ -235,24 +235,29 @@ def get_brand_switching_summary(df: pd.DataFrame, top_n: int = 20) -> pd.DataFra
     return switching_summary
 
 
-def calculate_executive_kpis(summary_df: pd.DataFrame) -> Dict:
+def calculate_executive_kpis(summary_df: pd.DataFrame, summary_df_full: pd.DataFrame = None) -> Dict:
     """
     Calculate high-level executive KPIs
     
     Args:
-        summary_df: Brand summary dataframe
+        summary_df: Brand summary dataframe (filtered data) - for Total Movement, Net Flow, Churn
+        summary_df_full: Brand summary dataframe (full category data) - for Winner/Loser comparison
         
     Returns:
         Dictionary with KPI metrics
     """
     if len(summary_df) == 0:
         return {}
+    
+    # If full data not provided, use filtered data for everything
+    if summary_df_full is None:
+        summary_df_full = summary_df
         
-    # 1. Total Category Movement (Total customers in Period 1)
+    # 1. Total Category Movement (Total customers in Period 1) - FROM FILTERED DATA
     total_movement = summary_df['2024_Total'].sum()
     
-    # 2. Biggest Winner (Max Net Movement > 0)
-    winners = summary_df[summary_df['Net_Movement'] > 0]
+    # 2. Biggest Winner (Max Net Movement > 0) - FROM FULL DATA
+    winners = summary_df_full[summary_df_full['Net_Movement'] > 0]
     if len(winners) > 0:
         biggest_winner = winners.loc[winners['Net_Movement'].idxmax()]
         winner_name = biggest_winner['Brand']
@@ -261,8 +266,8 @@ def calculate_executive_kpis(summary_df: pd.DataFrame) -> Dict:
         winner_name = "None"
         winner_val = 0
         
-    # 3. Biggest Loser (Min Net Movement < 0)
-    losers = summary_df[summary_df['Net_Movement'] < 0]
+    # 3. Biggest Loser (Min Net Movement < 0) - FROM FULL DATA
+    losers = summary_df_full[summary_df_full['Net_Movement'] < 0]
     if len(losers) > 0:
         biggest_loser = losers.loc[losers['Net_Movement'].idxmin()]
         loser_name = biggest_loser['Brand']
@@ -271,12 +276,12 @@ def calculate_executive_kpis(summary_df: pd.DataFrame) -> Dict:
         loser_name = "None"
         loser_val = 0
         
-    # 4. Overall Churn Rate (Total Gone + Switch Out / Total Period 1)
+    # 4. Overall Churn Rate (Total Gone + Switch Out / Total Period 1) - FROM FILTERED DATA
     total_gone = summary_df['Gone'].sum()
     total_switch_out = summary_df['Switch_Out'].sum()
     churn_rate = ((total_gone + total_switch_out) / total_movement * 100) if total_movement > 0 else 0
     
-    # 5. Net Movement Category Level 
+    # 5. Net Movement Category Level - FROM FILTERED DATA
     # Formula: (New + Switch In) - (Switch Out + Gone)
     total_new = summary_df['New_Customer'].sum()
     total_switch_in = summary_df['Switch_In'].sum()

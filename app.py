@@ -250,8 +250,14 @@ if run_analysis or st.session_state.query_executed:
     # Calculate summary AFTER determining df_display (this ensures AI gets correct data)
     summary_df = data_processor.calculate_brand_summary(df_display)
     
-    # --- Executive KPIs (Now using filtered data) ---
-    kpis = data_processor.calculate_executive_kpis(summary_df)
+    # For Winner/Loser: Use full category data (not just filtered brands)
+    # This allows users to see competitive landscape even when filtering specific brands
+    summary_df_full = data_processor.calculate_brand_summary(df)
+    
+    # --- Executive KPIs (Hybrid approach) ---
+    # Total Movement, Net Flow, Churn Rate = from filtered data
+    # Winner/Loser = from full data (all brands in category)
+    kpis = data_processor.calculate_executive_kpis(summary_df, summary_df_full)
     
     # Render Executive Summary Section at the top (but calculated here after filtering)
     st.markdown("""
@@ -283,7 +289,7 @@ if run_analysis or st.session_state.query_executed:
             <div class="premium-card" style="padding: 15px; text-align: center;">
                 <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Category Net Flow</div>
                 <div style="font-size: 24px; font-weight: 800; color: {color};">{icon} {net_cat_fmt}</div>
-                <div style="font-size: 12px; color: {color};">New - Gone</div>
+                <div style="font-size: 12px; color: {color};">Total In - Total Out</div>
             </div>
             """, unsafe_allow_html=True)
             
@@ -313,7 +319,7 @@ if run_analysis or st.session_state.query_executed:
             <div class="premium-card" style="padding: 15px; text-align: center;">
                 <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Churn Rate</div>
                 <div style="font-size: 24px; font-weight: 800; color: #c62828;">{churn_rate_fmt}%</div>
-                <div style="font-size: 12px; color: #666;">(Gone + Switch Out) / Total</div>
+                <div style="font-size: 12px; color: #666;">Total Out / Total</div>
             </div>
             """, unsafe_allow_html=True)
     
