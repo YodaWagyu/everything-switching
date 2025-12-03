@@ -95,16 +95,16 @@ def build_switching_query(
     else:  # Brand Switch (default)
         target_item_expr = "pm.Brand"
     
-    # Build brand filter
+    # Build brand filter - ASYMMETRIC: Period 1 filtered, Period 2 unfiltered
     if brands:
         # Escape single quotes in brand names
         escaped_brands = []
         for b in brands:
             escaped_b = b.replace("'", "''")
             escaped_brands.append(f"'{escaped_b}'")
-        brand_filter = f"AND pm.Brand IN ({', '.join(escaped_brands)})"
+        brand_filter_period1 = f"pm.Brand IN ({', '.join(escaped_brands)})"
     else:
-        brand_filter = ""
+        brand_filter_period1 = ""
     
     # Build product name filter - supports multiple keywords with comma separation
     if product_name_contains and product_name_contains.strip():
@@ -157,7 +157,23 @@ def build_switching_query(
     # Escape category name
     category_escaped = category.replace("'", "''")
     
-    # Build the complete query
+    # Build the complete query with period-conditional brand filtering
+    # When brands are filtered: Period 1 applies filter, Period 2 gets all brands
+    # This enables "Gone vs Switch to Other Brands" analysis
+    if brand_filter_period1:
+        # Asymmetric filtering: Period 1 filtered, Period 2 unfiltered
+        date_filter = f"""AND (
+      (a.Date BETWEEN start_2024 AND end_2024 AND {brand_filter_period1})
+      OR
+      (a.Date BETWEEN start_2025 AND end_2025)
+    )"""
+    else:
+        # No brand filter: symmetric behavior
+        date_filter = f"""AND (
+      a.Date BETWEEN start_2024 AND end_2024 OR
+      a.Date BETWEEN start_2025 AND end_2025
+    )"""
+    
     query = f"""
 DECLARE start_2024 DATE DEFAULT '{period1_start}';
 DECLARE end_2024   DATE DEFAULT '{period1_end}';
@@ -184,14 +200,10 @@ WITH base AS (
   JOIN `{config.BIGQUERY_PROJECT}.{config.BIGQUERY_DATASET}.{config.BIGQUERY_TABLE_BRANCH}` br
     ON a.BranchCode = br.BranchCode
   WHERE pm.CategoryName = '{category_escaped}'
-    {brand_filter}
     {product_filter}
     {product_not_filter}
     {store_filter}
-    AND (
-      a.Date BETWEEN start_2024 AND end_2024 OR
-      a.Date BETWEEN start_2025 AND end_2025
-    )
+    {date_filter}
     AND CustomerCode != '0'
 ),
 

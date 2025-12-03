@@ -135,16 +135,49 @@ if run_analysis or st.session_state.query_executed:
     st.markdown("---")
     
     st.markdown("## 📊 Section 1: Customer Flow")
-    labels, sources, targets, values = data_processor.prepare_sankey_data(df)
+    
+    # Apply brand filtering based on view mode toggle (only shown when brands are filtered)
+    df_display = df  # Default to full data
+    
+    if selected_brands:
+        from modules import brand_filter
+        
+        # Show view mode toggle
+        col_toggle, col_spacer = st.columns([4, 6])
+        with col_toggle:
+            view_mode = st.radio(
+                "🔍 View Mode",
+                options=['🔒 Filtered View', '🔓 Full View'],
+                index=0,  # Default to Filtered (backward compatible)
+                horizontal=True,
+                help="🔒 Filtered: Same-brand comparison (e.g., COLGATE ↔ COLGATE) | 🔓 Full: See where filtered brands went (e.g., COLGATE → All Brands)",
+                key="view_mode_toggle"
+            )
+        
+        # Determine filter mode from selection
+        filter_mode = 'filtered' if '🔒' in view_mode else 'full'
+        
+        # Apply client-side filter
+        df_display = brand_filter.filter_dataframe_by_brands(df, selected_brands, filter_mode)
+        
+        # Recalculate summary for the filtered view
+        summary_df = data_processor.calculate_brand_summary(df_display)
+        
+        # Show filter description
+        if filter_mode == 'full':
+            st.info(f"💡 **Full View**: Showing where **{', '.join(selected_brands)}** customers went (all destination brands visible)")
+    
+    # Use df_display for all visualizations
+    labels, sources, targets, values = data_processor.prepare_sankey_data(df_display)
     st.plotly_chart(visualizations.create_sankey_diagram(labels, sources, targets, values), use_container_width=True)
     st.markdown("## 🔥 Section 2: Competitive Matrix")
-    st.plotly_chart(visualizations.create_competitive_heatmap(data_processor.prepare_heatmap_data(df)), use_container_width=True)
+    st.plotly_chart(visualizations.create_competitive_heatmap(data_processor.prepare_heatmap_data(df_display)), use_container_width=True)
     st.markdown("## 🎯 Section 3: Brand Deep Dive")
     available_brands_for_analysis = summary_df['Brand'].tolist()
     if available_brands_for_analysis:
         selected_focus_brand = st.selectbox("Select brand", available_brands_for_analysis, key="focus_brand")
         if selected_focus_brand:
-            st.plotly_chart(visualizations.create_waterfall_chart(data_processor.prepare_waterfall_data(df, selected_focus_brand), selected_focus_brand), use_container_width=True)
+            st.plotly_chart(visualizations.create_waterfall_chart(data_processor.prepare_waterfall_data(df_display, selected_focus_brand), selected_focus_brand), use_container_width=True)
     st.markdown("## 📋 Section 4: Summary Tables & Charts")
     tab1, tab2, tab3, tab4 = st.tabs(["📊 Summary", "📈 Charts", "📄 Raw", "📥 Export"])
     with tab1:
@@ -167,22 +200,22 @@ if run_analysis or st.session_state.query_executed:
     with tab2:
         c1, c2 = st.columns(2)
         with c1:
-            st.plotly_chart(visualizations.create_movement_type_pie(df), use_container_width=True)
+            st.plotly_chart(visualizations.create_movement_type_pie(df_display), use_container_width=True)
         with c2:
             metric = st.selectbox("Metric", ['Net_Movement','Total_In','Total_Out','Stayed'])
             st.plotly_chart(visualizations.create_brand_comparison_bar(summary_df, metric), use_container_width=True)
     with tab3:
         st.markdown("### Raw Data")
-        st.dataframe(df, use_container_width=True, height=400)
+        st.dataframe(df_display, use_container_width=True, height=400)
         st.markdown("### Top 10 Flows")
-        st.dataframe(data_processor.get_top_flows(df, n=10), use_container_width=True)
+        st.dataframe(data_processor.get_top_flows(df_display, n=10), use_container_width=True)
     with tab4:
         st.markdown("### Export")
         c1, c2 = st.columns(2)
         with c1:
-            st.download_button("📊 Excel", utils.create_excel_export(df, summary_df), f"switching_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
+            st.download_button("📊 Excel", utils.create_excel_export(df_display, summary_df), f"switching_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
         with c2:
-            st.download_button("📄 CSV", df.to_csv(index=False), f"switching_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv", "text/csv", use_container_width=True)
+            st.download_button("📄 CSV", df_display.to_csv(index=False), f"switching_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv", "text/csv", use_container_width=True)
     st.markdown("## 🤖 AI-Powered Insights")
     if st.button("✨ Generate Complete Analysis"):
         ai_category = selected_categories[0] if selected_categories else None
@@ -195,8 +228,8 @@ if run_analysis or st.session_state.query_executed:
         if not brands_for_ai:
             special_categories = {'NEW_TO_CATEGORY', 'LOST_FROM_CATEGORY', 'MIXED'}
             all_items = set()
-            all_items.update(df['prod_2024'].unique())
-            all_items.update(df['prod_2025'].unique())
+            all_items.update(df_display['prod_2024'].unique())
+            all_items.update(df_display['prod_2025'].unique())
             
             # Extract brands (first word) from products
             for item in all_items:
@@ -209,11 +242,11 @@ if run_analysis or st.session_state.query_executed:
             brands_for_ai = list(set(brands_for_ai))
             # Limit to top 10 brands for highlighting (avoid too many colors)
             if len(brands_for_ai) > 10:
-                brand_customers = df.groupby(df['prod_2024'].apply(lambda x: x.split()[0] if x.split() and x not in special_categories else x))['customers'].sum()
+                brand_customers = df_display.groupby(df_display['prod_2024'].apply(lambda x: x.split()[0] if x.split() and x not in special_categories else x))['customers'].sum()
                 top_brands = brand_customers.nlargest(10).index.tolist()
                 brands_for_ai = [b for b in brands_for_ai if b in top_brands]
         
-        insights = ai_analyzer.generate_insights(df, summary_df, ai_category, brands_for_ai, analysis_mode, f"{period1_start} to {period1_end}", f"{period2_start} to {period2_end}")
+        insights = ai_analyzer.generate_insights(df_display, summary_df, ai_category, brands_for_ai, analysis_mode, f"{period1_start} to {period1_end}", f"{period2_start} to {period2_end}")
         if insights:
             st.markdown(insights, unsafe_allow_html=True)
 else:
