@@ -223,7 +223,12 @@ if run_analysis or st.session_state.query_executed:
     display_category = selected_categories[0] if selected_categories else None
     utils.display_filter_summary(analysis_mode, period1_start.strftime("%Y-%m-%d"), period1_end.strftime("%Y-%m-%d"), period2_start.strftime("%Y-%m-%d"), period2_end.strftime("%Y-%m-%d"), display_category, selected_brands, product_name_contains, primary_threshold, len(utils.parse_barcode_mapping(barcode_mapping_text)) if analysis_mode == "Custom Type" else 0)
     
-    st.markdown("## 📊 Section 1: Customer Flow")
+    st.markdown("""
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; margin-top: 30px;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="#0f3d3e"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
+        <span style="font-size: 24px; font-weight: 800; color: #0f3d3e;">Section 1: Customer Flow</span>
+    </div>
+""", unsafe_allow_html=True)
     
     # Apply brand filtering based on view mode toggle (only shown when brands are filtered)
     df_display = df  # Default to full data
@@ -259,19 +264,39 @@ if run_analysis or st.session_state.query_executed:
     # Use df_display for all visualizations
     labels, sources, targets, values = data_processor.prepare_sankey_data(df_display)
     st.plotly_chart(visualizations.create_sankey_diagram(labels, sources, targets, values), use_container_width=True)
-    st.markdown("## 🔥 Section 2: Competitive Matrix")
+    st.markdown("""
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; margin-top: 30px;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="#0f3d3e"><path d="M13.5.67s.74 2.65.74 4.8c0 2.06-1.35 3.73-3.41 3.73-2.07 0-3.63-1.67-3.63-3.73l.03-.36C5.21 7.51 4 10.62 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8C20 8.61 17.41 3.8 13.5.67zM11.71 19c-1.78 0-3.22-1.4-3.22-3.14 0-1.62 1.05-2.76 2.81-3.12 1.77-.36 3.6-1.21 4.62-2.58.39 1.29.59 2.65.59 4.04 0 2.65-2.15 4.8-4.8 4.8z"/></svg>
+        <span style="font-size: 24px; font-weight: 800; color: #0f3d3e;">Section 2: Competitive Matrix</span>
+    </div>
+""", unsafe_allow_html=True)
     st.plotly_chart(visualizations.create_competitive_heatmap(data_processor.prepare_heatmap_data(df_display)), use_container_width=True)
-    st.markdown("## 🎯 Section 3: Brand Deep Dive")
+    st.markdown("""
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; margin-top: 30px;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="#0f3d3e"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/></svg>
+        <span style="font-size: 24px; font-weight: 800; color: #0f3d3e;">Section 3: Brand Deep Dive</span>
+    </div>
+""", unsafe_allow_html=True)
     available_brands_for_analysis = summary_df['Brand'].tolist()
     if available_brands_for_analysis:
         selected_focus_brand = st.selectbox("Select brand", available_brands_for_analysis, key="focus_brand")
         if selected_focus_brand:
             st.plotly_chart(visualizations.create_waterfall_chart(data_processor.prepare_waterfall_data(df_display, selected_focus_brand), selected_focus_brand), use_container_width=True)
-    st.markdown("## 📋 Section 4: Summary Tables & Charts")
-    tab1, tab2, tab3, tab4, tab5 = st.tabs(["📊 Summary", "🔄 Brand Switching", "📈 Charts", "📄 Raw", "📥 Export"])
+    st.markdown("""
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; margin-top: 30px;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="#0f3d3e"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+        <span style="font-size: 24px; font-weight: 800; color: #0f3d3e;">Section 4: Summary Tables & Charts</span>
+    </div>
+""", unsafe_allow_html=True)
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(["Summary", "Brand Switching", "Charts", "Raw", "Export"])
     with tab1:
         st.markdown("### Brand Movement Summary")
         display_summary = visualizations.create_summary_table_display(summary_df)
+        
+        # Sort by 2024_Total descending as requested
+        if '2024_Total' in display_summary.columns:
+            display_summary = display_summary.sort_values(by='2024_Total', ascending=False)
+            
         def make_table(df):
             # Define rich gradient colors for each column group
             gradient_colors = {
@@ -342,7 +367,12 @@ if run_analysis or st.session_state.query_executed:
         st.markdown(make_table(display_summary), unsafe_allow_html=True)
     
     with tab2:
-        st.markdown("### 🔄 Brand Switching Details")
+        st.markdown("""
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="#0f3d3e"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg>
+        <span style="font-size: 20px; font-weight: 700; color: #0f3d3e;">Brand Switching Details</span>
+    </div>
+""", unsafe_allow_html=True)
         st.caption("Top brand-to-brand switching flows (sorted by From Brand A→Z, then Customers High→Low)")
         
         switching_summary = data_processor.get_brand_switching_summary(df_display, top_n=20)
@@ -476,7 +506,12 @@ if run_analysis or st.session_state.query_executed:
             st.download_button("📊 Excel", utils.create_excel_export(df_display, summary_df), f"switching_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
         with c2:
             st.download_button("📄 CSV", df_display.to_csv(index=False), f"switching_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv", "text/csv", use_container_width=True)
-    st.markdown("## 🤖 AI-Powered Insights")
+    st.markdown("""
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; margin-top: 40px;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="#0f3d3e"><path d="M12 2c-5.52 0-10 4.48-10 10s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/></svg>
+        <span style="font-size: 24px; font-weight: 800; color: #0f3d3e;">AI-Powered Insights</span>
+    </div>
+""", unsafe_allow_html=True)
     if st.button("✨ Generate Complete Analysis"):
         ai_category = selected_categories[0] if selected_categories else None
         
