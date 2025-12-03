@@ -52,12 +52,69 @@ def logout():
 
 def show_login_page():
     """Display login page with premium design"""
-    # Load custom CSS for login page
-    try:
-        with open('assets/style.css') as f:
-            st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
-    except FileNotFoundError:
-        pass
+    # Custom CSS for Login Page ONLY
+    st.markdown("""
+        <style>
+            /* Deep Blue Gradient Background (Matches Logout Button) */
+            .stApp {
+                background: linear-gradient(135deg, #2874a6 0%, #1b4f72 100%) !important;
+            }
+            
+            /* Login Card - Glassmorphism with White Text */
+            .login-container {
+                max-width: 400px;
+                margin: 100px auto;
+                padding: 40px;
+                background: rgba(255, 255, 255, 0.1);
+                border-radius: 24px;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                animation: fadeInUp 0.6s ease-out;
+            }
+            
+            .login-title {
+                font-size: 32px;
+                font-weight: 700;
+                color: #ffffff;
+                margin-bottom: 10px;
+                text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            }
+            
+            .login-subtitle {
+                color: rgba(255, 255, 255, 0.8);
+                font-size: 16px;
+                font-weight: 400;
+            }
+            
+            /* Input Label Styling */
+            .stTextInput label {
+                color: white !important;
+            }
+            
+            /* Button Styling - White variant for contrast */
+            .stButton > button {
+                background: white !important;
+                color: #2874a6 !important;
+                border: none;
+                font-weight: 700 !important;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            }
+            
+            .stButton > button:hover {
+                background: #f8f9fa !important;
+                transform: translateY(-1px);
+                box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+            }
+            
+            /* Input Field Styling */
+            .stTextInput > div > div > input {
+                background-color: rgba(255, 255, 255, 0.9);
+                border: none;
+                color: #1a1a1a;
+            }
+        </style>
+    """, unsafe_allow_html=True)
 
     # Center the login card using columns
     col1, col2, col3 = st.columns([1, 2, 1])
