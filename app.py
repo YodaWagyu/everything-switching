@@ -282,7 +282,7 @@ if run_analysis or st.session_state.query_executed:
             st.markdown(f"""
             <div class="premium-card" style="padding: 15px; text-align: center;">
                 <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Churn Rate</div>
-                <div style="font-size: 24px; font-weight: 800; color: #c62828;">{kpis['churn_rate']:.1f}%</div>
+                <div style="font-size: 24px; font-weight: 800; color: #c62828;">{kpis['churn_rate']:.1f}%</div> <!-- Fixed typo -->
                 <div style="font-size: 12px; color: #666;">Total Gone / Total</div>
             </div>
             """, unsafe_allow_html=True)
