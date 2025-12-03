@@ -225,99 +225,105 @@ if run_analysis or st.session_state.query_executed:
         switching_summary = data_processor.get_brand_switching_summary(df_display, top_n=20)
         
         if len(switching_summary) > 0:
-            # Build HTML table with proper string escaping
-            table_rows = ""
+            # Build table rows using list
+            rows = []
             for _, row in switching_summary.iterrows():
-                table_rows += f"""
-                    <tr>
-                        <td class="from-brand">{row['From_Brand']}</td>
-                        <td class="to-brand">{row['To_Brand']}</td>
-                        <td class="customers-col">{row['Customers']:,.0f}</td>
-                        <td class="pct-col">{row['Pct_of_From_Brand']:.2f}%</td>
-                    </tr>
-                """
+                rows.append(
+                    '<tr>'
+                    f'<td class="from-brand">{row["From_Brand"]}</td>'
+                    f'<td class="to-brand">{row["To_Brand"]}</td>'
+                    f'<td class="customers-col">{row["Customers"]:,.0f}</td>'
+                    f'<td class="pct-col">{row["Pct_of_From_Brand"]:.2f}%</td>'
+                    '</tr>'
+                )
             
-            html_table = f"""
-            <style>
-                .switching-table {{
-                    width: 100%;
-                    border-collapse: collapse;
-                    font-size: 14px;
-                    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-                }}
-                .switching-table thead th {{
-                    color: white;
-                    padding: 12px;
-                    text-align: center;
-                    font-weight: 600;
-                    position: sticky;
-                    top: 0;
-                    border-right: 1px solid rgba(255,255,255,0.2);
-                }}
-                .switching-table thead th:nth-child(1) {{
-                    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-                }}
-                .switching-table thead th:nth-child(2) {{
-                    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-                }}
-                .switching-table thead th:nth-child(3) {{
-                    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-                }}
-                .switching-table thead th:nth-child(4) {{
-                    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-                }}
-                .switching-table tbody tr {{
-                    border-bottom: 1px solid #e0e0e0;
-                    transition: background-color 0.2s;
-                }}
-                .switching-table tbody tr:hover {{
-                    background-color: #f5f5f5;
-                }}
-                .switching-table tbody td {{
-                    padding: 10px 12px;
-                    text-align: center;
-                    vertical-align: middle;
-                }}
-                .switching-table tbody tr:nth-child(even) {{
-                    background-color: #fafafa;
-                }}
-                .from-brand {{
-                    background-color: #ffebee !important;
-                    font-weight: 600;
-                    color: #c62828;
-                }}
-                .to-brand {{
-                    background-color: #e8f5e9 !important;
-                    font-weight: 600;
-                    color: #2e7d32;
-                }}
-                .customers-col {{
-                    font-weight: 600;
-                    color: #1565c0;
-                }}
-                .pct-col {{
-                    color: #f57c00;
-                    font-weight: 500;
-                }}
-            </style>
-            <div style="max-height: 600px; overflow-y: auto;">
-                <table class="switching-table">
-                    <thead>
-                        <tr>
-                            <th style="width: 30%;">From Brand</th>
-                            <th style="width: 30%;">To Brand</th>
-                            <th style="width: 20%;">Customers</th>
-                            <th style="width: 20%;">% of From Brand</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {table_rows}
-                    </tbody>
-                </table>
-            </div>
-            """
+            table_body = ''.join(rows)
             
-            st.markdown(html_table, unsafe_allow_html=True)
+            # Use single quotes for outer string, double quotes for HTML attributes
+            html = '''
+<style>
+    .switching-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    .switching-table thead th {
+        color: white;
+        padding: 14px;
+        text-align: center;
+        font-weight: 600;
+        position: sticky;
+        top: 0;
+        border-right: 1px solid rgba(255,255,255,0.15);
+        text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    }
+    .switching-table thead th:nth-child(1) {
+        background: linear-gradient(135deg, #c94b4b 0%, #4b134f 100%);
+    }
+    .switching-table thead th:nth-child(2) {
+        background: linear-gradient(135deg, #0575e6 0%, #021b79 100%);
+    }
+    .switching-table thead th:nth-child(3) {
+        background: linear-gradient(135deg, #134e5e 0%, #71b280 100%);
+    }
+    .switching-table thead th:nth-child(4) {
+        background: linear-gradient(135deg, #f12711 0%, #f5af19 100%);
+    }
+    .switching-table tbody tr {
+        border-bottom: 1px solid #e0e0e0;
+        transition: all 0.2s;
+    }
+    .switching-table tbody tr:hover {
+        background-color: #f0f0f0;
+        transform: scale(1.01);
+    }
+    .switching-table tbody td {
+        padding: 12px;
+        text-align: center;
+        vertical-align: middle;
+    }
+    .switching-table tbody tr:nth-child(even) {
+        background-color: #fafafa;
+    }
+    .from-brand {
+        background-color: #ffebee !important;
+        font-weight: 600;
+        color: #c62828;
+    }
+    .to-brand {
+        background-color: #e8f5e9 !important;
+        font-weight: 600;
+        color: #2e7d32;
+    }
+    .customers-col {
+        font-weight: 600;
+        color: #1565c0;
+    }
+    .pct-col {
+        color: #f57c00;
+        font-weight: 500;
+    }
+</style>
+<div style="max-height: 600px; overflow-y: auto;">
+    <table class="switching-table">
+        <thead>
+            <tr>
+                <th style="width: 30%;">From Brand</th>
+                <th style="width: 30%;">To Brand</th>
+                <th style="width: 20%;">Customers</th>
+                <th style="width: 20%;">% of From Brand</th>
+            </tr>
+        </thead>
+        <tbody>''' + table_body + '''
+        </tbody>
+    </table>
+</div>
+'''
+            
+            st.markdown(html, unsafe_allow_html=True)
             st.info("💡 **คำอธิบาย:** % of From Brand = จำนวนลูกค้าที่ย้ายจาก Brand นั้น / ลูกค้าทั้งหมดของ Brand ในช่วง Before Period")
         else:
             st.warning("⚠️ ไม่พบข้อมูลการ switch ระหว่าง brand")
