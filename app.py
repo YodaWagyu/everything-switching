@@ -240,10 +240,11 @@ if run_analysis or st.session_state.query_executed:
         k1, k2, k3, k4, k5 = st.columns(5)
         
         with k1:
+            total_movement_fmt = utils.format_number(kpis['total_movement'])
             st.markdown(f"""
             <div class="premium-card" style="padding: 15px; text-align: center;">
                 <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Total Movement</div>
-                <div style="font-size: 24px; font-weight: 800; color: #0f3d3e;">{utils.format_number(kpis['total_movement'])}</div>
+                <div style="font-size: 24px; font-weight: 800; color: #0f3d3e;">{total_movement_fmt}</div>
                 <div style="font-size: 12px; color: #666;">Customers</div>
             </div>
             """, unsafe_allow_html=True)
@@ -252,29 +253,32 @@ if run_analysis or st.session_state.query_executed:
             net_cat = kpis['net_category_movement']
             color = "#2e7d32" if net_cat >= 0 else "#c62828"
             icon = "▲" if net_cat >= 0 else "▼"
+            net_cat_fmt = utils.format_number(abs(net_cat))
             st.markdown(f"""
             <div class="premium-card" style="padding: 15px; text-align: center;">
                 <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Category Net Flow</div>
-                <div style="font-size: 24px; font-weight: 800; color: {color};">{icon} {utils.format_number(abs(net_cat))}</div>
+                <div style="font-size: 24px; font-weight: 800; color: {color};">{icon} {net_cat_fmt}</div>
                 <div style="font-size: 12px; color: {color};">New - Gone</div>
             </div>
             """, unsafe_allow_html=True)
             
         with k3:
+            winner_val_fmt = utils.format_number(kpis['winner_val'])
             st.markdown(f"""
             <div class="premium-card" style="padding: 15px; text-align: center;">
                 <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Biggest Winner</div>
                 <div style="font-size: 18px; font-weight: 800; color: #0f3d3e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{kpis['winner_name']}</div>
-                <div style="font-size: 14px; font-weight: 600; color: #2e7d32;">+{utils.format_number(kpis['winner_val'])}</div>
+                <div style="font-size: 14px; font-weight: 600; color: #2e7d32;">+{winner_val_fmt}</div>
             </div>
             """, unsafe_allow_html=True)
             
         with k4:
+            loser_val_fmt = utils.format_number(kpis['loser_val'])
             st.markdown(f"""
             <div class="premium-card" style="padding: 15px; text-align: center;">
                 <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Biggest Loser</div>
                 <div style="font-size: 18px; font-weight: 800; color: #0f3d3e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{kpis['loser_name']}</div>
-                <div style="font-size: 14px; font-weight: 600; color: #c62828;">{utils.format_number(kpis['loser_val'])}</div>
+                <div style="font-size: 14px; font-weight: 600; color: #c62828;">{loser_val_fmt}</div>
             </div>
             """, unsafe_allow_html=True)
             
@@ -600,26 +604,29 @@ if run_analysis or st.session_state.query_executed:
         if cohort_metrics:
             c1, c2, c3 = st.columns(3)
             with c1:
+                retention_rate_fmt = f"{cohort_metrics['retention_rate']:.1f}"
                 st.markdown(f"""
                 <div class="premium-card" style="padding: 20px; text-align: center; border-left: 5px solid #2e7d32;">
                     <div style="font-size: 16px; color: #666; margin-bottom: 5px;">Retention Rate</div>
-                    <div style="font-size: 32px; font-weight: 800; color: #2e7d32;">{cohort_metrics['retention_rate']:.1f}%</div>
+                    <div style="font-size: 32px; font-weight: 800; color: #2e7d32;">{retention_rate_fmt}%</div>
                     <div style="font-size: 12px; color: #666;">Customers who stayed with same brand</div>
                 </div>
                 """, unsafe_allow_html=True)
             with c2:
+                switch_rate_fmt = f"{cohort_metrics['switch_rate']:.1f}"
                 st.markdown(f"""
                 <div class="premium-card" style="padding: 20px; text-align: center; border-left: 5px solid #f57c00;">
                     <div style="font-size: 16px; color: #666; margin-bottom: 5px;">Switch Rate</div>
-                    <div style="font-size: 32px; font-weight: 800; color: #f57c00;">{cohort_metrics['switch_rate']:.1f}%</div>
+                    <div style="font-size: 32px; font-weight: 800; color: #f57c00;">{switch_rate_fmt}%</div>
                     <div style="font-size: 12px; color: #666;">Customers who switched brands</div>
                 </div>
                 """, unsafe_allow_html=True)
             with c3:
+                churn_rate_fmt_2 = f"{cohort_metrics['churn_rate']:.1f}"
                 st.markdown(f"""
                 <div class="premium-card" style="padding: 20px; text-align: center; border-left: 5px solid #c62828;">
                     <div style="font-size: 16px; color: #666; margin-bottom: 5px;">Churn Rate</div>
-                    <div style="font-size: 32px; font-weight: 800; color: #c62828;">{cohort_metrics['churn_rate']:.1f}%</div>
+                    <div style="font-size: 32px; font-weight: 800; color: #c62828;">{churn_rate_fmt_2}%</div>
                     <div style="font-size: 12px; color: #666;">Customers lost from category</div>
                 </div>
                 """, unsafe_allow_html=True)
