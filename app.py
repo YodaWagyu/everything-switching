@@ -22,7 +22,37 @@ if not auth.is_authenticated():
     st.stop()
 
 # Main app (only visible after login)
-st.title("🔄 Everything-Switching Analysis")
+# Custom Header with ES Logo
+st.markdown("""
+    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 30px; padding-top: 10px;">
+        <div style="
+            width: 45px; 
+            height: 45px; 
+            background: #0f3d3e; 
+            border-radius: 10px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            color: white;
+            font-family: 'Inter', sans-serif;
+            font-weight: 800;
+            font-size: 18px;
+            letter-spacing: -1px;
+            box-shadow: 0 4px 10px rgba(15, 61, 62, 0.2);
+        ">
+            ES
+        </div>
+        <div style="
+            font-family: 'Inter', sans-serif; 
+            font-weight: 800; 
+            font-size: 28px; 
+            color: #0f3d3e; 
+            letter-spacing: -1px;
+        ">
+            Everything-Switching Analysis
+        </div>
+    </div>
+""", unsafe_allow_html=True)
 
 # Add logout button in sidebar
 with st.sidebar:

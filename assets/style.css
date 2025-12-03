@@ -12,7 +12,6 @@ body,
 .stApp {
     background-color: #f8f9fa;
     background-image: none;
-    /* Reset any gradients */
 }
 
 /* Sidebar Styling - Dark Teal Premium */
@@ -21,25 +20,35 @@ body,
     border-right: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+/* Sidebar Text Colors */
 [data-testid="stSidebar"] h1,
 [data-testid="stSidebar"] h2,
 [data-testid="stSidebar"] h3,
 [data-testid="stSidebar"] label,
-[data-testid="stSidebar"] .stMarkdown {
+[data-testid="stSidebar"] .stMarkdown,
+[data-testid="stSidebar"] p,
+[data-testid="stSidebar"] .stRadio label {
     color: white !important;
 }
 
-/* Sidebar Inputs */
+/* Sidebar Inputs - High Contrast Fix */
 [data-testid="stSidebar"] .stTextInput>div>div>input,
 [data-testid="stSidebar"] .stSelectbox>div>div>div,
-[data-testid="stSidebar"] .stMultiSelect>div>div>div {
-    background-color: rgba(255, 255, 255, 0.1) !important;
-    color: white !important;
+[data-testid="stSidebar"] .stMultiSelect>div>div>div,
+[data-testid="stSidebar"] .stDateInput>div>div>input {
+    background-color: #ffffff !important;
+    color: #1a1a1a !important;
     border: 1px solid rgba(255, 255, 255, 0.2) !important;
 }
 
+/* Placeholder Text */
 [data-testid="stSidebar"] .stTextInput>div>div>input::placeholder {
-    color: rgba(255, 255, 255, 0.6) !important;
+    color: #666666 !important;
+}
+
+/* Sidebar Selectbox Dropdown Text */
+[data-testid="stSidebar"] .stSelectbox>div>div>div {
+    color: #1a1a1a !important;
 }
 
 /* Main Content Headers */
@@ -48,7 +57,6 @@ h2,
 h3 {
     font-family: 'Inter', sans-serif;
     color: #0f3d3e !important;
-    /* Dark Teal Brand Color */
 }
 
 h1 {
