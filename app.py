@@ -213,8 +213,8 @@ if run_analysis or st.session_state.query_executed:
             }
             
             # Build table with rich styling
-            h = '<div style="box-shadow: 0 4px 12px rgba(0,0,0,0.25); border-radius: 8px; overflow: hidden;">'
-            h += '<table style="width:100%; font-size:12px; border-collapse: collapse;"><thead><tr>'
+            h = '<div style="box-shadow: 0 4px 12px rgba(0,0,0,0.25); border-radius: 8px; overflow: hidden; display: inline-block; width: 100%;">'
+            h += '<table style="width:100%; font-size:12px; border-collapse: collapse; display: block;"><thead><tr>'
             
             for col in df.columns:
                 width = col_widths.get(col, '6%')
@@ -235,9 +235,9 @@ if run_analysis or st.session_state.query_executed:
             h += '</tr></thead><tbody>'
             
             for idx, row in df.iterrows():
-                # Alternate row colors with hover effect
+                # Alternate row colors with hover effect (no scale)
                 bg_color = '#fafafa' if idx % 2 == 0 else '#ffffff'
-                h += f'<tr style="border-bottom: 1px solid #e0e0e0; transition: all 0.2s;" onmouseover="this.style.backgroundColor=\'#f0f0f0\'; this.style.transform=\'scale(1.005)\';" onmouseout="this.style.backgroundColor=\'{bg_color}\'; this.style.transform=\'scale(1)\';">'
+                h += f'<tr style="border-bottom: 1px solid #e0e0e0; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor=\'#f0f0f0\';" onmouseout="this.style.backgroundColor=\'{bg_color}\';">'
                 
                 for i, (col, v) in enumerate(row.items()):
                     fmt = f"{v:.1f}%" if isinstance(v,(int,float)) and '%' in col else f"{v:,.0f}" if isinstance(v,(int,float)) else str(v)
