@@ -8,6 +8,16 @@ body,
     color: #1a1a1a;
 }
 
+/* Global Styles */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+html,
+body,
+[class*="css"] {
+    font-family: 'Inter', sans-serif;
+    color: #1a1a1a;
+}
+
 /* Main App Background */
 .stApp {
     background-color: #f8f9fa;
@@ -20,14 +30,17 @@ body,
     border-right: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* Sidebar Text Colors */
+/* Sidebar Text Colors - Ensure EVERYTHING is white */
 [data-testid="stSidebar"] h1,
 [data-testid="stSidebar"] h2,
 [data-testid="stSidebar"] h3,
 [data-testid="stSidebar"] label,
 [data-testid="stSidebar"] .stMarkdown,
 [data-testid="stSidebar"] p,
-[data-testid="stSidebar"] .stRadio label {
+[data-testid="stSidebar"] .stRadio label,
+[data-testid="stSidebar"] .stSlider div,
+[data-testid="stSidebar"] .stSlider label,
+[data-testid="stSidebar"] [data-testid="stWidgetLabel"] {
     color: white !important;
 }
 
@@ -49,6 +62,29 @@ body,
 /* Sidebar Selectbox Dropdown Text */
 [data-testid="stSidebar"] .stSelectbox>div>div>div {
     color: #1a1a1a !important;
+}
+
+/* Sidebar Spacing - Fix "Messy" Spacing */
+[data-testid="stSidebar"] hr {
+    margin: 20px 0 !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-testid="stSidebar"] .stMarkdown {
+    margin-bottom: 5px !important;
+}
+
+/* Logout Button Specific Fix */
+[data-testid="stSidebar"] .stButton>button {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: white !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    width: 100%;
+}
+
+[data-testid="stSidebar"] .stButton>button:hover {
+    background: rgba(255, 255, 255, 0.2) !important;
+    border-color: white !important;
 }
 
 /* Main Content Headers */
@@ -105,8 +141,8 @@ h3 {
     color: #666;
 }
 
-/* Button Styling - Global */
-.stButton>button {
+/* Button Styling - Global (Main Content) */
+.stMain .stButton>button {
     background: linear-gradient(135deg, #0f3d3e 0%, #1a5f60 100%) !important;
     color: white !important;
     border: none;
@@ -117,7 +153,7 @@ h3 {
     box-shadow: 0 4px 12px rgba(15, 61, 62, 0.2) !important;
 }
 
-.stButton>button:hover {
+.stMain .stButton>button:hover {
     transform: translateY(-1px);
     box-shadow: 0 8px 20px rgba(15, 61, 62, 0.3) !important;
     filter: brightness(1.1);

@@ -256,14 +256,14 @@ if run_analysis or st.session_state.query_executed:
                 'Net_Movement': 'linear-gradient(135deg, #2874a6 0%, #1b4f72 100%)'
             }
             
-            # Define balanced column widths
+            # Define balanced column widths - EQUAL WIDTHS as requested
             col_widths = {
-                'Brand': '10%',
-                '2024_Total': '6%', 'Stayed': '5%', 'Stayed_%': '5%',
-                'Switch_Out': '6%', 'Switch_Out_%': '6%',
-                'Gone': '5%', 'Gone_%': '5%', 'Total_Out': '6%',
-                'Switch_In': '6%', 'New_Customer': '8%', 'Total_In': '6%',
-                '2025_Total': '6%', 'Net_Movement': '8%'
+                'Brand': '7%',
+                '2024_Total': '7%', 'Stayed': '7%', 'Stayed_%': '7%',
+                'Switch_Out': '7%', 'Switch_Out_%': '7%',
+                'Gone': '7%', 'Gone_%': '7%', 'Total_Out': '7%',
+                'Switch_In': '7%', 'New_Customer': '7%', 'Total_In': '7%',
+                '2025_Total': '7%', 'Net_Movement': '7%'
             }
             
             # Build table with rich styling
