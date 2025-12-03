@@ -1,11 +1,24 @@
 """Everything-Switching Analysis Application"""
 import streamlit as st
 from datetime import datetime, timedelta
-from modules import bigquery_client, data_processor, visualizations, utils, query_builder, ai_analyzer
+from modules import bigquery_client, data_processor, visualizations, utils, query_builder, ai_analyzer, auth
 import config
 
 st.set_page_config(page_title="Everything-Switching", page_icon="🔄", layout="wide")
+
+# Authentication check
+if not auth.is_authenticated():
+    auth.show_login_page()
+    st.stop()
+
+# Main app (only visible after login)
 st.title("🔄 Everything-Switching Analysis")
+
+# Add logout button in sidebar
+with st.sidebar:
+    if st.button("🚪 Logout", use_container_width=True):
+        auth.logout()
+
 if 'query_executed' not in st.session_state:
     st.session_state.query_executed = False
 
@@ -113,22 +126,29 @@ if run_analysis or st.session_state.query_executed:
     if df is None or len(df) == 0:
         st.warning("⚠️ No data")
         st.stop()
-    if gb_processed > 0:
-        st.markdown("---")
-        col_cost1, col_cost2 = st.columns([3, 1])
-        with col_cost1:
-            utils.display_cost_info(gb_processed)
-        with col_cost2:
-            st.markdown("")  # Spacer
-            if st.button("🔍 View SQL Query", use_container_width=True):
-                st.session_state.show_query = not st.session_state.get('show_query', False)
+    
+    # Admin-only: Cost and Query Display
+    if auth.is_admin():
+        if gb_processed > 0:
+            st.markdown("---")
+            col_cost1, col_cost2 = st.columns([3, 1])
+            with col_cost1:
+                utils.display_cost_info(gb_processed)
+            with col_cost2:
+                st.markdown("")  # Spacer
+                if st.button("🔍 View SQL Query", use_container_width=True):
+                    st.session_state.show_query = not st.session_state.get('show_query', False)
         
-        # Show query if button clicked
-        if st.session_state.get('show_query', False) and 'last_executed_query' in st.session_state:
-            with st.expander("📝 Executed SQL Query", expanded=True):
-                st.code(st.session_state.last_executed_query, language="sql")
+            # Show query if button clicked
+            if st.session_state.get('show_query', False) and 'last_executed_query' in st.session_state:
+                with st.expander("📝 Executed SQL Query", expanded=True):
+                    st.code(st.session_state.last_executed_query, language="sql")
         
+            st.markdown("---")
+    else:
+        # User-only: Just show simple separator
         st.markdown("---")
+    
     display_category = selected_categories[0] if selected_categories else None
     utils.display_filter_summary(analysis_mode, period1_start.strftime("%Y-%m-%d"), period1_end.strftime("%Y-%m-%d"), period2_start.strftime("%Y-%m-%d"), period2_end.strftime("%Y-%m-%d"), display_category, selected_brands, product_name_contains, primary_threshold, len(utils.parse_barcode_mapping(barcode_mapping_text)) if analysis_mode == "Custom Type" else 0)
     
