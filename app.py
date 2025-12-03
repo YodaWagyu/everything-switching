@@ -232,8 +232,8 @@ if run_analysis or st.session_state.query_executed:
                     '<tr>'
                     f'<td class="from-brand">{row["From_Brand"]}</td>'
                     f'<td class="to-brand">{row["To_Brand"]}</td>'
-                    f'<td class="customers-col">{row["Customers"]:,.0f}</td>'
-                    f'<td class="pct-col">{row["Pct_of_From_Brand"]:.2f}%</td>'
+                    f'<td class="customers-col" data-value="{row["Customers"]}">{row["Customers"]:,.0f}</td>'
+                    f'<td class="pct-col" data-value="{row["Pct_of_From_Brand"]}">{row["Pct_of_From_Brand"]:.2f}%</td>'
                     '</tr>'
                 )
             
@@ -259,6 +259,26 @@ if run_analysis or st.session_state.query_executed:
         top: 0;
         border-right: 1px solid rgba(255,255,255,0.15);
         text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        cursor: pointer;
+        user-select: none;
+        transition: all 0.2s;
+    }
+    .switching-table thead th:hover {
+        filter: brightness(1.1);
+        transform: translateY(-2px);
+    }
+    .switching-table thead th::after {
+        content: ' ⇅';
+        opacity: 0.5;
+        font-size: 0.8em;
+    }
+    .switching-table thead th.sort-asc::after {
+        content: ' ▲';
+        opacity: 1;
+    }
+    .switching-table thead th.sort-desc::after {
+        content: ' ▼';
+        opacity: 1;
     }
     .switching-table thead th:nth-child(1) {
         background: linear-gradient(135deg, #c94b4b 0%, #4b134f 100%);
@@ -308,23 +328,78 @@ if run_analysis or st.session_state.query_executed:
     }
 </style>
 <div style="max-height: 600px; overflow-y: auto;">
-    <table class="switching-table">
+    <table class="switching-table" id="switchingTable">
         <thead>
             <tr>
-                <th style="width: 30%;">From Brand</th>
-                <th style="width: 30%;">To Brand</th>
-                <th style="width: 20%;">Customers</th>
-                <th style="width: 20%;">% of From Brand</th>
+                <th style="width: 30%;" onclick="sortTable(0, 'string')">From Brand</th>
+                <th style="width: 30%;" onclick="sortTable(1, 'string')">To Brand</th>
+                <th style="width: 20%;" onclick="sortTable(2, 'number')">Customers</th>
+                <th style="width: 20%;" onclick="sortTable(3, 'number')">% of From Brand</th>
             </tr>
         </thead>
         <tbody>''' + table_body + '''
         </tbody>
     </table>
 </div>
+
+<script>
+let sortDirection = {};
+
+function sortTable(columnIndex, type) {
+    const table = document.getElementById('switchingTable');
+    const tbody = table.querySelector('tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    const headers = table.querySelectorAll('th');
+    
+    // Toggle sort direction
+    if (!sortDirection[columnIndex]) {
+        sortDirection[columnIndex] = 'asc';
+    } else if (sortDirection[columnIndex] === 'asc') {
+        sortDirection[columnIndex] = 'desc';
+    } else {
+        sortDirection[columnIndex] = 'asc';
+    }
+    
+    const direction = sortDirection[columnIndex];
+    
+    // Remove sort classes from all headers
+    headers.forEach(h => {
+        h.classList.remove('sort-asc', 'sort-desc');
+    });
+    
+    // Add sort class to current header
+    headers[columnIndex].classList.add(direction === 'asc' ? 'sort-asc' : 'sort-desc');
+    
+    // Sort rows
+    rows.sort((a, b) => {
+        const cellA = a.querySelectorAll('td')[columnIndex];
+        const cellB = b.querySelectorAll('td')[columnIndex];
+        
+        let valA, valB;
+        
+        if (type === 'number') {
+            // Use data-value attribute for numbers
+            valA = parseFloat(cellA.getAttribute('data-value') || cellA.textContent.replace(/,/g, ''));
+            valB = parseFloat(cellB.getAttribute('data-value') || cellB.textContent.replace(/,/g, ''));
+        } else {
+            // String comparison
+            valA = cellA.textContent.trim().toLowerCase();
+            valB = cellB.textContent.trim().toLowerCase();
+        }
+        
+        if (valA < valB) return direction === 'asc' ? -1 : 1;
+        if (valA > valB) return direction === 'asc' ? 1 : -1;
+        return 0;
+    });
+    
+    // Re-append sorted rows
+    rows.forEach(row => tbody.appendChild(row));
+}
+</script>
 '''
             
             st.markdown(html, unsafe_allow_html=True)
-            st.info("💡 **คำอธิบาย:** % of From Brand = จำนวนลูกค้าที่ย้ายจาก Brand นั้น / ลูกค้าทั้งหมดของ Brand ในช่วง Before Period")
+            st.info("💡 **คำอธิบาย:** คลิกที่หัวตารางเพื่อเรียงข้อมูล | % of From Brand = จำนวนลูกค้าที่ย้ายจาก Brand นั้น / ลูกค้าทั้งหมดของ Brand ในช่วง Before Period")
         else:
             st.warning("⚠️ ไม่พบข้อมูลการ switch ระหว่าง brand")
     
