@@ -322,7 +322,7 @@ if run_analysis or st.session_state.query_executed:
             churn_rate_fmt = f"{kpis['churn_rate']:.1f}"
             st.markdown(f"""
             <div class="premium-card" style="padding: 15px; text-align: center;">
-                <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Churn Rate</div>
+                <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Attrition Rate</div>
                 <div style="font-size: 24px; font-weight: 800; color: #c62828;">{churn_rate_fmt}%</div>
                 <div style="font-size: 12px; color: #666;">Total Out / Total</div>
             </div>
@@ -355,7 +355,7 @@ if run_analysis or st.session_state.query_executed:
         <span style="font-size: 24px; font-weight: 800; color: #0f3d3e;">Section 4: Summary Tables & Charts</span>
     </div>
 """, unsafe_allow_html=True)
-    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["Summary", "Brand Switching", "Charts", "Raw", "Export", "Loyalty"])
+    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["Summary", "Brand Switching", "Loyalty", "Charts", "Raw", "Export"])
     with tab1:
         st.markdown("### Brand Movement Summary")
         display_summary = visualizations.create_summary_table_display(summary_df)
