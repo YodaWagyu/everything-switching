@@ -97,68 +97,53 @@ with col4:
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("""
-    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px; margin-top: 20px;">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M20 4H4v2h16V4zm1 10v-2l-1-5H4l-1 5v2h1v6h10v-6h4v6h2v-6h1zm-9 4H6v-4h6v4z"/></svg>
-        <span style="font-size: 18px; font-weight: 700; color: white;">Store Filter</span>
-    </div>
-""", unsafe_allow_html=True)
-store_filter_type = st.sidebar.radio("Store Type", ["All Store", "Same Store"], label_visibility="collapsed")
+with st.sidebar.expander("🏪 Store Settings", expanded=True):
+    store_filter_type = st.radio("Store Type", ["All Store", "Same Store"], label_visibility="collapsed")
 
-store_opening_cutoff = None
-if store_filter_type == "Same Store":
-    default_cutoff = datetime(2023, 12, 31)
-    store_opening_cutoff = st.sidebar.date_input(
-        "Opened before", 
-        default_cutoff,
-        help="Only include stores that opened before this date",
-        key="store_cutoff"
-    ).strftime("%Y-%m-%d")
+    store_opening_cutoff = None
+    if store_filter_type == "Same Store":
+        default_cutoff = datetime(2023, 12, 31)
+        store_opening_cutoff = st.date_input(
+            "Opened before", 
+            default_cutoff,
+            help="Only include stores that opened before this date",
+            key="store_cutoff"
+        ).strftime("%Y-%m-%d")
 
 st.sidebar.markdown("---")
-st.sidebar.markdown("""
-    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px; margin-top: 20px;">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"/></svg>
-        <span style="font-size: 18px; font-weight: 700; color: white;">Filters</span>
-    </div>
-""", unsafe_allow_html=True)
-available_categories = bigquery_client.get_categories()
-selected_categories = st.sidebar.multiselect("Category", available_categories, default=[available_categories[0]] if available_categories else [])
+with st.sidebar.expander("🔍 Product Filters", expanded=True):
+    available_categories = bigquery_client.get_categories()
+    selected_categories = st.multiselect("Category", available_categories, default=[available_categories[0]] if available_categories else [])
 
-selected_subcategories = []
-if selected_categories:
-    all_subcategories = []
-    for cat in selected_categories:
-        subcats = bigquery_client.get_subcategories(cat)
-        all_subcategories.extend(subcats)
-    all_subcategories = list(set(all_subcategories))
-    selected_subcategories = st.sidebar.multiselect("SubCategory", all_subcategories)
+    selected_subcategories = []
+    if selected_categories:
+        all_subcategories = []
+        for cat in selected_categories:
+            subcats = bigquery_client.get_subcategories(cat)
+            all_subcategories.extend(subcats)
+        all_subcategories = list(set(all_subcategories))
+        selected_subcategories = st.multiselect("SubCategory", all_subcategories)
 
-brands_text = st.sidebar.text_input("Brands", placeholder="เช่น NIVEA, VASELINE, CITRA", help="Enter brand names separated by commas")
-selected_brands = [b.strip() for b in brands_text.split(',') if b.strip()] if brands_text else []
+    brands_text = st.text_input("Brands", placeholder="เช่น NIVEA, VASELINE, CITRA", help="Enter brand names separated by commas")
+    selected_brands = [b.strip() for b in brands_text.split(',') if b.strip()] if brands_text else []
 
-product_name_contains = st.sidebar.text_input("Product Contains", placeholder="เช่น โลชั่น, ครีม, นม", help="ใส่คำค้นหาได้หลายคำคั่นด้วยคอมม่า (OR condition)")
+    product_name_contains = st.text_input("Product Contains", placeholder="เช่น โลชั่น, ครีม, นม", help="ใส่คำค้นหาได้หลายคำคั่นด้วยคอมม่า (OR condition)")
 
-product_name_not_contains = st.sidebar.text_input("Product NOT Contains", placeholder="เช่น PM_, PROMO", help="กรองสินค้าที่มีคำนี้ออก (AND NOT condition)")
+    product_name_not_contains = st.text_input("Product NOT Contains", placeholder="เช่น PM_, PROMO", help="กรองสินค้าที่มีคำนี้ออก (AND NOT condition)")
 
 st.sidebar.markdown("---")
-st.sidebar.markdown("""
-    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px; margin-top: 20px;">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/></svg>
-        <span style="font-size: 18px; font-weight: 700; color: white;">Threshold</span>
-    </div>
-""", unsafe_allow_html=True)
-primary_threshold = st.sidebar.slider("Primary %", float(config.MIN_PRIMARY_THRESHOLD*100), float(config.MAX_PRIMARY_THRESHOLD*100), float(config.DEFAULT_PRIMARY_THRESHOLD*100), step=5.0) / 100.0
+with st.sidebar.expander("⚙️ Advanced Settings", expanded=False):
+    primary_threshold = st.slider("Primary %", float(config.MIN_PRIMARY_THRESHOLD*100), float(config.MAX_PRIMARY_THRESHOLD*100), float(config.DEFAULT_PRIMARY_THRESHOLD*100), step=5.0) / 100.0
 
-barcode_mapping_text = ""
-if analysis_mode == "Custom Type":
-    st.sidebar.markdown("---")
-    st.sidebar.markdown("""
-    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px; margin-top: 20px;">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/></svg>
-        <span style="font-size: 18px; font-weight: 700; color: white;">Barcode Mapping</span>
-    </div>
-""", unsafe_allow_html=True)
-    barcode_mapping_text = st.sidebar.text_area("Paste barcode mapping", barcode_mapping_text, height=150, placeholder="barcode,product_type", help="Format: barcode,product_type (one per line)")
+    barcode_mapping_text = ""
+    if analysis_mode == "Custom Type":
+        st.markdown("""
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px; margin-top: 20px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/></svg>
+            <span style="font-size: 18px; font-weight: 700; color: white;">Barcode Mapping</span>
+        </div>
+    """, unsafe_allow_html=True)
+        barcode_mapping_text = st.text_area("Paste barcode mapping", barcode_mapping_text, height=150, placeholder="barcode,product_type", help="Format: barcode,product_type (one per line)")
 
 st.sidebar.markdown("---")
 run_analysis = st.sidebar.button("🚀 Run Analysis", type="primary", use_container_width=True)
@@ -222,6 +207,85 @@ if run_analysis or st.session_state.query_executed:
     
     display_category = selected_categories[0] if selected_categories else None
     utils.display_filter_summary(analysis_mode, period1_start.strftime("%Y-%m-%d"), period1_end.strftime("%Y-%m-%d"), period2_start.strftime("%Y-%m-%d"), period2_end.strftime("%Y-%m-%d"), display_category, selected_brands, product_name_contains, primary_threshold, len(utils.parse_barcode_mapping(barcode_mapping_text)) if analysis_mode == "Custom Type" else 0)
+    
+    # --- Executive KPIs ---
+    st.markdown("""
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; margin-top: 10px;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="#0f3d3e"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/></svg>
+        <span style="font-size: 24px; font-weight: 800; color: #0f3d3e;">Executive Summary</span>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Calculate KPIs
+    # We need summary_df for this. It's calculated later in the code, so we need to move it up or calculate a temp one.
+    # The original code calculates summary_df inside the view toggle block. 
+    # Let's calculate it here for the KPIs.
+    
+    # Aggregate to brand level first if needed
+    if analysis_mode == "Product Switch":
+        df_brand = data_processor.aggregate_to_brand_level(df)
+        kpi_summary_df = data_processor.calculate_brand_summary(df_brand)
+    else:
+        # For Brand Switch, df is already brand level (mostly), but let's ensure structure
+        # Actually, df from query for Brand Switch is product level? No, query aggregates.
+        # Let's check query_builder.py... Brand Switch query returns from_brand, to_brand.
+        # Wait, calculate_brand_summary expects prod_2024, prod_2025 columns.
+        # If Analysis Mode is Brand Switch, the columns are likely already Brands.
+        # Let's assume df has 'prod_2024' and 'prod_2025' as per data_processor expectations.
+        kpi_summary_df = data_processor.calculate_brand_summary(df)
+
+    kpis = data_processor.calculate_executive_kpis(kpi_summary_df)
+    
+    if kpis:
+        k1, k2, k3, k4, k5 = st.columns(5)
+        
+        with k1:
+            st.markdown(f"""
+            <div class="premium-card" style="padding: 15px; text-align: center;">
+                <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Total Movement</div>
+                <div style="font-size: 24px; font-weight: 800; color: #0f3d3e;">{utils.format_number(kpis['total_movement'])}</div>
+                <div style="font-size: 12px; color: #666;">Customers</div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+        with k2:
+            net_cat = kpis['net_category_movement']
+            color = "#2e7d32" if net_cat >= 0 else "#c62828"
+            icon = "▲" if net_cat >= 0 else "▼"
+            st.markdown(f"""
+            <div class="premium-card" style="padding: 15px; text-align: center;">
+                <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Category Net Flow</div>
+                <div style="font-size: 24px; font-weight: 800; color: {color};">{icon} {utils.format_number(abs(net_cat))}</div>
+                <div style="font-size: 12px; color: {color};">New - Gone</div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+        with k3:
+            st.markdown(f"""
+            <div class="premium-card" style="padding: 15px; text-align: center;">
+                <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Biggest Winner</div>
+                <div style="font-size: 18px; font-weight: 800; color: #0f3d3e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{kpis['winner_name']}</div>
+                <div style="font-size: 14px; font-weight: 600; color: #2e7d32;">+{utils.format_number(kpis['winner_val'])}</div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+        with k4:
+            st.markdown(f"""
+            <div class="premium-card" style="padding: 15px; text-align: center;">
+                <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Biggest Loser</div>
+                <div style="font-size: 18px; font-weight: 800; color: #0f3d3e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{kpis['loser_name']}</div>
+                <div style="font-size: 14px; font-weight: 600; color: #c62828;">{utils.format_number(kpis['loser_val'])}</div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+        with k5:
+            st.markdown(f"""
+            <div class="premium-card" style="padding: 15px; text-align: center;">
+                <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Churn Rate</div>
+                <div style="font-size: 24px; font-weight: 800; color: #c62828;">{kpis['churn_rate']:.1f}%</div>
+                <div style="font-size: 12px; color: #666;">Total Gone / Total</div>
+            </div>
+            """, unsafe_allow_html=True)
     
     st.markdown("""
     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; margin-top: 30px;">
@@ -288,7 +352,7 @@ if run_analysis or st.session_state.query_executed:
         <span style="font-size: 24px; font-weight: 800; color: #0f3d3e;">Section 4: Summary Tables & Charts</span>
     </div>
 """, unsafe_allow_html=True)
-    tab1, tab2, tab3, tab4, tab5 = st.tabs(["Summary", "Brand Switching", "Charts", "Raw", "Export"])
+    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["Summary", "Brand Switching", "Charts", "Raw", "Export", "Loyalty"])
     with tab1:
         st.markdown("### Brand Movement Summary")
         display_summary = visualizations.create_summary_table_display(summary_df)
@@ -488,12 +552,31 @@ if run_analysis or st.session_state.query_executed:
             st.warning("⚠️ ไม่พบข้อมูลการ switch ระหว่าง brand")
     
     with tab3:
+        st.markdown("### 📈 Market Overview")
         c1, c2 = st.columns(2)
         with c1:
             st.plotly_chart(visualizations.create_movement_type_pie(df_display), use_container_width=True)
         with c2:
             metric = st.selectbox("Metric", ['Net_Movement','Total_In','Total_Out','Stayed'])
             st.plotly_chart(visualizations.create_brand_comparison_bar(summary_df, metric), use_container_width=True)
+            
+        st.markdown("---")
+        st.markdown("### ⚔️ Competitive Analysis (Net Gain/Loss)")
+        
+        # Brand Selector for Net Gain/Loss
+        # Default to biggest winner or loser if available, else first brand
+        default_brand_index = 0
+        if kpis and kpis.get('winner_name') != "None":
+             try:
+                 default_brand_index = sorted(summary_df['Brand'].unique().tolist()).index(kpis['winner_name'])
+             except:
+                 pass
+                 
+        target_brand = st.selectbox("Select Focus Brand", sorted(summary_df['Brand'].unique()), index=default_brand_index, key="net_gain_loss_brand")
+        
+        # Create and display chart
+        fig_net_flow = visualizations.create_net_gain_loss_chart(df_display, target_brand)
+        st.plotly_chart(fig_net_flow, use_container_width=True)
     with tab4:
         st.markdown("### Raw Data")
         st.dataframe(df_display, use_container_width=True, height=400)
@@ -506,6 +589,58 @@ if run_analysis or st.session_state.query_executed:
             st.download_button("📊 Excel", utils.create_excel_export(df_display, summary_df), f"switching_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
         with c2:
             st.download_button("📄 CSV", df_display.to_csv(index=False), f"switching_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv", "text/csv", use_container_width=True)
+            
+    with tab6:
+        st.markdown("### 👥 Cohort & Loyalty Analysis")
+        st.caption("Analysis of customer retention and churn behavior between the two periods.")
+        
+        cohort_metrics = data_processor.calculate_cohort_metrics(df_display)
+        
+        if cohort_metrics:
+            c1, c2, c3 = st.columns(3)
+            with c1:
+                st.markdown(f"""
+                <div class="premium-card" style="padding: 20px; text-align: center; border-left: 5px solid #2e7d32;">
+                    <div style="font-size: 16px; color: #666; margin-bottom: 5px;">Retention Rate</div>
+                    <div style="font-size: 32px; font-weight: 800; color: #2e7d32;">{cohort_metrics['retention_rate']:.1f}%</div>
+                    <div style="font-size: 12px; color: #666;">Customers who stayed with same brand</div>
+                </div>
+                """, unsafe_allow_html=True)
+            with c2:
+                st.markdown(f"""
+                <div class="premium-card" style="padding: 20px; text-align: center; border-left: 5px solid #f57c00;">
+                    <div style="font-size: 16px; color: #666; margin-bottom: 5px;">Switch Rate</div>
+                    <div style="font-size: 32px; font-weight: 800; color: #f57c00;">{cohort_metrics['switch_rate']:.1f}%</div>
+                    <div style="font-size: 12px; color: #666;">Customers who switched brands</div>
+                </div>
+                """, unsafe_allow_html=True)
+            with c3:
+                st.markdown(f"""
+                <div class="premium-card" style="padding: 20px; text-align: center; border-left: 5px solid #c62828;">
+                    <div style="font-size: 16px; color: #666; margin-bottom: 5px;">Churn Rate</div>
+                    <div style="font-size: 32px; font-weight: 800; color: #c62828;">{cohort_metrics['churn_rate']:.1f}%</div>
+                    <div style="font-size: 12px; color: #666;">Customers lost from category</div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+            st.markdown("#### Customer Base Composition")
+            # Simple bar chart for composition
+            comp_data = pd.DataFrame({
+                'Type': ['Retained', 'Switched', 'Churned'],
+                'Customers': [cohort_metrics['stayed_customers'], cohort_metrics['switch_out_customers'], cohort_metrics['gone_customers']]
+            })
+            fig_comp = go.Figure(data=[go.Bar(
+                x=comp_data['Type'], 
+                y=comp_data['Customers'],
+                marker_color=['#2e7d32', '#f57c00', '#c62828'],
+                text=comp_data['Customers'],
+                texttemplate='%{text:,}',
+                textposition='auto'
+            )])
+            fig_comp.update_layout(title="Customer Fate (From Period 1)", height=400, plot_bgcolor='white')
+            st.plotly_chart(fig_comp, use_container_width=True)
+        else:
+            st.info("No data available for cohort analysis.")
     st.markdown("""
     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; margin-top: 40px;">
         <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="#0f3d3e"><path d="M12 2c-5.52 0-10 4.48-10 10s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/></svg>

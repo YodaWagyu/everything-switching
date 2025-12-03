@@ -233,3 +233,109 @@ def get_brand_switching_summary(df: pd.DataFrame, top_n: int = 20) -> pd.DataFra
     switching_summary = switching_summary.sort_values('Customers', ascending=False).head(top_n)
     
     return switching_summary
+
+
+def calculate_executive_kpis(summary_df: pd.DataFrame) -> Dict:
+    """
+    Calculate high-level executive KPIs
+    
+    Args:
+        summary_df: Brand summary dataframe
+        
+    Returns:
+        Dictionary with KPI metrics
+    """
+    if len(summary_df) == 0:
+        return {}
+        
+    # 1. Total Category Movement (Total customers in Period 1)
+    total_movement = summary_df['2024_Total'].sum()
+    
+    # 2. Biggest Winner (Max Net Movement > 0)
+    winners = summary_df[summary_df['Net_Movement'] > 0]
+    if len(winners) > 0:
+        biggest_winner = winners.loc[winners['Net_Movement'].idxmax()]
+        winner_name = biggest_winner['Brand']
+        winner_val = biggest_winner['Net_Movement']
+    else:
+        winner_name = "None"
+        winner_val = 0
+        
+    # 3. Biggest Loser (Min Net Movement < 0)
+    losers = summary_df[summary_df['Net_Movement'] < 0]
+    if len(losers) > 0:
+        biggest_loser = losers.loc[losers['Net_Movement'].idxmin()]
+        loser_name = biggest_loser['Brand']
+        loser_val = biggest_loser['Net_Movement']
+    else:
+        loser_name = "None"
+        loser_val = 0
+        
+    # 4. Overall Churn Rate (Total Gone / Total Period 1)
+    total_gone = summary_df['Gone'].sum()
+    churn_rate = (total_gone / total_movement * 100) if total_movement > 0 else 0
+    
+    # 5. Net Movement Category Level (Total New - Total Gone)
+    # Note: Switch In/Out cancels out at category level if we consider closed system, 
+    # but here we care about New vs Gone for the category growth
+    total_new = summary_df['New_Customer'].sum()
+    net_category_movement = total_new - total_gone
+    
+    return {
+        'total_movement': total_movement,
+        'winner_name': winner_name,
+        'winner_val': winner_val,
+        'loser_name': loser_name,
+        'loser_val': loser_val,
+        'churn_rate': churn_rate,
+        'net_category_movement': net_category_movement,
+    return {
+        'total_movement': total_movement,
+        'winner_name': winner_name,
+        'winner_val': winner_val,
+        'loser_name': loser_name,
+        'loser_val': loser_val,
+        'churn_rate': churn_rate,
+        'net_category_movement': net_category_movement,
+        'total_new': total_new,
+        'total_gone': total_gone
+    }
+
+
+def calculate_cohort_metrics(df: pd.DataFrame) -> Dict:
+    """
+    Calculate Cohort and Loyalty metrics
+    
+    Args:
+        df: Switching dataframe
+        
+    Returns:
+        Dictionary with loyalty metrics
+    """
+    # 1. Repeat Purchase Rate (Stayed / Total Period 1)
+    # Note: This is an approximation based on switching data. 
+    # True cohort analysis needs transaction-level data over time.
+    # Here we use "Stayed" as a proxy for loyalty/retention between the two periods.
+    
+    total_period1 = df[df['prod_2024'] != 'NEW_TO_CATEGORY']['customers'].sum()
+    stayed_customers = df[df['move_type'] == 'stayed']['customers'].sum()
+    
+    retention_rate = (stayed_customers / total_period1 * 100) if total_period1 > 0 else 0
+    
+    # 2. One-time Buyers (Gone / Total Period 1) - Proxy
+    gone_customers = df[df['prod_2025'] == 'LOST_FROM_CATEGORY']['customers'].sum()
+    churn_rate = (gone_customers / total_period1 * 100) if total_period1 > 0 else 0
+    
+    # 3. Switchers (Switched Out / Total Period 1)
+    switch_out = df[(df['move_type'] == 'switched') & (df['prod_2025'] != 'LOST_FROM_CATEGORY')]['customers'].sum()
+    switch_rate = (switch_out / total_period1 * 100) if total_period1 > 0 else 0
+    
+    return {
+        'retention_rate': retention_rate,
+        'churn_rate': churn_rate,
+        'switch_rate': switch_rate,
+        'stayed_customers': stayed_customers,
+        'gone_customers': gone_customers,
+        'switch_out_customers': switch_out,
+        'total_base': total_period1
+    }
