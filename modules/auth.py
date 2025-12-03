@@ -51,145 +51,80 @@ def logout():
 
 
 def show_login_page():
-    """Display login page with premium split-screen design"""
-    # Custom CSS for Split-Screen Login
+    """Display login page with premium centered card design"""
+    # Custom CSS for Login Page
     st.markdown("""
         <style>
-            /* Global Background */
+            /* Global Background - Dark Teal/Slate Radial */
             .stApp {
-                background-color: #0e1117;
-                background-image: radial-gradient(circle at 50% 50%, #1a202c 0%, #0e1117 100%);
+                background-color: #1e293b;
+                background-image: radial-gradient(circle at 50% 50%, #243b55 0%, #141e30 100%);
             }
             
             /* Hide default elements */
             #MainMenu, footer, header {visibility: hidden;}
             
-            /* Target the Main Container to center our card */
-            .block-container {
-                padding-top: 5rem;
-                max-width: 1000px;
+            /* Center the card container */
+            [data-testid="stVerticalBlock"] {
+                align-items: center;
             }
             
-            /* Card Container Styling (The Row) */
-            [data-testid="stHorizontalBlock"] {
-                background: #1e293b;
-                border-radius: 24px;
-                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-                overflow: hidden;
+            /* The Login Card Container */
+            [data-testid="stForm"] {
+                background: rgba(30, 41, 59, 0.7);
+                backdrop-filter: blur(20px);
+                -webkit-backdrop-filter: blur(20px);
+                border-radius: 20px;
                 border: 1px solid rgba(255, 255, 255, 0.05);
-                min-height: 500px;
+                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+                padding: 60px 50px;
+                width: 100%;
+                max-width: 500px;
+                margin: 0 auto;
             }
             
-            /* Left Column (Visual) */
-            [data-testid="stColumn"]:nth-of-type(1) {
-                background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
-                padding: 0 !important;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                position: relative;
-            }
-            
-            /* Right Column (Form) */
-            [data-testid="stColumn"]:nth-of-type(2) {
-                background: #1e293b; /* Dark Slate */
-                padding: 40px !important;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-            }
-            
-            /* Typography & Elements */
-            .brand-container {
-                padding: 60px;
-                color: white;
-                height: 100%;
-                display: flex;
-                flex-direction: column;
-                justify-content: space-between;
-            }
-            
-            .brand-title {
-                font-family: 'Inter', sans-serif;
-                font-size: 42px;
-                font-weight: 800;
-                line-height: 1.1;
-                margin-bottom: 20px;
-                background: linear-gradient(to right, #fff, #cbd5e1);
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
-            }
-            
-            .brand-subtitle {
-                font-family: 'Inter', sans-serif;
-                font-size: 16px;
-                color: rgba(255, 255, 255, 0.7);
-                line-height: 1.6;
-            }
-            
-            .glass-badge {
-                background: rgba(255, 255, 255, 0.1);
-                backdrop-filter: blur(10px);
-                padding: 8px 16px;
-                border-radius: 50px;
-                font-size: 12px;
-                font-weight: 600;
-                letter-spacing: 1px;
-                text-transform: uppercase;
-                width: fit-content;
-                margin-bottom: 20px;
-                border: 1px solid rgba(255, 255, 255, 0.1);
-            }
-            
-            /* Form Elements */
-            .form-header {
-                margin-bottom: 30px;
-            }
-            
-            .form-title {
-                font-size: 28px;
-                font-weight: 700;
-                color: white;
-                margin-bottom: 8px;
-            }
-            
-            .form-subtitle {
-                color: #94a3b8;
-                font-size: 14px;
-            }
-            
-            /* Input Styling */
+            /* Input Styling - Light Gray/Silver as per image */
             .stTextInput > div > div > input {
-                background-color: #334155 !important;
-                border: 1px solid #475569 !important;
-                color: white !important;
+                background-color: #cbd5e1 !important; /* Light gray */
+                border: 1px solid #94a3b8 !important;
+                color: #0f172a !important; /* Dark text */
                 border-radius: 8px !important;
-                padding: 12px 16px !important;
+                padding: 14px 20px !important;
+                font-size: 15px !important;
                 height: 50px;
+            }
+            
+            .stTextInput > div > div > input::placeholder {
+                color: #64748b !important;
             }
             
             .stTextInput > div > div > input:focus {
+                background-color: #e2e8f0 !important;
                 border-color: #38bdf8 !important;
-                box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2) !important;
+                box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2) !important;
             }
             
-            /* Button Styling */
+            /* Button Styling - White with Dark Text */
             .stButton > button {
-                background: linear-gradient(90deg, #38bdf8 0%, #0ea5e9 100%) !important;
-                color: white !important;
+                background: #ffffff !important;
+                color: #0f172a !important;
                 border: none;
                 border-radius: 8px !important;
                 height: 50px;
-                font-weight: 600 !important;
-                font-size: 16px !important;
+                font-weight: 700 !important;
+                font-size: 14px !important;
+                letter-spacing: 0.5px;
+                text-transform: uppercase;
                 width: 100%;
-                margin-top: 10px;
+                margin-top: 15px;
                 transition: all 0.2s;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             }
             
             .stButton > button:hover {
+                background: #f8fafc !important;
                 transform: translateY(-1px);
-                box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
             }
             
             /* Hide Label */
@@ -199,39 +134,68 @@ def show_login_page():
         </style>
     """, unsafe_allow_html=True)
 
-    # Split Layout: Left (Visual) - Right (Form)
-    col1, col2 = st.columns([1.2, 1])
+    # Centering Layout
+    col1, col2, col3 = st.columns([1, 2, 1])
     
-    with col1:
-        st.markdown("""
-            <div class="brand-container">
-                <div>
-                    <div class="glass-badge">Analytics Platform</div>
-                    <div class="brand-title">Everything<br>Switching</div>
-                    <div class="brand-subtitle">
-                        Deep dive into customer behavior, brand loyalty, and market movement with our premium analytics suite.
-                    </div>
-                </div>
-                <div style="font-size: 12px; color: rgba(255,255,255,0.4);">
-                    © 2024 Data Intelligence
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
-        
     with col2:
-        st.markdown("""
-            <div class="form-header">
-                <div class="form-title">Welcome back</div>
-                <div class="form-subtitle">Please enter your access key to continue</div>
-            </div>
-        """, unsafe_allow_html=True)
-        
         with st.form("login_form"):
-            password = st.text_input("Password", type="password", placeholder="Access Key", label_visibility="collapsed")
+            # Header Content
+            st.markdown("""
+                <div style="text-align: center; margin-bottom: 40px;">
+                    <!-- Icon Box -->
+                    <div style="
+                        width: 60px; 
+                        height: 60px; 
+                        background: linear-gradient(135deg, #0ea5e9, #0284c7); 
+                        border-radius: 12px; 
+                        margin: 0 auto 25px auto;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 32px;
+                        box-shadow: 0 10px 25px -5px rgba(14, 165, 233, 0.5);
+                        border: 2px solid rgba(255,255,255,0.1);
+                    ">
+                        🔄
+                    </div>
+                    
+                    <!-- Title -->
+                    <h1 style="
+                        color: white; 
+                        font-family: 'Inter', sans-serif; 
+                        font-weight: 800; 
+                        font-size: 32px; 
+                        margin: 0 0 15px 0; 
+                        letter-spacing: -0.5px;
+                    ">Everything Switching</h1>
+                    
+                    <!-- Separator -->
+                    <div style="
+                        width: 30px; 
+                        height: 4px; 
+                        background: #0ea5e9; 
+                        margin: 0 auto 15px auto; 
+                        border-radius: 2px;
+                    "></div>
+                    
+                    <!-- Subtitle -->
+                    <p style="
+                        color: #94a3b8; 
+                        font-family: 'Inter', sans-serif; 
+                        font-size: 12px; 
+                        font-weight: 600; 
+                        letter-spacing: 1.5px; 
+                        text-transform: uppercase;
+                        margin: 0;
+                    ">Premium Analytics Dashboard</p>
+                </div>
+            """, unsafe_allow_html=True)
             
-            st.markdown("<div style='height: 10px'></div>", unsafe_allow_html=True)
+            # Input
+            password = st.text_input("Password", type="password", placeholder="Enter your secure access key", label_visibility="collapsed")
             
-            submit = st.form_submit_button("Sign In", use_container_width=True)
+            # Button
+            submit = st.form_submit_button("ENTER DASHBOARD", use_container_width=True)
             
             if submit:
                 if password:
