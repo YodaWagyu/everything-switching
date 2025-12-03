@@ -12,17 +12,17 @@ BIGQUERY_TABLE_BRANCH = "PCB_BRANCH_NFKDB"
 # Analysis Mode Configuration
 ANALYSIS_MODES = {
     "Brand Switch": {
-        "label": "🏷️ Brand Switch",
+        "label": "Brand Switch",
         "description": "Analyze switching between brands",
         "target_field": "pm.Brand"
     },
     "Product Switch": {
-        "label": "📦 Product Switch",
+        "label": "Product Switch",
         "description": "Analyze switching between products",
         "target_field": "pm.ProductName"
     },
     "Custom Type": {
-        "label": "🎯 Custom Type",
+        "label": "Custom Type",
         "description": "Define custom product groupings",
         "target_field": "custom"  # Will be replaced by CASE WHEN
     }
