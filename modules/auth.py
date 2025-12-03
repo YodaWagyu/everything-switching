@@ -76,7 +76,9 @@ def show_login_page():
             .login-title {
                 font-size: 32px;
                 font-weight: 700;
-                color: #ffffff;
+                color: #ffffff !important;
+                background: none !important;
+                -webkit-text-fill-color: #ffffff !important;
                 margin-bottom: 10px;
                 text-shadow: 0 2px 4px rgba(0,0,0,0.2);
             }
