@@ -43,20 +43,12 @@ def create_competitive_heatmap(heatmap_df: pd.DataFrame) -> go.Figure:
         colorscale='Blues', 
         text=heatmap_df.values, 
         texttemplate='%{text:,}',
-        textfont={"size": 11, "color": "#1a1a1a"}
+        textfont={"size": 11, "color": "#000000"}
     ))
     fig.update_layout(
         title="Competitive Matrix",
         height=600,
-        font=dict(family="Arial", size=12, color="#1a1a1a")
-    )
-    fig.update_xaxes(
-        tickfont=dict(size=13, color="#000000", family="Arial"),
-        titlefont=dict(size=14, color="#000000")
-    )
-    fig.update_yaxes(
-        tickfont=dict(size=13, color="#000000", family="Arial"),
-        titlefont=dict(size=14, color="#000000")
+        font=dict(family="Arial", size=13, color="#000000")
     )
     return fig
 
