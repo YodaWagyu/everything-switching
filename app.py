@@ -250,13 +250,18 @@ if run_analysis or st.session_state.query_executed:
     # Calculate summary AFTER determining df_display (this ensures AI gets correct data)
     summary_df = data_processor.calculate_brand_summary(df_display)
     
-    # For Winner/Loser: Use full category data (not just filtered brands)
-    # This allows users to see competitive landscape even when filtering specific brands
-    summary_df_full = data_processor.calculate_brand_summary(df)
+    # For Winner/Loser: Use different data based on View Mode
+    # Filtered View: Use filtered data only (df_display)
+    # Full View: Use full category data (df) to see competitive landscape
+    # No brand filter: Always use df_display
+    if selected_brands and filter_mode == 'full':
+        # Full View: Show all brands in category for Winner/Loser
+        summary_df_full = data_processor.calculate_brand_summary(df)
+    else:
+        # Filtered View or No Filter: Use filtered data for Winner/Loser
+        summary_df_full = summary_df
     
-    # --- Executive KPIs (Hybrid approach) ---
-    # Total Movement, Net Flow, Churn Rate = from filtered data
-    # Winner/Loser = from full data (all brands in category)
+    # --- Executive KPIs (Hybrid approach based on View Mode) ---
     kpis = data_processor.calculate_executive_kpis(summary_df, summary_df_full)
     
     # Render Executive Summary Section at the top (but calculated here after filtering)

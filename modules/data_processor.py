@@ -268,6 +268,7 @@ def calculate_executive_kpis(summary_df: pd.DataFrame, summary_df_full: pd.DataF
         
     # 3. Biggest Loser (Min Net Movement) - FROM FULL DATA
     if len(summary_df_full) > 0:
+        # If only one brand and it's positive, still show it as "loser" (relative to itself)
         biggest_loser = summary_df_full.loc[summary_df_full['Net_Movement'].idxmin()]
         loser_name = biggest_loser['Brand']
         loser_val = biggest_loser['Net_Movement']
