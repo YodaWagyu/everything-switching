@@ -247,6 +247,12 @@ if run_analysis or st.session_state.query_executed:
         if filter_mode == 'full':
             st.info(f"💡 **Full View**: Showing where **{', '.join(selected_brands)}** customers went (all destination brands visible)")
     
+    # DEBUG: Check df_display before summary calculation
+    if selected_brands:
+        st.write("🔍 DEBUG - df_display (raw data):")
+        st.write(f"- prod_2024 unique: {sorted(df_display['prod_2024'].unique())}")
+        st.write(f"- prod_2024 total customers: {df_display[df_display['prod_2024'].isin(selected_brands)]['customers'].sum():,}")
+    
     # Calculate summary AFTER determining df_display (this ensures AI gets correct data)
     summary_df = data_processor.calculate_brand_summary(df_display)
     
