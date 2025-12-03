@@ -65,12 +65,12 @@ def aggregate_to_brand_level(df: pd.DataFrame, product_master_lookup: Dict[str, 
 def calculate_brand_summary(df: pd.DataFrame) -> pd.DataFrame:
     """Calculate movement summary for each brand"""
     
-    all_brands = set()
-    all_brands.update(df['prod_2024'].unique())
-    all_brands.update(df['prod_2025'].unique())
+    # IMPORTANT: Only summarize brands that exist in Period 1 (prod_2024)
+    # This ensures Total Movement counts customers from Before Period only
+    all_brands_2024 = df['prod_2024'].unique()
     
     special_categories = {'NEW_TO_CATEGORY', 'LOST_FROM_CATEGORY', 'MIXED'}
-    brands = sorted([b for b in all_brands if b not in special_categories])
+    brands = sorted([b for b in all_brands_2024 if b not in special_categories])
     
     summary_data = []
     

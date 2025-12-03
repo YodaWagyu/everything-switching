@@ -243,13 +243,6 @@ if run_analysis or st.session_state.query_executed:
         # Apply client-side filter
         df_display = brand_filter.filter_dataframe_by_brands(df, selected_brands, filter_mode)
         
-        # DEBUG: Check filtering
-        if filter_mode == 'full':
-            st.write("🔍 DEBUG - Full View df_display:")
-            st.write(f"- prod_2024 unique: {sorted(df_display['prod_2024'].unique())}")
-            st.write(f"- prod_2025 unique: {sorted(df_display['prod_2025'].unique())}")
-            st.write(f"- Total rows: {len(df_display)}")
-        
         # Show filter description
         if filter_mode == 'full':
             st.info(f"💡 **Full View**: Showing where **{', '.join(selected_brands)}** customers went (all destination brands visible)")
