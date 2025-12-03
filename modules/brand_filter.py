@@ -35,11 +35,13 @@ def filter_dataframe_by_brands(df: pd.DataFrame, brands: List[str], mode: str = 
         return df.copy()
     
     # Filtered mode: apply symmetric filter (remove non-filtered brands from Period 2)
-    special_categories = {'NEW_TO_CATEGORY', 'LOST_FROM_CATEGORY', 'MIXED'}
+    # IMPORTANT: Do NOT include MIXED in special categories for filtered view
+    # MIXED contains multiple brands and would inflate Switch_Out metrics
+    special_categories = {'NEW_TO_CATEGORY', 'LOST_FROM_CATEGORY'}
     
     # Filter logic: Keep rows where prod_2025 is either:
     # 1. In the selected brands
-    # 2. A special category (NEW_TO_CATEGORY, LOST_FROM_CATEGORY, MIXED)
+    # 2. A special category (NEW_TO_CATEGORY, LOST_FROM_CATEGORY only)
     filtered_df = df[
         df['prod_2025'].isin(brands) | 
         df['prod_2025'].isin(special_categories)
