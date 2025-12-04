@@ -215,16 +215,20 @@ if run_analysis or st.session_state.query_executed:
     special_categories = ['NEW_TO_CATEGORY', 'LOST_FROM_CATEGORY', 'MIXED']
     all_brands_in_data = sorted([b for b in df['prod_2024'].unique() if b not in special_categories])
     
-    # Post-Query Brand Filter - Using Streamlit container with custom styling
+    # Post-Query Brand Filter - Rich Minimal Modern Design
     st.markdown("""
     <style>
     div[data-testid="stVerticalBlock"] > div:has(div.brand-filter-container) {
-        border: 2px solid #0f3d3e;
-        background: linear-gradient(to right, #e8f4f5, #ffffff);
-        padding: 20px 24px;
-        border-radius: 10px;
-        margin-bottom: 25px;
-        box-shadow: 0 2px 8px rgba(15, 61, 62, 0.1);
+        background: #ffffff;
+        border: 1px solid #e0e0e0;
+        border-radius: 12px;
+        padding: 28px 32px;
+        margin-bottom: 32px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+        transition: box-shadow 0.2s ease;
+    }
+    div[data-testid="stVerticalBlock"] > div:has(div.brand-filter-container):hover {
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.06);
     }
     </style>
     """, unsafe_allow_html=True)
@@ -233,27 +237,44 @@ if run_analysis or st.session_state.query_executed:
         st.markdown('<div class="brand-filter-container"></div>', unsafe_allow_html=True)
         
         st.markdown("""
-        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="#0f3d3e"><path d="M17.63 5.84C17.27 5.33 16.67 5 16 5L5 5.01C3.9 5.01 3 5.9 3 7v10c0 1.1.9 1.99 2 1.99L16 19c.67 0 1.27-.33 1.63-.84L22 12l-4.37-6.16zM16 17H5V7h11l3.55 5L16 17z"/></svg>
-            <span style="font-size: 19px; font-weight: 800; color: #0f3d3e;">Select Brands to Analyze</span>
+        <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #f0f0f0;">
+            <div style="width: 36px; height: 36px; background: linear-gradient(135deg, #0f3d3e 0%, #1a5f60 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M17.63 5.84C17.27 5.33 16.67 5 16 5L5 5.01C3.9 5.01 3 5.9 3 7v10c0 1.1.9 1.99 2 1.99L16 19c.67 0 1.27-.33 1.63-.84L22 12l-4.37-6.16zM16 17H5V7h11l3.55 5L16 17z"/></svg>
+            </div>
+            <div>
+                <div style="font-size: 18px; font-weight: 700; color: #1a1a1a; letter-spacing: -0.3px;">Select Brands</div>
+                <div style="font-size: 13px; color: #666; margin-top: 2px;">Choose brands to analyze instantly</div>
+            </div>
         </div>
         """, unsafe_allow_html=True)
         
         selected_brands = st.multiselect(
-            "Choose one or more brands to analyze",
+            "Brand Selection",
             options=all_brands_in_data,
             default=None,
-            help="💡 Select brands to focus your analysis. You can switch brands anytime without re-querying!",
-            key="brand_filter_post_query"
+            help="💡 Switch brands anytime without re-querying",
+            key="brand_filter_post_query",
+            label_visibility="collapsed"
         )
         
         if not selected_brands:
-            st.info("👆 **Please select at least one brand above to view the analysis**")
-            st.caption("All brands are available from your query. Select any brand(s) and results will appear instantly!")
+            st.markdown("""
+            <div style="background: #f8f9fa; border-left: 3px solid #0f3d3e; padding: 16px 20px; border-radius: 6px; margin-top: 16px;">
+                <div style="font-size: 14px; color: #555; line-height: 1.6;">
+                    <strong>👆 Select brands above</strong> to view insights
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
             st.stop()
         
-        # Display selected brands
-        st.success(f"✅ Analyzing **{len(selected_brands)} brand(s)**: {', '.join(selected_brands)}")
+        # Display selected brands elegantly
+        st.markdown(f"""
+        <div style="background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%); border-left: 3px solid #4caf50; padding: 14px 20px; border-radius: 6px; margin-top: 16px;">
+            <div style="font-size: 13px; color: #2e7d32; font-weight: 600;">
+                ✓ Analyzing {len(selected_brands)} brand{"s" if len(selected_brands) > 1 else ""}: <span style="font-weight: 700;">{", ".join(selected_brands)}</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
     
     # Note: No need to update filter summary here since we moved brand filter
     # utils.display_filter_summary(...) - will update this later if needed
