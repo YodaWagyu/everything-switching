@@ -10,64 +10,53 @@ import config
 
 
 def create_sankey_diagram(labels: List[str], sources: List[int], targets: List[int], values: List[int], 
-                          min_volume_pct: float = 0.0, highlight_brand: str = None) -> go.Figure:
+                          highlighted_brands: List[str] = None, min_volume_pct: float = 0.0) -> go.Figure:
     """
-    Create Sankey diagram with filtering and highlighting options
+    Create Sankey diagram with highlighted brands shown in vibrant colors
     
     Args:
         labels: List of node labels
         sources: List of source indices
         targets: List of target indices
         values: List of flow values
+        highlighted_brands: List of brands to highlight (None = no highlighting)
         min_volume_pct: Minimum percentage of total flow to display (0-100)
-        highlight_brand: Brand to highlight (others will be greyed out)
     """
     # Calculate total volume for percentage filtering
     total_volume = sum(values)
     
-    # Filter data based on minimum volume percentage
+    # Filter data based on minimum volume percentage (keep all flows for now)
     filtered_sources = []
     filtered_targets = []
     filtered_values = []
     
     for s, t, v in zip(sources, targets, values):
         if total_volume > 0 and (v / total_volume * 100) >= min_volume_pct:
-            # If highlighting is active, check if this flow involves the highlighted brand
-            if highlight_brand and highlight_brand != "All":
-                source_label = labels[s]
-                target_label = labels[t].replace('_2025', '') # Remove suffix for checking
-                
-                # Check if source or target matches the highlighted brand
-                # Handle special categories mapping if needed, but usually brand name is in label
-                if highlight_brand in source_label or highlight_brand in target_label:
-                    filtered_sources.append(s)
-                    filtered_targets.append(t)
-                    filtered_values.append(v)
-                else:
-                    # Optional: Keep them but make them very transparent? 
-                    # For now, let's just keep them but color them grey in the link color logic
-                    # Or strictly filter them out? Executive said "Highlight brand -> show ONLY related flows"
-                    # "แสดงเฉพาะสายที่เกี่ยวกับแบรนด์ที่เลือก" -> Filter out others
-                    pass 
-            else:
-                filtered_sources.append(s)
-                filtered_targets.append(t)
-                filtered_values.append(v)
-    
-    # If highlight mode, we might have filtered everything if no matches (unlikely if logic is correct)
-    # If NOT highlight mode, we just use the filtered lists based on volume
+            filtered_sources.append(s)
+            filtered_targets.append(t)
+            filtered_values.append(v)
     
     # Update lists
     final_sources = filtered_sources
     final_targets = filtered_targets
     final_values = filtered_values
     
+    # Helper function to check if label involves highlighted brand
+    def is_highlighted_label(label, highlighted_brands):
+        if not highlighted_brands:
+            return False
+        clean_label = label.replace('_2025', '')
+        for brand in highlighted_brands:
+            if brand in clean_label:
+                return True
+        return False
+    
     # Define Node Colors
     node_colors = []
     for label in labels:
         clean_label = label.replace('_2025', '')
         
-        # Determine color based on brand
+        # Determine base color based on brand
         if 'New Customers' in clean_label:
             base_color = config.BRAND_COLORS.get('NEW_TO_CATEGORY', '#4CAF50')
         elif 'Gone' in clean_label:
@@ -75,22 +64,20 @@ def create_sankey_diagram(labels: List[str], sources: List[int], targets: List[i
         elif 'MIXED' in clean_label:
             base_color = config.BRAND_COLORS.get('MIXED', '#FFC107')
         else:
-            brand_name = clean_label.split()[0] # First word assumption
+            brand_name = clean_label.split()[0]  # First word assumption
             base_color = config.BRAND_COLORS.get(brand_name, '#2196F3')
             
         # Apply Highlight Logic to Nodes
-        if highlight_brand and highlight_brand != "All":
-            # If this node is NOT the highlighted brand and NOT a special category connected to it...
-            # Actually, simpler: Is this node the highlighted brand?
-            if highlight_brand in clean_label:
+        if highlighted_brands:
+            if is_highlighted_label(label, highlighted_brands):
+                # Highlighted brand - keep vibrant color
                 node_colors.append(base_color)
-            elif clean_label in ['New Customers', 'Gone']:
-                 # Keep special categories colored if they are connected? 
-                 # Let's keep them colored for context, or maybe grey them too?
-                 # Let's keep them standard color but maybe lighter?
-                 node_colors.append(base_color) 
+            elif clean_label in ['New Customers', 'Gone', 'MIXED']:
+                # Special categories - keep standard color
+                node_colors.append(base_color)
             else:
-                node_colors.append('#e0e0e0') # Grey out other brands
+                # Other brands - light grey
+                node_colors.append('#e0e0e0')
         else:
             node_colors.append(base_color)
 
@@ -100,15 +87,18 @@ def create_sankey_diagram(labels: List[str], sources: List[int], targets: List[i
         source_label = labels[s]
         target_label = labels[t]
         
-        # Default link color (semi-transparent source color)
-        # We need to find the color of the source node
-        # This is complex to lookup back from the loop above without a map
-        # Let's just use a default greyish for links unless highlighted
+        # Check if this flow involves highlighted brand
+        is_highlighted_flow = False
+        if highlighted_brands:
+            if is_highlighted_label(source_label, highlighted_brands) or is_highlighted_label(target_label, highlighted_brands):
+                is_highlighted_flow = True
         
-        if highlight_brand and highlight_brand != "All":
-             link_colors.append('rgba(15, 61, 62, 0.4)') # Dark Teal transparent for highlighted flows
+        if is_highlighted_flow:
+            # Highlighted flow - vibrant teal
+            link_colors.append('rgba(15, 61, 62, 0.5)')
         else:
-             link_colors.append('rgba(189, 189, 189, 0.3)') # Light grey for normal flows to reduce clutter
+            # Other flows - very light grey (almost invisible)
+            link_colors.append('rgba(200, 200, 200, 0.15)')
 
     fig = go.Figure(data=[go.Sankey(
         node=dict(
