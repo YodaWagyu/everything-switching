@@ -218,33 +218,46 @@ if run_analysis or st.session_state.query_executed:
     is_product_switch_mode = (analysis_mode == "Product Switch")
     
     if is_product_switch_mode:
-        # Product Switch: Need brand-to-product mapping
-        # Extract unique brands from the product names in df
-        # Since we don't have direct brand column in results, we need to re-query or use product names
+        # Product Switch: Get accurate product-to-brand mapping from BigQuery
+        st.caption("🔄 Loading product-brand mapping...")
         
-        # For now, let's extract what looks like brands from product names
-        # Better approach: Query should include Brand column alongside ProductName
-        all_items_in_data = sorted([b for b in df['prod_2024'].unique() if b not in special_categories])
+        # Query product master to get Brand for all products in the category
+        mapping_query = f"""
+        SELECT DISTINCT
+          ProductName,
+          Brand
+        FROM `{config.BIGQUERY_PROJECT}.{config.BIGQUERY_DATASET}.{config.BIGQUERY_TABLE_PRODUCT_MASTER}`
+        WHERE CategoryName = '{selected_category}'
+        """
         
-        # WORKAROUND: Extract brand-like prefixes (first word before space)
-        # This is a simplified approach - ideally we'd have Brand column in query results
-        brands_set = set()
-        product_to_brand_map = {}
-        for item in all_items_in_data:
-            # Extract first word as "brand" (simplified logic)
-            # Example: "Colgate Total 150g" -> "Colgate"
-            parts = item.split()
-            if parts:
-                brand = parts[0]
-                brands_set.add(brand)
-                product_to_brand_map[item] = brand
-        
-        all_brands_in_data = sorted(brands_set)
-        filter_label = "Select Brands (Product-level analysis)"
-        filter_help = "💡 Select brands to see product-level switching within those brands"
+        try:
+            mapping_df, _ = bigquery_client.execute_query(mapping_query)
+            
+            # Create product-to-brand mapping
+            product_to_brand_map = dict(zip(mapping_df['ProductName'], mapping_df['Brand']))
+            
+            # Get unique brands from products in the query results
+            all_items_in_data = sorted([b for b in df['prod_2024'].unique() if b not in special_categories])
+            brands_set = set()
+            for product in all_items_in_data:
+                if product in product_to_brand_map:
+                    brands_set.add(product_to_brand_map[product])
+            
+            all_brands_in_data = sorted(brands_set)
+            filter_label = "Select Brands (Product-level analysis)"
+            filter_help = "💡 Select brands to see product-level switching within those brands"
+            
+        except Exception as e:
+            st.error(f"Error loading product mapping: {e}")
+            # Fallback: use direct product filtering
+            all_brands_in_data = sorted([b for b in df['prod_2024'].unique() if b not in special_categories])
+            product_to_brand_map = {}
+            filter_label = "Select Products"
+            filter_help = "💡 Select products to analyze"
     else:
         # Brand Switch / Custom Type: Direct brand filtering
         all_brands_in_data = sorted([b for b in df['prod_2024'].unique() if b not in special_categories])
+        product_to_brand_map = {}
         filter_label = "Select Brands"
         filter_help = "💡 Switch brands anytime without re-querying"
     
