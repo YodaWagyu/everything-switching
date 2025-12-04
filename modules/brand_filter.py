@@ -68,6 +68,17 @@ def filter_dataframe_by_brands(df: pd.DataFrame, brands: List[str], mode: str = 
     # Step 3: Aggregate by grouping (sum customers for OTHERS flows)
     filtered_df = filtered_df.groupby(['prod_2024', 'prod_2025', 'move_type'], as_index=False)['customers'].sum()
     
+    # Step 4: Filter out unwanted OTHERS flows to reduce confusion
+    # Keep OTHERS only when it flows TO focused brands (Switch In)
+    # Remove: OTHERS → OTHERS, OTHERS → LOST, OTHERS → MIXED, etc.
+    # Keep all flows FROM focused brands (including → OTHERS for Switch Out visibility)
+    filtered_df = filtered_df[
+        # Keep all flows FROM focused brands or NEW_TO_CATEGORY
+        (filtered_df['prod_2024'].isin(brands) | (filtered_df['prod_2024'] == 'NEW_TO_CATEGORY')) |
+        # OR keep OTHERS flows only when going TO focused brands
+        ((filtered_df['prod_2024'] == 'OTHERS') & (filtered_df['prod_2025'].isin(brands)))
+    ]
+    
     return filtered_df
 
 

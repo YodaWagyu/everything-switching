@@ -230,15 +230,15 @@ if run_analysis or st.session_state.query_executed:
         with col_toggle:
             view_mode = st.radio(
                 "🔍 View Mode",
-                options=['🔒 Filtered View', '🔓 Full View'],
-                index=0,  # Default to Filtered (backward compatible)
+                options=['🎯 Focus View', '🔓 Full View'],
+                index=0,  # Default to Focus View
                 horizontal=True,
-                help="🔒 Filtered: Same-brand comparison (e.g., COLGATE ↔ COLGATE) | 🔓 Full: See where filtered brands went (e.g., COLGATE → All Brands)",
+                help="🎯 Focus: Only selected brands with OTHERS showing Switch In | 🔓 Full: Complete category perspective",
                 key="view_mode_toggle"
             )
         
         # Determine filter mode from selection
-        filter_mode = 'filtered' if '🔒' in view_mode else 'full'
+        filter_mode = 'filtered' if '🎯' in view_mode else 'full'
         
         # Apply client-side filter
         df_display = brand_filter.filter_dataframe_by_brands(df, selected_brands, filter_mode)
@@ -247,33 +247,18 @@ if run_analysis or st.session_state.query_executed:
         if filter_mode == 'full':
             st.info(f"💡 **Full View**: Showing where **{', '.join(selected_brands)}** customers went (all destination brands visible)")
     
-    # DEBUG: Check df_display before summary calculation
-    if selected_brands:
-        st.write("🔍 DEBUG - df_display (raw data):")
-        st.write(f"- prod_2024 unique: {sorted(df_display['prod_2024'].unique())}")
-        st.write(f"- prod_2024 total customers: {df_display[df_display['prod_2024'].isin(selected_brands)]['customers'].sum():,}")
-    
     # Calculate summary AFTER determining df_display (this ensures AI gets correct data)
     summary_df = data_processor.calculate_brand_summary(df_display)
     
-    # DEBUG: Show what brands are in summary
-    if selected_brands:
-        st.write("🔍 DEBUG - summary_df brands:")
-        st.write(f"- Brands: {sorted(summary_df['Brand'].unique())}")
-        st.write(f"- Total Movement (sum of 2024_Total): {summary_df['2024_Total'].sum():,}")
-    
     # For Winner/Loser: Use different data based on View Mode
-    # Filtered View: Use filtered data only (df_display)
+    # Focus View: Use filtered data only (df_display)
     # Full View: Use full category data (df) to see competitive landscape
     # No brand filter: Always use df_display
     if selected_brands and filter_mode == 'full':
         # Full View: Show all brands in category for Winner/Loser
         summary_df_full = data_processor.calculate_brand_summary(df)
-        st.write("🔍 DEBUG - summary_df_full (from df):")
-        st.write(f"- Brands: {sorted(summary_df_full['Brand'].unique())}")
-        st.write(f"- Total Movement: {summary_df_full['2024_Total'].sum():,}")
     else:
-        # Filtered View or No Filter: Use filtered data for Winner/Loser
+        # Focus View or No Filter: Use filtered data for Winner/Loser
         summary_df_full = summary_df
     
     # --- Executive KPIs (Hybrid approach based on View Mode) ---
@@ -307,7 +292,7 @@ if run_analysis or st.session_state.query_executed:
             net_cat_fmt = utils.format_number(abs(net_cat))
             st.markdown(f"""
             <div class="premium-card" style="padding: 15px; text-align: center;">
-                <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Category Net Flow</div>
+                <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Net Movement</div>
                 <div style="font-size: 24px; font-weight: 800; color: {color};">{icon} {net_cat_fmt}</div>
                 <div style="font-size: 12px; color: {color};">Total In - Total Out</div>
             </div>
