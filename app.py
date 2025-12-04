@@ -215,31 +215,34 @@ if run_analysis or st.session_state.query_executed:
     special_categories = ['NEW_TO_CATEGORY', 'LOST_FROM_CATEGORY', 'MIXED']
     all_brands_in_data = sorted([b for b in df['prod_2024'].unique() if b not in special_categories])
     
-    # Post-Query Brand Filter
-    st.markdown("""
-    <div style="border: 2px solid #0f3d3e; background: linear-gradient(to right, #e8f4f5, #ffffff); padding: 18px 24px; border-radius: 10px; margin-bottom: 25px; box-shadow: 0 2px 8px rgba(15, 61, 62, 0.1);">
-        <div style="display: flex; align-items: center; gap: 12px;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="#0f3d3e"><path d="M17.63 5.84C17.27 5.33 16.67 5 16 5L5 5.01C3.9 5.01 3 5.9 3 7v10c0 1.1.9 1.99 2 1.99L16 19c.67 0 1.27-.33 1.63-.84L22 12l-4.37-6.16zM16 17H5V7h11l3.55 5L16 17z"/></svg>
-            <span style="font-size: 19px; font-weight: 800; color: #0f3d3e;">Select Brands to Analyze</span>
-        </div>
-    </div>
-""", unsafe_allow_html=True)
-    
-    selected_brands = st.multiselect(
-        "Choose one or more brands to analyze",
-        options=all_brands_in_data,
-        default=None,
-        help="💡 Select brands to focus your analysis. You can switch brands anytime without re-querying!",
-        key="brand_filter_post_query"
-    )
-    
-    if not selected_brands:
-        st.info("👆 **Please select at least one brand above to view the analysis**")
-        st.caption("All brands are available from your query. Select any brand(s) and results will appear instantly!")
-        st.stop()
-    
-    # Display selected brands
-    st.success(f"✅ Analyzing **{len(selected_brands)} brand(s)**: {', '.join(selected_brands)}")
+    # Post-Query Brand Filter - All in one bordered container
+    with st.container():
+        st.markdown("""
+        <div style="border: 2px solid #0f3d3e; background: linear-gradient(to right, #e8f4f5, #ffffff); padding: 20px 24px; border-radius: 10px; margin-bottom: 25px; box-shadow: 0 2px 8px rgba(15, 61, 62, 0.1);">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="#0f3d3e"><path d="M17.63 5.84C17.27 5.33 16.67 5 16 5L5 5.01C3.9 5.01 3 5.9 3 7v10c0 1.1.9 1.99 2 1.99L16 19c.67 0 1.27-.33 1.63-.84L22 12l-4.37-6.16zM16 17H5V7h11l3.55 5L16 17z"/></svg>
+                <span style="font-size: 19px; font-weight: 800; color: #0f3d3e;">Select Brands to Analyze</span>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        selected_brands = st.multiselect(
+            "Choose one or more brands to analyze",
+            options=all_brands_in_data,
+            default=None,
+            help="💡 Select brands to focus your analysis. You can switch brands anytime without re-querying!",
+            key="brand_filter_post_query"
+        )
+        
+        if not selected_brands:
+            st.info("👆 **Please select at least one brand above to view the analysis**")
+            st.caption("All brands are available from your query. Select any brand(s) and results will appear instantly!")
+            st.markdown("</div>", unsafe_allow_html=True)
+            st.stop()
+        
+        # Display selected brands
+        st.success(f"✅ Analyzing **{len(selected_brands)} brand(s)**: {', '.join(selected_brands)}")
+        
+        st.markdown("</div>", unsafe_allow_html=True)
     
     # Note: No need to update filter summary here since we moved brand filter
     # utils.display_filter_summary(...) - will update this later if needed
