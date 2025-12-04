@@ -398,19 +398,19 @@ if run_analysis or st.session_state.query_executed:
                 <div class="premium-card" style="padding: 15px; text-align: center;">
                     <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Biggest Loser</div>
                     <div style="font-size: 16px; font-weight: 800; color: #0f3d3e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{loser_cat_name}</div>
-                    <div style="font-size: 12px; font-weight: 600; color: #c62828;">{loser_cat_fmt}</div>
+                    <div style="font-size: 12px; font-weight: 600; color: #c62828;">-{loser_cat_fmt}</div>
                     <div style="font-size: 10px; color: #888; margin-top: 5px;">Category</div>
                     <div style="font-size: 14px; font-weight: 700; color: #f57c00; margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">🎯 {loser_filt_name}</div>
-                    <div style="font-size: 11px; font-weight: 500; color: #f57c00;">{loser_filt_fmt}</div>
+                    <div style="font-size: 11px; font-weight: 500; color: #f57c00;">-{loser_filt_fmt}</div>
                 </div>
                 """, unsafe_allow_html=True)
             else:
-                loser_val_fmt = utils.format_number(kpis['loser_val'])
+                loser_val_fmt = utils.format_number(abs(kpis['loser_val']))
                 st.markdown(f"""
                 <div class="premium-card" style="padding: 15px; text-align: center;">
                     <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Biggest Loser</div>
                     <div style="font-size: 18px; font-weight: 800; color: #0f3d3e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{kpis['loser_name']}</div>
-                    <div style="font-size: 14px; font-weight: 600; color: #c62828;">{loser_val_fmt}</div>
+                    <div style="font-size: 14px; font-weight: 600; color: #c62828;">-{loser_val_fmt}</div>
                 </div>
                 """, unsafe_allow_html=True)
             
