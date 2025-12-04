@@ -78,34 +78,44 @@ def show_login_page():
     # Custom CSS for Split-Screen
     st.markdown("""
         <style>
-            /* Global Background */
+            /* Global Background - Full Height with Flexbox Centering */
             .stApp {
                 background-color: #f8f9fa;
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
             
             /* Hide default elements */
             #MainMenu, footer, header {visibility: hidden;}
             
-            /* Main Container */
+            /* Main Container - Centered with Flexbox */
             .block-container {
-                padding-top: 2rem;
-                padding-bottom: 2rem;
-                max-width: 1200px;
+                padding: 2rem !important;
+                max-width: min(1200px, 90vw);
+                width: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin: auto !important;
             }
             
-            /* The Split Card Container */
+            /* The Split Card Container - Responsive Sizing */
             [data-testid="stHorizontalBlock"] {
                 background: white;
                 border-radius: 24px;
                 box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
                 overflow: hidden;
-                min-height: 600px;
+                min-height: min(600px, 80vh);
+                max-height: 90vh;
+                width: 100%;
             }
             
             /* Left Column (Form) - White */
             [data-testid="stColumn"]:nth-of-type(1) {
                 background: white;
-                padding: 80px !important;
+                padding: clamp(40px, 8vw, 80px) !important;
                 display: flex;
                 flex-direction: column;
                 justify-content: center;
@@ -114,7 +124,7 @@ def show_login_page():
             /* Right Column (Info) - Dark Teal */
             [data-testid="stColumn"]:nth-of-type(2) {
                 background: linear-gradient(135deg, #0f3d3e 0%, #1a5f60 100%);
-                padding: 80px !important;
+                padding: clamp(40px, 8vw, 80px) !important;
                 display: flex;
                 flex-direction: column;
                 justify-content: center;
@@ -125,7 +135,7 @@ def show_login_page():
             /* Typography - Left */
             .welcome-header {
                 font-family: 'Inter', sans-serif;
-                font-size: 32px;
+                font-size: clamp(24px, 4vw, 32px);
                 font-weight: 700;
                 color: #1a1a1a;
                 margin-bottom: 10px;
@@ -133,7 +143,7 @@ def show_login_page():
             
             .welcome-sub {
                 font-family: 'Inter', sans-serif;
-                font-size: 16px;
+                font-size: clamp(14px, 2vw, 16px);
                 color: #666;
                 margin-bottom: 40px;
                 line-height: 1.5;
@@ -142,7 +152,7 @@ def show_login_page():
             /* Typography - Right */
             .info-header {
                 font-family: 'Inter', sans-serif;
-                font-size: 36px;
+                font-size: clamp(24px, 4vw, 36px);
                 font-weight: 700;
                 line-height: 1.3;
                 margin-bottom: 30px;
@@ -155,7 +165,7 @@ def show_login_page():
             }
             
             .quote-text {
-                font-size: 18px;
+                font-size: clamp(14px, 2.5vw, 18px);
                 line-height: 1.6;
                 opacity: 0.9;
                 font-style: italic;
@@ -164,7 +174,7 @@ def show_login_page():
             .quote-author {
                 margin-top: 15px;
                 font-weight: 600;
-                font-size: 14px;
+                font-size: clamp(12px, 1.5vw, 14px);
                 opacity: 0.7;
                 text-transform: uppercase;
                 letter-spacing: 1px;
