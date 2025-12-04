@@ -250,14 +250,12 @@ if run_analysis or st.session_state.query_executed:
     # Calculate summary AFTER determining df_display (this ensures AI gets correct data)
     summary_df = data_processor.calculate_brand_summary(df_display)
     
-    # For Focus View: Remove OTHERS from summary to show only focused brands
+    # For Focus View: Remove OTHERS from summary table to show only focused brands
+    # But keep OTHERS in df_display so Waterfall/Matrix can show Switch In from OTHERS
     if selected_brands and filter_mode == 'filtered':
-        # Filter out OTHERS from summary
+        # Filter out OTHERS from summary (removes OTHERS row from tables)
         summary_df = summary_df[summary_df['Brand'] != 'OTHERS'].copy()
-        
-        # Also filter out OTHERS from df_display baseline (prod_2024) for cleaner visualizations
-        # Keep OTHERS only in prod_2025 (destination) for Switch Out visibility
-        df_display = df_display[df_display['prod_2024'] != 'OTHERS'].copy()
+        # Note: We keep df_display as-is (with OTHERS flows) for Waterfall/Matrix visualization
     
     # For Winner/Loser: Use different data based on View Mode
     # Focus View: Use filtered data only (df_display)
