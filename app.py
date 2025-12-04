@@ -250,6 +250,15 @@ if run_analysis or st.session_state.query_executed:
     # Calculate summary AFTER determining df_display (this ensures AI gets correct data)
     summary_df = data_processor.calculate_brand_summary(df_display)
     
+    # For Focus View: Remove OTHERS from summary to show only focused brands
+    if selected_brands and filter_mode == 'filtered':
+        # Filter out OTHERS from summary
+        summary_df = summary_df[summary_df['Brand'] != 'OTHERS'].copy()
+        
+        # Also filter out OTHERS from df_display baseline (prod_2024) for cleaner visualizations
+        # Keep OTHERS only in prod_2025 (destination) for Switch Out visibility
+        df_display = df_display[df_display['prod_2024'] != 'OTHERS'].copy()
+    
     # For Winner/Loser: Use different data based on View Mode
     # Focus View: Use filtered data only (df_display)
     # Full View: Use full category data (df) to see competitive landscape
