@@ -62,6 +62,40 @@ def aggregate_to_brand_level(df: pd.DataFrame, product_master_lookup: Dict[str, 
     return brand_df
 
 
+def aggregate_products_to_brands(df: pd.DataFrame, product_to_brand_map: dict) -> pd.DataFrame:
+    """
+    Aggregate product-level data to brand level.
+    Used in Brand Switch mode where query returns products but display should be brands.
+    
+    Args:
+        df: DataFrame with prod_2024, prod_2025, customers, move_type columns (product-level)
+        product_to_brand_map: Dict mapping ProductName -> Brand
+        
+    Returns:
+        DataFrame with prod_2024, prod_2025 converted to brand names and customers aggregated
+    """
+    if not product_to_brand_map or len(df) == 0:
+        return df
+    
+    df_copy = df.copy()
+    
+    # Map products to brands
+    special_categories = {'NEW_TO_CATEGORY', 'LOST_FROM_CATEGORY', 'MIXED', 'OTHERS'}
+    
+    def map_to_brand(product):
+        if product in special_categories:
+            return product  # Keep special categories as-is
+        return product_to_brand_map.get(product, 'OTHERS')  # Map to brand or OTHERS
+    
+    df_copy['prod_2024'] = df_copy['prod_2024'].apply(map_to_brand)
+    df_copy['prod_2025'] = df_copy['prod_2025'].apply(map_to_brand)
+    
+    # Aggregate by brand (sum customers for same brand flows)
+    df_aggregated = df_copy.groupby(['prod_2024', 'prod_2025', 'move_type'], as_index=False)['customers'].sum()
+    
+    return df_aggregated
+
+
 def calculate_brand_summary(df: pd.DataFrame, item_label: str = 'Brand') -> pd.DataFrame:
     """Calculate movement summary for each brand/product
     

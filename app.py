@@ -214,53 +214,57 @@ if run_analysis or st.session_state.query_executed:
     # Smart Brand/Product Filter based on Analysis Mode
     special_categories = ['NEW_TO_CATEGORY', 'LOST_FROM_CATEGORY', 'MIXED']
     
-    # Check if we're in Product Switch mode
+    # Check if we're in Product Switch mode (for display logic later)
     is_product_switch_mode = (analysis_mode == "Product Switch")
     
-    if is_product_switch_mode:
-        # Product Switch: Get accurate product-to-brand mapping from BigQuery
-        st.caption("🔄 Loading product-brand mapping...")
+    # BOTH Brand Switch and Product Switch:
+    # - SQL query returns PRODUCT-level data
+    # - Dropdown shows BRANDS (from mapping)
+    # - The difference is in DISPLAY:
+    #   - Brand Switch: aggregate to brand level
+    #   - Product Switch: keep product level
+    
+    # Load product-to-brand mapping (needed for BOTH modes)
+    st.caption("🔄 Loading product-brand mapping...")
+    
+    # Query product master to get Brand for all products in the category
+    mapping_query = f"""
+    SELECT DISTINCT
+      ProductName,
+      Brand
+    FROM `{config.BIGQUERY_PROJECT}.{config.BIGQUERY_DATASET}.{config.BIGQUERY_TABLE_PRODUCT_MASTER}`
+    WHERE CategoryName = '{selected_categories[0] if selected_categories else ""}'
+    """
+    
+    try:
+        mapping_df, _ = bigquery_client.execute_query(mapping_query)
         
-        # Query product master to get Brand for all products in the category
-        mapping_query = f"""
-        SELECT DISTINCT
-          ProductName,
-          Brand
-        FROM `{config.BIGQUERY_PROJECT}.{config.BIGQUERY_DATASET}.{config.BIGQUERY_TABLE_PRODUCT_MASTER}`
-        WHERE CategoryName = '{selected_categories[0] if selected_categories else ""}'
-        """
+        # Create product-to-brand mapping
+        product_to_brand_map = dict(zip(mapping_df['ProductName'], mapping_df['Brand']))
         
-        try:
-            mapping_df, _ = bigquery_client.execute_query(mapping_query)
-            
-            # Create product-to-brand mapping
-            product_to_brand_map = dict(zip(mapping_df['ProductName'], mapping_df['Brand']))
-            
-            # Get unique brands from products in the query results
-            all_items_in_data = sorted([b for b in df['prod_2024'].unique() if b not in special_categories])
-            brands_set = set()
-            for product in all_items_in_data:
-                if product in product_to_brand_map:
-                    brands_set.add(product_to_brand_map[product])
-            
-            all_brands_in_data = sorted(brands_set)
-            filter_label = "Select Brands (Product-level analysis)"
-            filter_help = "💡 Select brands to see product-level switching within those brands"
-            
-        except Exception as e:
-            st.error(f"Error loading product mapping: {e}")
-            # Fallback: use direct product filtering
-            all_brands_in_data = sorted([b for b in df['prod_2024'].unique() if b not in special_categories])
-            product_to_brand_map = {}
-            filter_label = "Select Products"
-            filter_help = "💡 Select products to analyze"
-    else:
-        # Brand Switch / Custom Type: Direct brand filtering from query results
-        # In Brand Switch mode, df['prod_2024'] already contains BRAND names (from query)
+        # Get unique brands from products in the query results
+        all_products_in_data = [p for p in df['prod_2024'].unique() if p not in special_categories]
+        brands_set = set()
+        for product in all_products_in_data:
+            if product in product_to_brand_map:
+                brands_set.add(product_to_brand_map[product])
+        
+        all_brands_in_data = sorted(brands_set)
+        
+        if is_product_switch_mode:
+            filter_label = "Select Brands"
+            filter_help = "💡 Select brands to see **product-level** switching within those brands"
+        else:
+            filter_label = "Select Brands"
+            filter_help = "💡 Select brands to see **brand-level** aggregated switching"
+        
+    except Exception as e:
+        st.error(f"Error loading product mapping: {e}")
+        # Fallback: use direct values from query
         all_brands_in_data = sorted([b for b in df['prod_2024'].unique() if b not in special_categories])
         product_to_brand_map = {}
-        filter_label = "Select Brands"
-        filter_help = "💡 Switch brands anytime without re-querying"
+        filter_label = "Select Items"
+        filter_help = "💡 Select items to analyze"
     
     # Post-Query Brand Filter - Rich Minimal Modern Design
     st.markdown("""
@@ -393,27 +397,44 @@ if run_analysis or st.session_state.query_executed:
         filter_mode = 'filtered' if '🎯' in view_mode else 'full'
         
         # Apply client-side filter
-        # For Product Switch mode: we need to filter products by their brand
-        if is_product_switch_mode and product_to_brand_map:
+        # BOTH modes: df contains PRODUCT-level data, so we need to filter by products
+        if product_to_brand_map:
             # Get list of products that belong to selected brands
             products_in_selected_brands = [
                 product for product, brand in product_to_brand_map.items() 
                 if brand in selected_brands
             ]
-            # Use product names for filtering instead of brand names
+            # Filter using product names
             df_display = brand_filter.filter_dataframe_by_brands(df, products_in_selected_brands, filter_mode)
         else:
-            # Brand Switch / Custom Type: use brand names directly
+            # Fallback if no mapping (should not happen)
             df_display = brand_filter.filter_dataframe_by_brands(df, selected_brands, filter_mode)
         
         # Show filter description
         if filter_mode == 'full':
             st.info(f"💡 **Category View**: Showing complete category with **{', '.join(selected_brands)}** highlighted")
     
-    # Calculate summary AFTER determining df_display (this ensures AI gets correct data)
-    # Use dynamic item label based on analysis mode
-    item_label = 'Product' if is_product_switch_mode else 'Brand'
-    summary_df = data_processor.calculate_brand_summary(df_display, item_label=item_label)
+    # KEY DIFFERENCE BETWEEN MODES:
+    # - Brand Switch: Aggregate product-level data to BRAND level for display
+    # - Product Switch: Keep PRODUCT level for display
+    
+    if is_product_switch_mode:
+        # Product Switch: Keep product-level data
+        item_label = 'Product'
+        df_for_summary = df_display  # No aggregation
+        df_for_full_summary = df  # No aggregation
+    else:
+        # Brand Switch: Aggregate to brand level
+        item_label = 'Brand'
+        if product_to_brand_map:
+            df_for_summary = data_processor.aggregate_products_to_brands(df_display, product_to_brand_map)
+            df_for_full_summary = data_processor.aggregate_products_to_brands(df, product_to_brand_map)
+        else:
+            df_for_summary = df_display
+            df_for_full_summary = df
+    
+    # Calculate summary
+    summary_df = data_processor.calculate_brand_summary(df_for_summary, item_label=item_label)
     
     # For Focus View: Remove OTHERS from summary table to show only focused brands
     # But keep OTHERS in df_display so Waterfall/Matrix can show Switch In from OTHERS
@@ -423,8 +444,8 @@ if run_analysis or st.session_state.query_executed:
             summary_df = summary_df[summary_df[item_label] != 'OTHERS'].copy()
         # Note: We keep df_display as-is (with OTHERS flows) for Waterfall/Matrix visualization
     
-    # Calculate full category summary (all brands)
-    summary_df_full = data_processor.calculate_brand_summary(df, item_label=item_label)
+    # Calculate full category summary (all brands) - using aggregated data for Brand Switch
+    summary_df_full = data_processor.calculate_brand_summary(df_for_full_summary, item_label=item_label)
     
     # For Category View: We need both full category data and filtered data
     # summary_df_full = all brands (for tables and category-wide KPIs)
