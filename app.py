@@ -262,10 +262,11 @@ if run_analysis or st.session_state.query_executed:
     
     # For Category View: We need both full category data and filtered data
     # summary_df_full = all brands (for tables and category-wide KPIs)
-    # summary_df = filtered brands only, no OTHERS (for filtered KPIs)
+    # summary_df_filtered = only selected brands from full category (for filtered KPIs)
     if selected_brands and filter_mode == 'full':
-        # Category View: Calculate filtered summary without OTHERS
-        summary_df_filtered = summary_df[summary_df['Brand'] != 'OTHERS'].copy() if 'OTHERS' in summary_df['Brand'].values else summary_df.copy()
+        # Category View: Filter selected brands from FULL category data
+        # This gives us the selected brands' metrics within the full category context
+        summary_df_filtered = summary_df_full[summary_df_full['Brand'].isin(selected_brands)].copy()
     else:
         summary_df_filtered = summary_df
     
