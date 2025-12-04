@@ -314,7 +314,7 @@ if run_analysis or st.session_state.query_executed:
             st.stop()
         
         # Display selected brands elegantly
-        if is_product_switch_mode:
+        if is_product_switch_mode and product_to_brand_map:
             # Count products under selected brands
             selected_products = [p for p, b in product_to_brand_map.items() if b in selected_brands]
             st.markdown(f"""
@@ -334,23 +334,23 @@ if run_analysis or st.session_state.query_executed:
             """, unsafe_allow_html=True)
     
     # Apply Product Filtering for Product Switch Mode
-    if is_product_switch_mode and selected_brands:
+    if is_product_switch_mode and selected_brands and product_to_brand_map:
         # Filter DataFrame to show only products from selected brands
-        # Need to filter both prod_2024 and prod_2025 columns
-        def is_product_in_brand(product_name, selected_brands):
-            """Check if product belongs to any selected brand"""
+        # Use accurate product_to_brand_map from BigQuery
+        def is_product_in_brand(product_name, selected_brands, mapping):
+            """Check if product belongs to any selected brand using accurate mapping"""
             if product_name in special_categories:
                 return True  # Keep special categories
-            # Extract brand from product name (first word)
-            parts = str(product_name).split()
-            if parts and parts[0] in selected_brands:
+            # Use BigQuery mapping for accurate brand lookup
+            brand = mapping.get(product_name)
+            if brand and brand in selected_brands:
                 return True
             return False
         
         # Filter rows where either prod_2024 or prod_2025 belongs to selected brands
         mask = (
-            df['prod_2024'].apply(lambda x: is_product_in_brand(x, selected_brands)) |
-            df['prod_2025'].apply(lambda x: is_product_in_brand(x, selected_brands))
+            df['prod_2024'].apply(lambda x: is_product_in_brand(x, selected_brands, product_to_brand_map)) |
+            df['prod_2025'].apply(lambda x: is_product_in_brand(x, selected_brands, product_to_brand_map))
         )
         df = df[mask].copy()
         
