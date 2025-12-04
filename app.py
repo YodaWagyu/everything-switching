@@ -227,7 +227,7 @@ if run_analysis or st.session_state.query_executed:
           ProductName,
           Brand
         FROM `{config.BIGQUERY_PROJECT}.{config.BIGQUERY_DATASET}.{config.BIGQUERY_TABLE_PRODUCT_MASTER}`
-        WHERE CategoryName = '{selected_category}'
+        WHERE CategoryName = '{selected_categories[0] if selected_categories else ""}'
         """
         
         try:
