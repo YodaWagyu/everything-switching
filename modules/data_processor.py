@@ -345,8 +345,19 @@ def calculate_hybrid_kpis(summary_df_category: pd.DataFrame, summary_df_filtered
     # Calculate filtered KPIs  
     filtered_kpis = calculate_executive_kpis(summary_df_filtered, summary_df_category, item_label=item_label)
     
-    # Calculate percentage
-    filtered_pct = (filtered_kpis['total_movement'] / category_kpis['total_movement'] * 100) if category_kpis['total_movement'] > 0 else 0
+    # Safety check: ensure KPI dicts have required keys
+    if not category_kpis or not filtered_kpis:
+        return {
+            'category': category_kpis or {},
+            'filtered': filtered_kpis or {},
+            'filtered_percentage': 0,
+            'selected_brands': selected_brands or []
+        }
+    
+    # Calculate percentage with safety
+    cat_total = category_kpis.get('total_movement', 0)
+    filt_total = filtered_kpis.get('total_movement', 0)
+    filtered_pct = (filt_total / cat_total * 100) if cat_total > 0 else 0
     
     return {
         'category': category_kpis,

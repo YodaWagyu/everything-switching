@@ -432,7 +432,15 @@ if run_analysis or st.session_state.query_executed:
         # Category View: Filter selected brands from FULL category data
         # This gives us the selected brands' metrics within the full category context
         if item_label in summary_df_full.columns:
-            summary_df_filtered = summary_df_full[summary_df_full[item_label].isin(selected_brands)].copy()
+            # In Product Switch mode, need to filter by product names, not brand names
+            if is_product_switch_mode and product_to_brand_map:
+                products_in_selected_brands = [
+                    product for product, brand in product_to_brand_map.items() 
+                    if brand in selected_brands
+                ]
+                summary_df_filtered = summary_df_full[summary_df_full[item_label].isin(products_in_selected_brands)].copy()
+            else:
+                summary_df_filtered = summary_df_full[summary_df_full[item_label].isin(selected_brands)].copy()
         else:
             summary_df_filtered = summary_df
     else:
