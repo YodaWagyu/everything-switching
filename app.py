@@ -257,21 +257,30 @@ if run_analysis or st.session_state.query_executed:
         summary_df = summary_df[summary_df['Brand'] != 'OTHERS'].copy()
         # Note: We keep df_display as-is (with OTHERS flows) for Waterfall/Matrix visualization
     
-    # For Winner/Loser: Use different data based on View Mode
-    # Focus View: Use filtered data only (df_display)
-    # Category View: Use full category data (df) to see competitive landscape
-    # No brand filter: Always use df_display
+    # Calculate full category summary (all brands)
+    summary_df_full = data_processor.calculate_brand_summary(df)
+    
+    # For Category View: We need both full category data and filtered data
+    # summary_df_full = all brands (for tables and category-wide KPIs)
+    # summary_df = filtered brands only, no OTHERS (for filtered KPIs)
     if selected_brands and filter_mode == 'full':
-        # Category View: Show all brands in category for Winner/Loser
-        summary_df_full = data_processor.calculate_brand_summary(df)
+        # Category View: Calculate filtered summary without OTHERS
+        summary_df_filtered = summary_df[summary_df['Brand'] != 'OTHERS'].copy() if 'OTHERS' in summary_df['Brand'].values else summary_df.copy()
     else:
-        # Focus View or No Filter: Use filtered data for Winner/Loser
-        summary_df_full = summary_df
+        summary_df_filtered = summary_df
+    
+    # Determine which summary to use for display tables
+    # Category View: Use summary_df_full (all brands with 🎯 badges)
+    # Focus View: Use summary_df (filtered brands only)
+    if selected_brands and filter_mode == 'full':
+        summary_df_display = summary_df_full
+    else:
+        summary_df_display = summary_df
     
     # --- Executive KPIs (Hybrid approach for Category View) ---
     if selected_brands and filter_mode == 'full':
         # Category View: Use hybrid KPIs (show both category + filtered)
-        kpis = data_processor.calculate_hybrid_kpis(summary_df_full, summary_df, selected_brands)
+        kpis = data_processor.calculate_hybrid_kpis(summary_df_full, summary_df_filtered, selected_brands)
     else:
         # Focus View or No Filter: Use standard KPIs
         kpis = data_processor.calculate_executive_kpis(summary_df, summary_df_full)
@@ -440,7 +449,7 @@ if run_analysis or st.session_state.query_executed:
         <span style="font-size: 24px; font-weight: 800; color: #0f3d3e;">Section 3: Brand Deep Dive</span>
     </div>
 """, unsafe_allow_html=True)
-    available_brands_for_analysis = summary_df['Brand'].tolist()
+    available_brands_for_analysis = summary_df_display['Brand'].tolist()
     if available_brands_for_analysis:
         # Add badge to filtered brands in Category View
         if selected_brands and filter_mode == 'full':
@@ -464,7 +473,7 @@ if run_analysis or st.session_state.query_executed:
     tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["Summary", "Brand Switching", "Loyalty", "Charts", "Raw", "Export"])
     with tab1:
         st.markdown("### Brand Movement Summary")
-        display_summary = visualizations.create_summary_table_display(summary_df)
+        display_summary = visualizations.create_summary_table_display(summary_df_display)
         
         # Sort by 2024_Total descending as requested
         if '2024_Total' in display_summary.columns:
