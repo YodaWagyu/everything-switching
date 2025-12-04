@@ -218,27 +218,27 @@ if run_analysis or st.session_state.query_executed:
     # Post-Query Brand Filter - Rich Minimal Modern Design
     st.markdown("""
     <style>
-    div[data-testid="stVerticalBlock"] > div:has(div.brand-filter-container) {
+    /* Target the container directly without needing marker div */
+    div[data-testid="stVerticalBlock"] > div[data-testid="stVerticalBlock"]:has(+ div[data-testid="stMultiSelect"]) {
         background: #ffffff;
-        border: 1px solid #e0e0e0;
+        border: 1.5px solid #d0d0d0;
         border-radius: 12px;
         padding: 28px 32px;
         margin-bottom: 32px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
-        transition: box-shadow 0.2s ease;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.05);
+        transition: all 0.2s ease;
     }
-    div[data-testid="stVerticalBlock"] > div:has(div.brand-filter-container):hover {
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.06);
+    div[data-testid="stVerticalBlock"] > div[data-testid="stVerticalBlock"]:has(+ div[data-testid="stMultiSelect"]):hover {
+        border-color: #b0b0b0;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.08);
     }
     </style>
     """, unsafe_allow_html=True)
     
     with st.container():
-        st.markdown('<div class="brand-filter-container"></div>', unsafe_allow_html=True)
-        
         st.markdown("""
-        <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #f0f0f0;">
-            <div style="width: 36px; height: 36px; background: linear-gradient(135deg, #0f3d3e 0%, #1a5f60 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+        <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #e8e8e8;">
+            <div style="width: 36px; height: 36px; background: linear-gradient(135deg, #0f3d3e 0%, #1a5f60 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(15, 61, 62, 0.2);">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M17.63 5.84C17.27 5.33 16.67 5 16 5L5 5.01C3.9 5.01 3 5.9 3 7v10c0 1.1.9 1.99 2 1.99L16 19c.67 0 1.27-.33 1.63-.84L22 12l-4.37-6.16zM16 17H5V7h11l3.55 5L16 17z"/></svg>
             </div>
             <div>
