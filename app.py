@@ -406,11 +406,11 @@ if run_analysis or st.session_state.query_executed:
     # But keep OTHERS in df_display so Waterfall/Matrix can show Switch In from OTHERS
     if selected_brands and filter_mode == 'filtered':
         # Filter out OTHERS from summary (removes OTHERS row from tables)
-        summary_df = summary_df[summary_df['Brand'] != 'OTHERS'].copy()
+        summary_df = summary_df[summary_df[item_label] != 'OTHERS'].copy()
         # Note: We keep df_display as-is (with OTHERS flows) for Waterfall/Matrix visualization
     
     # Calculate full category summary (all brands)
-    summary_df_full = data_processor.calculate_brand_summary(df)
+    summary_df_full = data_processor.calculate_brand_summary(df, item_label=item_label)
     
     # For Category View: We need both full category data and filtered data
     # summary_df_full = all brands (for tables and category-wide KPIs)

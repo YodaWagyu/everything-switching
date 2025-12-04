@@ -252,13 +252,14 @@ def get_brand_switching_summary(df: pd.DataFrame, top_n: int = 20) -> pd.DataFra
     return switching_summary
 
 
-def calculate_executive_kpis(summary_df: pd.DataFrame, summary_df_full: pd.DataFrame = None) -> Dict:
+def calculate_executive_kpis(summary_df: pd.DataFrame, summary_df_full: pd.DataFrame = None, item_label: str = 'Brand') -> Dict:
     """
     Calculate high-level executive KPIs
     
     Args:
         summary_df: Brand summary dataframe (filtered data) - for Total Movement, Net Flow, Churn
         summary_df_full: Brand summary dataframe (full category data) - for Winner/Loser comparison
+        item_label: Column name for item (Brand or Product)
         
     Returns:
         Dictionary with KPI metrics
@@ -279,7 +280,7 @@ def calculate_executive_kpis(summary_df: pd.DataFrame, summary_df_full: pd.DataF
         winners = summary_df_full[summary_df_full['Net_Movement'] > 0]
         if len(winners) > 0:
             biggest_winner = winners.loc[winners['Net_Movement'].idxmax()]
-            winner_name = biggest_winner['Brand']
+            winner_name = biggest_winner[item_label]  # Dynamic column
             winner_val = biggest_winner['Net_Movement']
         else:
             winner_name = "N/A"
@@ -292,7 +293,7 @@ def calculate_executive_kpis(summary_df: pd.DataFrame, summary_df_full: pd.DataF
     # Only show if there are multiple brands to compare
     if len(summary_df_full) > 1:
         biggest_loser = summary_df_full.loc[summary_df_full['Net_Movement'].idxmin()]
-        loser_name = biggest_loser['Brand']
+        loser_name = biggest_loser[item_label]  # Dynamic column
         loser_val = biggest_loser['Net_Movement']
     else:
         loser_name = "N/A"
@@ -322,7 +323,7 @@ def calculate_executive_kpis(summary_df: pd.DataFrame, summary_df_full: pd.DataF
     }
 
 
-def calculate_hybrid_kpis(summary_df_category: pd.DataFrame, summary_df_filtered: pd.DataFrame, selected_brands: List[str] = None) -> Dict:
+def calculate_hybrid_kpis(summary_df_category: pd.DataFrame, summary_df_filtered: pd.DataFrame, selected_brands: List[str] = None, item_label: str = 'Brand') -> Dict:
     """
     Calculate hybrid KPIs showing both category-wide and filtered brand metrics
     
@@ -330,6 +331,7 @@ def calculate_hybrid_kpis(summary_df_category: pd.DataFrame, summary_df_filtered
         summary_df_category: Full category summary (all brands)
         summary_df_filtered: Filtered summary (selected brands only, no OTHERS)
         selected_brands: List of selected brand names
+        item_label: Column name for item (Brand or Product)
         
     Returns:
         Dictionary with nested category and filtered metrics
@@ -338,10 +340,10 @@ def calculate_hybrid_kpis(summary_df_category: pd.DataFrame, summary_df_filtered
         return {}
     
     # Calculate category-wide KPIs
-    category_kpis = calculate_executive_kpis(summary_df_category, summary_df_category)
+    category_kpis = calculate_executive_kpis(summary_df_category, summary_df_category, item_label=item_label)
     
     # Calculate filtered KPIs  
-    filtered_kpis = calculate_executive_kpis(summary_df_filtered, summary_df_category)
+    filtered_kpis = calculate_executive_kpis(summary_df_filtered, summary_df_category, item_label=item_label)
     
     # Calculate percentage
     filtered_pct = (filtered_kpis['total_movement'] / category_kpis['total_movement'] * 100) if category_kpis['total_movement'] > 0 else 0
