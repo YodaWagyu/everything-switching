@@ -405,9 +405,10 @@ if run_analysis or st.session_state.query_executed:
     
     # For Focus View: Remove OTHERS from summary table to show only focused brands
     # But keep OTHERS in df_display so Waterfall/Matrix can show Switch In from OTHERS
-    if selected_brands and filter_mode == 'filtered':
-        # Filter out OTHERS from summary (removes OTHERS row from tables)
-        summary_df = summary_df[summary_df[item_label] != 'OTHERS'].copy()
+    if selected_brands and filter_mode == 'filtered' and len(summary_df) > 0:
+        # Safety check: ensure column exists before filtering
+        if item_label in summary_df.columns:
+            summary_df = summary_df[summary_df[item_label] != 'OTHERS'].copy()
         # Note: We keep df_display as-is (with OTHERS flows) for Waterfall/Matrix visualization
     
     # Calculate full category summary (all brands)
@@ -416,10 +417,13 @@ if run_analysis or st.session_state.query_executed:
     # For Category View: We need both full category data and filtered data
     # summary_df_full = all brands (for tables and category-wide KPIs)
     # summary_df_filtered = only selected brands from full category (for filtered KPIs)
-    if selected_brands and filter_mode == 'full':
+    if selected_brands and filter_mode == 'full' and len(summary_df_full) > 0:
         # Category View: Filter selected brands from FULL category data
         # This gives us the selected brands' metrics within the full category context
-        summary_df_filtered = summary_df_full[summary_df_full[item_label].isin(selected_brands)].copy()
+        if item_label in summary_df_full.columns:
+            summary_df_filtered = summary_df_full[summary_df_full[item_label].isin(selected_brands)].copy()
+        else:
+            summary_df_filtered = summary_df
     else:
         summary_df_filtered = summary_df
     
@@ -616,7 +620,15 @@ if run_analysis or st.session_state.query_executed:
         <span style="font-size: 24px; font-weight: 800; color: #0f3d3e;">Section 3: Brand Deep Dive</span>
     </div>
 """, unsafe_allow_html=True)
-    available_brands_for_analysis = summary_df_display[item_label].tolist()
+    # Get available items for analysis with safety check
+    if item_label in summary_df_display.columns:
+        available_brands_for_analysis = summary_df_display[item_label].tolist()
+    elif 'Brand' in summary_df_display.columns:
+        available_brands_for_analysis = summary_df_display['Brand'].tolist()
+    elif 'Product' in summary_df_display.columns:
+        available_brands_for_analysis = summary_df_display['Product'].tolist()
+    else:
+        available_brands_for_analysis = []
     if available_brands_for_analysis:
         # Add badge to filtered brands in Category View
         if selected_brands and filter_mode == 'full':
@@ -912,18 +924,31 @@ if run_analysis or st.session_state.query_executed:
         
         # Brand Selector for Net Gain/Loss
         # Default to biggest winner or loser if available, else first brand
-        default_brand_index = 0
-        if kpis and kpis.get('winner_name') != "None":
-             try:
-                 default_brand_index = sorted(summary_df[item_label].unique().tolist()).index(kpis['winner_name'])
-             except:
-                 pass
-                 
-        target_brand = st.selectbox("Select Focus Brand", sorted(summary_df[item_label].unique()), index=default_brand_index, key="net_gain_loss_brand")
+        # Get unique items with safety check
+        if item_label in summary_df.columns:
+            unique_items = sorted(summary_df[item_label].unique().tolist())
+        elif 'Brand' in summary_df.columns:
+            unique_items = sorted(summary_df['Brand'].unique().tolist())
+        elif 'Product' in summary_df.columns:
+            unique_items = sorted(summary_df['Product'].unique().tolist())
+        else:
+            unique_items = []
         
-        # Create and display chart
-        fig_net_flow = visualizations.create_net_gain_loss_chart(df_display, target_brand)
-        st.plotly_chart(fig_net_flow, use_container_width=True)
+        if unique_items:
+            default_brand_index = 0
+            if kpis and kpis.get('winner_name') != "None":
+                 try:
+                     default_brand_index = unique_items.index(kpis['winner_name'])
+                 except:
+                     pass
+                     
+            target_brand = st.selectbox("Select Focus Brand", unique_items, index=default_brand_index, key="net_gain_loss_brand")
+        
+            # Create and display chart
+            fig_net_flow = visualizations.create_net_gain_loss_chart(df_display, target_brand)
+            st.plotly_chart(fig_net_flow, use_container_width=True)
+        else:
+            st.info("No brands available for competitive analysis.")
     
     # Tab 5: Raw (moved from tab4)
     with tab5:
