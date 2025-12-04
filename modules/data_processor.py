@@ -81,12 +81,24 @@ def calculate_brand_summary(df: pd.DataFrame) -> pd.DataFrame:
         switch_in = df[(df['prod_2024'] != brand) & (df['prod_2024'] != 'NEW_TO_CATEGORY') & (df['prod_2025'] == brand) & (df['move_type'] == 'switched')]['customers'].sum()
         new_customer = df[(df['prod_2024'] == 'NEW_TO_CATEGORY') & (df['prod_2025'] == brand)]['customers'].sum()
         
+        # Special handling for 'OTHERS' brand
+        # OTHERS represents aggregated non-selected brands, so we don't track its 2024_Total
+        if brand == 'OTHERS':
+            # For OTHERS: We only show flow data (Switch In/Out)
+            # No 2024_Total because OTHERS is not a real tracked brand in Period 1
+            period1_total = 0  # Don't count OTHERS in Total Movement
+            stayed = 0  # OTHERS can't "stay" as OTHERS (meaningless)
+            gone = 0  # OTHERS doesn't have tracked churn
+            total_out = switch_out  # Only Switch Out (to selected brands)
+        else:
+            # Normal brand calculation
+            period1_total = stayed + switch_out + gone
+            total_out = switch_out + gone
+        
         # Total In = Stayed + Switch In + New Customer
         total_in = stayed + switch_in + new_customer
-        total_out = switch_out + gone
         net_movement = total_in - total_out
         
-        period1_total = stayed + switch_out + gone
         period2_total = stayed + switch_in + new_customer
         
         summary_data.append({

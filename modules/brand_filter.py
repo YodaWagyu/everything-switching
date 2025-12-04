@@ -40,31 +40,32 @@ def filter_dataframe_by_brands(df: pd.DataFrame, brands: List[str], mode: str = 
         # Keep ALL prod_2025 destinations visible
         return df[df['prod_2024'].isin(brands)].copy()
     
-    # Filtered mode: apply symmetric filter with OTHERS aggregation
-    # IMPORTANT: Do NOT include MIXED in special categories for filtered view
-    # MIXED contains multiple brands and would inflate Switch_Out metrics
+    # Filtered mode: apply OTHERS aggregation for both periods
+    # This allows Switch In calculation while keeping focus on selected brands
     special_categories = {'NEW_TO_CATEGORY', 'LOST_FROM_CATEGORY'}
     
-    # Step 1: Filter prod_2024 to selected brands only
-    # This ensures we only look at customers from selected brands in Period 1
-    filtered_df = df[df['prod_2024'].isin(brands)].copy()
+    filtered_df = df.copy()
     
-    # Step 2: For prod_2025, convert non-selected brands to 'OTHERS'
-    # This maintains total customer count while providing focused view
-    # Keep: selected brands + special categories
-    # Convert to 'OTHERS': everything else except MIXED (which should be kept as-is for transparency)
+    # Step 1: Convert non-selected brands in prod_2024 to 'OTHERS'
+    # Keep: selected brands + NEW_TO_CATEGORY
+    # Convert to 'OTHERS': everything else
+    should_rename_2024_to_others = (
+        ~filtered_df['prod_2024'].isin(brands) &  # Not a selected brand
+        (filtered_df['prod_2024'] != 'NEW_TO_CATEGORY')  # Keep NEW_TO_CATEGORY as-is
+    )
+    filtered_df.loc[should_rename_2024_to_others, 'prod_2024'] = 'OTHERS'
     
-    # Create a mask for destinations that should be renamed to OTHERS
-    should_rename_to_others = (
+    # Step 2: Convert non-selected brands in prod_2025 to 'OTHERS'
+    # Keep: selected brands + special categories (NEW_TO_CATEGORY, LOST_FROM_CATEGORY) + MIXED
+    # Convert to 'OTHERS': everything else
+    should_rename_2025_to_others = (
         ~filtered_df['prod_2025'].isin(brands) &  # Not a selected brand
         ~filtered_df['prod_2025'].isin(special_categories) &  # Not a special category
         (filtered_df['prod_2025'] != 'MIXED')  # Keep MIXED as-is
     )
+    filtered_df.loc[should_rename_2025_to_others, 'prod_2025'] = 'OTHERS'
     
-    # Rename to OTHERS
-    filtered_df.loc[should_rename_to_others, 'prod_2025'] = 'OTHERS'
-    
-    # Group by the new keys and sum customers (aggregate OTHERS)
+    # Step 3: Aggregate by grouping (sum customers for OTHERS flows)
     filtered_df = filtered_df.groupby(['prod_2024', 'prod_2025', 'move_type'], as_index=False)['customers'].sum()
     
     return filtered_df
