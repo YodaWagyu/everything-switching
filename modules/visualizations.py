@@ -253,6 +253,12 @@ def create_brand_comparison_bar(summary_df: pd.DataFrame, metric: str = 'Net_Mov
         metric: Metric to compare
         item_label: Column name for items (will auto-detect if not provided)
     """
+    # Safety check: return empty figure if DataFrame is empty
+    if len(summary_df) == 0 or len(summary_df.columns) == 0:
+        fig = go.Figure()
+        fig.update_layout(title="No data available", height=450)
+        return fig
+    
     # Auto-detect item column if not provided
     if item_label is None:
         if 'Brand' in summary_df.columns:
@@ -261,6 +267,12 @@ def create_brand_comparison_bar(summary_df: pd.DataFrame, metric: str = 'Net_Mov
             item_label = 'Product'
         else:
             item_label = summary_df.columns[0]  # Fallback to first column
+    
+    # Safety check: ensure item_label column exists
+    if item_label not in summary_df.columns:
+        fig = go.Figure()
+        fig.update_layout(title="Column not found", height=450)
+        return fig
     
     sorted_df = summary_df.sort_values(metric, ascending=False)
     colors = ['#4CAF50' if v >= 0 else '#F44336' for v in sorted_df[metric]]

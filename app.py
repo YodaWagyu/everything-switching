@@ -392,7 +392,18 @@ if run_analysis or st.session_state.query_executed:
         filter_mode = 'filtered' if '🎯' in view_mode else 'full'
         
         # Apply client-side filter
-        df_display = brand_filter.filter_dataframe_by_brands(df, selected_brands, filter_mode)
+        # For Product Switch mode: we need to filter products by their brand
+        if is_product_switch_mode and product_to_brand_map:
+            # Get list of products that belong to selected brands
+            products_in_selected_brands = [
+                product for product, brand in product_to_brand_map.items() 
+                if brand in selected_brands
+            ]
+            # Use product names for filtering instead of brand names
+            df_display = brand_filter.filter_dataframe_by_brands(df, products_in_selected_brands, filter_mode)
+        else:
+            # Brand Switch / Custom Type: use brand names directly
+            df_display = brand_filter.filter_dataframe_by_brands(df, selected_brands, filter_mode)
         
         # Show filter description
         if filter_mode == 'full':
