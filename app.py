@@ -259,17 +259,22 @@ if run_analysis or st.session_state.query_executed:
     
     # For Winner/Loser: Use different data based on View Mode
     # Focus View: Use filtered data only (df_display)
-    # Full View: Use full category data (df) to see competitive landscape
+    # Category View: Use full category data (df) to see competitive landscape
     # No brand filter: Always use df_display
     if selected_brands and filter_mode == 'full':
-        # Full View: Show all brands in category for Winner/Loser
+        # Category View: Show all brands in category for Winner/Loser
         summary_df_full = data_processor.calculate_brand_summary(df)
     else:
         # Focus View or No Filter: Use filtered data for Winner/Loser
         summary_df_full = summary_df
     
-    # --- Executive KPIs (Hybrid approach based on View Mode) ---
-    kpis = data_processor.calculate_executive_kpis(summary_df, summary_df_full)
+    # --- Executive KPIs (Hybrid approach for Category View) ---
+    if selected_brands and filter_mode == 'full':
+        # Category View: Use hybrid KPIs (show both category + filtered)
+        kpis = data_processor.calculate_hybrid_kpis(summary_df_full, summary_df, selected_brands)
+    else:
+        # Focus View or No Filter: Use standard KPIs
+        kpis = data_processor.calculate_executive_kpis(summary_df, summary_df_full)
     
     # Render Executive Summary Section at the top (but calculated here after filtering)
     st.markdown("""
@@ -280,60 +285,144 @@ if run_analysis or st.session_state.query_executed:
     """, unsafe_allow_html=True)
     
     if kpis:
+        # Check if we're in Category View with hybrid KPIs
+        is_hybrid = 'category' in kpis and 'filtered' in kpis
+        
         k1, k2, k3, k4, k5 = st.columns(5)
         
         with k1:
-            total_movement_fmt = utils.format_number(kpis['total_movement'])
-            st.markdown(f"""
-            <div class="premium-card" style="padding: 15px; text-align: center;">
-                <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Total Movement</div>
-                <div style="font-size: 24px; font-weight: 800; color: #0f3d3e;">{total_movement_fmt}</div>
-                <div style="font-size: 12px; color: #666;">Customers</div>
-            </div>
-            """, unsafe_allow_html=True)
+            if is_hybrid:
+                total_cat_fmt = utils.format_number(kpis['category']['total_movement'])
+                total_filt_fmt = utils.format_number(kpis['filtered']['total_movement'])
+                pct = kpis['filtered_percentage']
+                st.markdown(f"""
+                <div class="premium-card" style="padding: 15px; text-align: center;">
+                    <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Total Movement</div>
+                    <div style="font-size: 24px; font-weight: 800; color: #0f3d3e;">{total_cat_fmt}</div>
+                    <div style="font-size: 11px; color: #888; margin-top: 5px;">Category-wide</div>
+                    <div style="font-size: 16px; font-weight: 600; color: #f57c00; margin-top: 8px;">🎯 {total_filt_fmt}</div>
+                    <div style="font-size: 10px; color: #f57c00;">{pct}% of category</div>
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                total_movement_fmt = utils.format_number(kpis['total_movement'])
+                st.markdown(f"""
+                <div class="premium-card" style="padding: 15px; text-align: center;">
+                    <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Total Movement</div>
+                    <div style="font-size: 24px; font-weight: 800; color: #0f3d3e;">{total_movement_fmt}</div>
+                    <div style="font-size: 12px; color: #666;">Customers</div>
+                </div>
+                """, unsafe_allow_html=True)
             
         with k2:
-            net_cat = kpis['net_category_movement']
-            color = "#2e7d32" if net_cat >= 0 else "#c62828"
-            icon = "▲" if net_cat >= 0 else "▼"
-            net_cat_fmt = utils.format_number(abs(net_cat))
-            st.markdown(f"""
-            <div class="premium-card" style="padding: 15px; text-align: center;">
-                <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Net Movement</div>
-                <div style="font-size: 24px; font-weight: 800; color: {color};">{icon} {net_cat_fmt}</div>
-                <div style="font-size: 12px; color: {color};">Total In - Total Out</div>
-            </div>
-            """, unsafe_allow_html=True)
+            if is_hybrid:
+                net_cat = kpis['category']['net_category_movement']
+                net_filt = kpis['filtered']['net_category_movement']
+                color = "#2e7d32" if net_cat >= 0 else "#c62828"
+                icon = "▲" if net_cat >= 0 else "▼"
+                net_cat_fmt = utils.format_number(abs(net_cat))
+                net_filt_fmt = utils.format_number(abs(net_filt))
+                filt_icon = "▲" if net_filt >= 0 else "▼"
+                st.markdown(f"""
+                <div class="premium-card" style="padding: 15px; text-align: center;">
+                    <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Net Movement</div>
+                    <div style="font-size: 24px; font-weight: 800; color: {color};">{icon} {net_cat_fmt}</div>
+                    <div style="font-size: 11px; color: #888; margin-top: 5px;">Category-wide</div>
+                    <div style="font-size: 16px; font-weight: 600; color: #f57c00; margin-top: 8px;">🎯 {filt_icon} {net_filt_fmt}</div>
+                    <div style="font-size: 10px; color: #f57c00;">Filtered brands</div>
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                net_cat = kpis['net_category_movement']
+                color = "#2e7d32" if net_cat >= 0 else "#c62828"
+                icon = "▲" if net_cat >= 0 else "▼"
+                net_cat_fmt = utils.format_number(abs(net_cat))
+                st.markdown(f"""
+                <div class="premium-card" style="padding: 15px; text-align: center;">
+                    <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Net Movement</div>
+                    <div style="font-size: 24px; font-weight: 800; color: {color};">{icon} {net_cat_fmt}</div>
+                    <div style="font-size: 12px; color: {color};">Total In - Total Out</div>
+                </div>
+                """, unsafe_allow_html=True)
             
         with k3:
-            winner_val_fmt = utils.format_number(kpis['winner_val'])
-            st.markdown(f"""
-            <div class="premium-card" style="padding: 15px; text-align: center;">
-                <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Biggest Winner</div>
-                <div style="font-size: 18px; font-weight: 800; color: #0f3d3e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{kpis['winner_name']}</div>
-                <div style="font-size: 14px; font-weight: 600; color: #2e7d32;">+{winner_val_fmt}</div>
-            </div>
-            """, unsafe_allow_html=True)
+            if is_hybrid:
+                winner_cat_name = kpis['category']['winner_name']
+                winner_cat_val = kpis['category']['winner_val']
+                winner_filt_name = kpis['filtered']['winner_name']
+                winner_filt_val = kpis['filtered']['winner_val']
+                winner_cat_fmt = utils.format_number(winner_cat_val)
+                winner_filt_fmt = utils.format_number(winner_filt_val)
+                st.markdown(f"""
+                <div class="premium-card" style="padding: 15px; text-align: center;">
+                    <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Biggest Winner</div>
+                    <div style="font-size: 16px; font-weight: 800; color: #0f3d3e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{winner_cat_name}</div>
+                    <div style="font-size: 12px; font-weight: 600; color: #2e7d32;">+{winner_cat_fmt}</div>
+                    <div style="font-size: 10px; color: #888; margin-top: 5px;">Category</div>
+                    <div style="font-size: 14px; font-weight: 700; color: #f57c00; margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">🎯 {winner_filt_name}</div>
+                    <div style="font-size: 11px; font-weight: 500; color: #f57c00;">+{winner_filt_fmt}</div>
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                winner_val_fmt = utils.format_number(kpis['winner_val'])
+                st.markdown(f"""
+                <div class="premium-card" style="padding: 15px; text-align: center;">
+                    <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Biggest Winner</div>
+                    <div style="font-size: 18px; font-weight: 800; color: #0f3d3e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{kpis['winner_name']}</div>
+                    <div style="font-size: 14px; font-weight: 600; color: #2e7d32;">+{winner_val_fmt}</div>
+                </div>
+                """, unsafe_allow_html=True)
             
         with k4:
-            loser_val_fmt = utils.format_number(kpis['loser_val'])
-            st.markdown(f"""
-            <div class="premium-card" style="padding: 15px; text-align: center;">
-                <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Biggest Loser</div>
-                <div style="font-size: 18px; font-weight: 800; color: #0f3d3e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{kpis['loser_name']}</div>
-                <div style="font-size: 14px; font-weight: 600; color: #c62828;">{loser_val_fmt}</div>
-            </div>
-            """, unsafe_allow_html=True)
+            if is_hybrid:
+                loser_cat_name = kpis['category']['loser_name']
+                loser_cat_val = kpis['category']['loser_val']
+                loser_filt_name = kpis['filtered']['loser_name']
+                loser_filt_val = kpis['filtered']['loser_val']
+                loser_cat_fmt = utils.format_number(abs(loser_cat_val))
+                loser_filt_fmt = utils.format_number(abs(loser_filt_val))
+                st.markdown(f"""
+                <div class="premium-card" style="padding: 15px; text-align: center;">
+                    <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Biggest Loser</div>
+                    <div style="font-size: 16px; font-weight: 800; color: #0f3d3e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{loser_cat_name}</div>
+                    <div style="font-size: 12px; font-weight: 600; color: #c62828;">{loser_cat_fmt}</div>
+                    <div style="font-size: 10px; color: #888; margin-top: 5px;">Category</div>
+                    <div style="font-size: 14px; font-weight: 700; color: #f57c00; margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">🎯 {loser_filt_name}</div>
+                    <div style="font-size: 11px; font-weight: 500; color: #f57c00;">{loser_filt_fmt}</div>
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                loser_val_fmt = utils.format_number(kpis['loser_val'])
+                st.markdown(f"""
+                <div class="premium-card" style="padding: 15px; text-align: center;">
+                    <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Biggest Loser</div>
+                    <div style="font-size: 18px; font-weight: 800; color: #0f3d3e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{kpis['loser_name']}</div>
+                    <div style="font-size: 14px; font-weight: 600; color: #c62828;">{loser_val_fmt}</div>
+                </div>
+                """, unsafe_allow_html=True)
             
         with k5:
-            churn_rate_fmt = f"{kpis['churn_rate']:.1f}"
-            st.markdown(f"""
-            <div class="premium-card" style="padding: 15px; text-align: center;">
-                <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Attrition Rate</div>
-                <div style="font-size: 24px; font-weight: 800; color: #c62828;">{churn_rate_fmt}%</div>
-                <div style="font-size: 12px; color: #666;">Total Out / Total</div>
-            </div>
-            """, unsafe_allow_html=True)
+            if is_hybrid:
+                churn_cat = kpis['category']['churn_rate']
+                churn_filt = kpis['filtered']['churn_rate']
+                st.markdown(f"""
+                <div class="premium-card" style="padding: 15px; text-align: center;">
+                    <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Attrition Rate</div>
+                    <div style="font-size: 24px; font-weight: 800; color: #c62828;">{churn_cat:.1f}%</div>
+                    <div style="font-size: 11px; color: #888; margin-top: 5px;">Category-wide</div>
+                    <div style="font-size: 16px; font-weight: 600; color: #f57c00; margin-top: 8px;">🎯 {churn_filt:.1f}%</div>
+                    <div style="font-size: 10px; color: #f57c00;">Filtered brands</div>
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                churn_rate_fmt = f"{kpis['churn_rate']:.1f}"
+                st.markdown(f"""
+                <div class="premium-card" style="padding: 15px; text-align: center;">
+                    <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Attrition Rate</div>
+                    <div style="font-size: 24px; font-weight: 800; color: #c62828;">{churn_rate_fmt}%</div>
+                    <div style="font-size: 12px; color: #666;">Total Out / Total</div>
+                </div>
+                """, unsafe_allow_html=True)
     
     # Use df_display for all visualizations
     labels, sources, targets, values = data_processor.prepare_sankey_data(df_display)
