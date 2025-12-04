@@ -211,9 +211,42 @@ if run_analysis or st.session_state.query_executed:
     
     display_category = selected_categories[0] if selected_categories else None
     
-    # Extract available brands from query results (exclude special categories)
+    # Smart Brand/Product Filter based on Analysis Mode
     special_categories = ['NEW_TO_CATEGORY', 'LOST_FROM_CATEGORY', 'MIXED']
-    all_brands_in_data = sorted([b for b in df['prod_2024'].unique() if b not in special_categories])
+    
+    # Check if we're in Product Switch mode
+    is_product_switch_mode = (analysis_mode == "Product Switch")
+    
+    if is_product_switch_mode:
+        # Product Switch: Need brand-to-product mapping
+        # Extract unique brands from the product names in df
+        # Since we don't have direct brand column in results, we need to re-query or use product names
+        
+        # For now, let's extract what looks like brands from product names
+        # Better approach: Query should include Brand column alongside ProductName
+        all_items_in_data = sorted([b for b in df['prod_2024'].unique() if b not in special_categories])
+        
+        # WORKAROUND: Extract brand-like prefixes (first word before space)
+        # This is a simplified approach - ideally we'd have Brand column in query results
+        brands_set = set()
+        product_to_brand_map = {}
+        for item in all_items_in_data:
+            # Extract first word as "brand" (simplified logic)
+            # Example: "Colgate Total 150g" -> "Colgate"
+            parts = item.split()
+            if parts:
+                brand = parts[0]
+                brands_set.add(brand)
+                product_to_brand_map[item] = brand
+        
+        all_brands_in_data = sorted(brands_set)
+        filter_label = "Select Brands (Product-level analysis)"
+        filter_help = "💡 Select brands to see product-level switching within those brands"
+    else:
+        # Brand Switch / Custom Type: Direct brand filtering
+        all_brands_in_data = sorted([b for b in df['prod_2024'].unique() if b not in special_categories])
+        filter_label = "Select Brands"
+        filter_help = "💡 Switch brands anytime without re-querying"
     
     # Post-Query Brand Filter - Rich Minimal Modern Design
     st.markdown("""
@@ -249,10 +282,10 @@ if run_analysis or st.session_state.query_executed:
         """, unsafe_allow_html=True)
         
         selected_brands = st.multiselect(
-            "Brand Selection",
+            filter_label,
             options=all_brands_in_data,
             default=None,
-            help="💡 Switch brands anytime without re-querying",
+            help=filter_help,
             key="brand_filter_post_query",
             label_visibility="collapsed"
         )
@@ -268,13 +301,47 @@ if run_analysis or st.session_state.query_executed:
             st.stop()
         
         # Display selected brands elegantly
-        st.markdown(f"""
-        <div style="background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%); border-left: 3px solid #4caf50; padding: 14px 20px; border-radius: 6px; margin-top: 16px;">
-            <div style="font-size: 13px; color: #2e7d32; font-weight: 600;">
-                ✓ Analyzing {len(selected_brands)} brand{"s" if len(selected_brands) > 1 else ""}: <span style="font-weight: 700;">{", ".join(selected_brands)}</span>
+        if is_product_switch_mode:
+            # Count products under selected brands
+            selected_products = [p for p, b in product_to_brand_map.items() if b in selected_brands]
+            st.markdown(f"""
+            <div style="background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%); border-left: 3px solid #4caf50; padding: 14px 20px; border-radius: 6px; margin-top: 16px;">
+                <div style="font-size: 13px; color: #2e7d32; font-weight: 600;">
+                    ✓ Analyzing {len(selected_brands)} brand{"s" if len(selected_brands) > 1 else ""} ({len(selected_products)} products): <span style="font-weight: 700;">{", ".join(selected_brands)}</span>
+                </div>
             </div>
-        </div>
-        """, unsafe_allow_html=True)
+            """, unsafe_allow_html=True)
+        else:
+            st.markdown(f"""
+            <div style="background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%); border-left: 3px solid #4caf50; padding: 14px 20px; border-radius: 6px; margin-top: 16px;">
+                <div style="font-size: 13px; color: #2e7d32; font-weight: 600;">
+                    ✓ Analyzing {len(selected_brands)} brand{"s" if len(selected_brands) > 1 else ""}: <span style="font-weight: 700;">{", ".join(selected_brands)}</span>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+    
+    # Apply Product Filtering for Product Switch Mode
+    if is_product_switch_mode and selected_brands:
+        # Filter DataFrame to show only products from selected brands
+        # Need to filter both prod_2024 and prod_2025 columns
+        def is_product_in_brand(product_name, selected_brands):
+            """Check if product belongs to any selected brand"""
+            if product_name in special_categories:
+                return True  # Keep special categories
+            # Extract brand from product name (first word)
+            parts = str(product_name).split()
+            if parts and parts[0] in selected_brands:
+                return True
+            return False
+        
+        # Filter rows where either prod_2024 or prod_2025 belongs to selected brands
+        mask = (
+            df['prod_2024'].apply(lambda x: is_product_in_brand(x, selected_brands)) |
+            df['prod_2025'].apply(lambda x: is_product_in_brand(x, selected_brands))
+        )
+        df = df[mask].copy()
+        
+        st.caption(f"🔍 Filtered to {len(df)} customer flows involving products from {', '.join(selected_brands)}")
     
     # Note: No need to update filter summary here since we moved brand filter
     # utils.display_filter_summary(...) - will update this later if needed
