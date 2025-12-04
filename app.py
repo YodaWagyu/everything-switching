@@ -255,8 +255,20 @@ if run_analysis or st.session_state.query_executed:
             filter_label = "Select Products"
             filter_help = "💡 Select products to analyze"
     else:
-        # Brand Switch / Custom Type: Direct brand filtering
-        all_brands_in_data = sorted([b for b in df['prod_2024'].unique() if b not in special_categories])
+        # Brand Switch / Custom Type: Get brands from product master
+        # This ensures we show actual brand names, not product names
+        if selected_categories:
+            try:
+                all_brands_in_data = bigquery_client.get_brands_by_category(selected_categories[0])
+                if not all_brands_in_data:
+                    # Fallback: get unique items from query result
+                    all_brands_in_data = sorted([b for b in df['prod_2024'].unique() if b not in special_categories])
+            except Exception as e:
+                # Fallback: get unique items from query result
+                all_brands_in_data = sorted([b for b in df['prod_2024'].unique() if b not in special_categories])
+        else:
+            all_brands_in_data = sorted([b for b in df['prod_2024'].unique() if b not in special_categories])
+        
         product_to_brand_map = {}
         filter_label = "Select Brands"
         filter_help = "💡 Switch brands anytime without re-querying"
