@@ -87,18 +87,26 @@ def create_sankey_diagram(labels: List[str], sources: List[int], targets: List[i
         source_label = labels[s]
         target_label = labels[t]
         
-        # Check if this flow involves highlighted brand
-        is_highlighted_flow = False
+        # Check if flow involves highlighted brand
         if highlighted_brands:
-            if is_highlighted_label(source_label, highlighted_brands) or is_highlighted_label(target_label, highlighted_brands):
-                is_highlighted_flow = True
-        
-        if is_highlighted_flow:
-            # Highlighted flow - vibrant teal
-            link_colors.append('rgba(15, 61, 62, 0.5)')
+            source_is_highlighted = is_highlighted_label(source_label, highlighted_brands)
+            target_is_highlighted = is_highlighted_label(target_label, highlighted_brands)
+            
+            if source_is_highlighted and target_is_highlighted:
+                # Stayed flow - use blue/teal
+                link_colors.append('rgba(33, 150, 243, 0.5)')
+            elif source_is_highlighted:
+                # Outflow from highlighted brand - RED
+                link_colors.append('rgba(244, 67, 54, 0.5)')
+            elif target_is_highlighted:
+                # Inflow to highlighted brand - GREEN
+                link_colors.append('rgba(76, 175, 80, 0.5)')
+            else:
+                # Other flows - very light grey (almost invisible)
+                link_colors.append('rgba(200, 200, 200, 0.15)')
         else:
-            # Other flows - very light grey (almost invisible)
-            link_colors.append('rgba(200, 200, 200, 0.15)')
+            # No highlighting - standard grey
+            link_colors.append('rgba(189, 189, 189, 0.3)')
 
     fig = go.Figure(data=[go.Sankey(
         node=dict(
