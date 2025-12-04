@@ -230,10 +230,10 @@ if run_analysis or st.session_state.query_executed:
         with col_toggle:
             view_mode = st.radio(
                 "🔍 View Mode",
-                options=['🎯 Focus View', '🔓 Full View'],
+                options=['🎯 Focus View', '🌐 Category View'],
                 index=0,  # Default to Focus View
                 horizontal=True,
-                help="🎯 Focus: Only selected brands with OTHERS showing Switch In | 🔓 Full: Complete category perspective",
+                help="🎯 Focus: Selected brands only | 🌐 Category: Full category with filtered brands highlighted",
                 key="view_mode_toggle"
             )
         
@@ -245,7 +245,7 @@ if run_analysis or st.session_state.query_executed:
         
         # Show filter description
         if filter_mode == 'full':
-            st.info(f"💡 **Full View**: Showing where **{', '.join(selected_brands)}** customers went (all destination brands visible)")
+            st.info(f"💡 **Category View**: Showing complete category with **{', '.join(selected_brands)}** highlighted")
     
     # Calculate summary AFTER determining df_display (this ensures AI gets correct data)
     summary_df = data_processor.calculate_brand_summary(df_display)
@@ -353,9 +353,19 @@ if run_analysis or st.session_state.query_executed:
 """, unsafe_allow_html=True)
     available_brands_for_analysis = summary_df['Brand'].tolist()
     if available_brands_for_analysis:
-        selected_focus_brand = st.selectbox("Select brand", available_brands_for_analysis, key="focus_brand")
-        if selected_focus_brand:
-            st.plotly_chart(visualizations.create_waterfall_chart(data_processor.prepare_waterfall_data(df_display, selected_focus_brand), selected_focus_brand), use_container_width=True)
+        # Add badge to filtered brands in Category View
+        if selected_brands and filter_mode == 'full':
+            brand_options = [f"🎯 {brand}" if brand in selected_brands else brand for brand in available_brands_for_analysis]
+        else:
+            brand_options = available_brands_for_analysis
+        
+        selected_focus_brand = st.selectbox("Select brand", brand_options, key="focus_brand")
+        
+        # Remove badge for data processing
+        selected_focus_brand_clean = selected_focus_brand.replace("🎯 ", "")
+        
+        if selected_focus_brand_clean:
+            st.plotly_chart(visualizations.create_waterfall_chart(data_processor.prepare_waterfall_data(df_display, selected_focus_brand_clean), selected_focus_brand_clean), use_container_width=True)
     st.markdown("""
     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; margin-top: 30px;">
         <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="#0f3d3e"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
@@ -428,7 +438,11 @@ if run_analysis or st.session_state.query_executed:
                 h += f'<tr style="border-bottom: 1px solid #e0e0e0; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor=\'#f0f0f0\';" onmouseout="this.style.backgroundColor=\'{bg_color}\';">'
                 
                 for i, (col, v) in enumerate(row.items()):
-                    fmt = f"{v:.1f}%" if isinstance(v,(int,float)) and '%' in col else f"{v:,.0f}" if isinstance(v,(int,float)) else str(v)
+                    # Add badge for filtered brands in Category View
+                    if i == 0 and selected_brands and filter_mode == 'full' and v in selected_brands:
+                        fmt = f"🎯 {v}"
+                    else:
+                        fmt = f"{v:.1f}%" if isinstance(v,(int,float)) and '%' in col else f"{v:,.0f}" if isinstance(v,(int,float)) else str(v)
                     align = "left" if i == 0 else "center"
                     font_weight = "600" if i == 0 else "normal"
                     h += f'<td style="padding: 10px; text-align: {align}; vertical-align: middle; font-weight: {font_weight};">{fmt}</td>'

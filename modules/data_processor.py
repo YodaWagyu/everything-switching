@@ -317,6 +317,38 @@ def calculate_executive_kpis(summary_df: pd.DataFrame, summary_df_full: pd.DataF
     }
 
 
+def calculate_hybrid_kpis(summary_df_category: pd.DataFrame, summary_df_filtered: pd.DataFrame, selected_brands: List[str] = None) -> Dict:
+    """
+    Calculate hybrid KPIs showing both category-wide and filtered brand metrics
+    
+    Args:
+        summary_df_category: Full category summary (all brands)
+        summary_df_filtered: Filtered summary (selected brands only, no OTHERS)
+        selected_brands: List of selected brand names
+        
+    Returns:
+        Dictionary with nested category and filtered metrics
+    """
+    if len(summary_df_category) == 0:
+        return {}
+    
+    # Calculate category-wide KPIs
+    category_kpis = calculate_executive_kpis(summary_df_category, summary_df_category)
+    
+    # Calculate filtered KPIs  
+    filtered_kpis = calculate_executive_kpis(summary_df_filtered, summary_df_category)
+    
+    # Calculate percentage
+    filtered_pct = (filtered_kpis['total_movement'] / category_kpis['total_movement'] * 100) if category_kpis['total_movement'] > 0 else 0
+    
+    return {
+        'category': category_kpis,
+        'filtered': filtered_kpis,
+        'filtered_percentage': round(filtered_pct, 1),
+        'selected_brands': selected_brands or []
+    }
+
+
 def calculate_cohort_metrics(df: pd.DataFrame) -> Dict:
     """
     Calculate Cohort and Loyalty metrics
