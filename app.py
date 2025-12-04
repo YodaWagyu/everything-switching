@@ -371,6 +371,7 @@ if run_analysis or st.session_state.query_executed:
     
     # Apply brand filtering based on view mode toggle (only shown when brands are filtered)
     df_display = df  # Default to full data
+    filter_mode = 'filtered'  # Default filter mode
     
     if selected_brands:
         from modules import brand_filter
@@ -418,7 +419,7 @@ if run_analysis or st.session_state.query_executed:
     if selected_brands and filter_mode == 'full':
         # Category View: Filter selected brands from FULL category data
         # This gives us the selected brands' metrics within the full category context
-        summary_df_filtered = summary_df_full[summary_df_full['Brand'].isin(selected_brands)].copy()
+        summary_df_filtered = summary_df_full[summary_df_full[item_label].isin(selected_brands)].copy()
     else:
         summary_df_filtered = summary_df
     
@@ -433,11 +434,11 @@ if run_analysis or st.session_state.query_executed:
     # --- Executive KPIs (Hybrid approach for Category View) ---
     if selected_brands and filter_mode == 'full':
         # Category View: Use hybrid KPIs (show both category + filtered)
-        kpis = data_processor.calculate_hybrid_kpis(summary_df_full, summary_df_filtered, selected_brands)
+        kpis = data_processor.calculate_hybrid_kpis(summary_df_full, summary_df_filtered, selected_brands, item_label=item_label)
     else:
         # Focus View or No Filter: Use standard KPIs
         # Pass summary_df for both parameters to properly detect single-brand case
-        kpis = data_processor.calculate_executive_kpis(summary_df, summary_df)
+        kpis = data_processor.calculate_executive_kpis(summary_df, summary_df, item_label=item_label)
     
     # Render Executive Summary Section at the top (but calculated here after filtering)
     st.markdown("""
@@ -615,7 +616,7 @@ if run_analysis or st.session_state.query_executed:
         <span style="font-size: 24px; font-weight: 800; color: #0f3d3e;">Section 3: Brand Deep Dive</span>
     </div>
 """, unsafe_allow_html=True)
-    available_brands_for_analysis = summary_df_display['Brand'].tolist()
+    available_brands_for_analysis = summary_df_display[item_label].tolist()
     if available_brands_for_analysis:
         # Add badge to filtered brands in Category View
         if selected_brands and filter_mode == 'full':
@@ -914,11 +915,11 @@ if run_analysis or st.session_state.query_executed:
         default_brand_index = 0
         if kpis and kpis.get('winner_name') != "None":
              try:
-                 default_brand_index = sorted(summary_df['Brand'].unique().tolist()).index(kpis['winner_name'])
+                 default_brand_index = sorted(summary_df[item_label].unique().tolist()).index(kpis['winner_name'])
              except:
                  pass
                  
-        target_brand = st.selectbox("Select Focus Brand", sorted(summary_df['Brand'].unique()), index=default_brand_index, key="net_gain_loss_brand")
+        target_brand = st.selectbox("Select Focus Brand", sorted(summary_df[item_label].unique()), index=default_brand_index, key="net_gain_loss_brand")
         
         # Create and display chart
         fig_net_flow = visualizations.create_net_gain_loss_chart(df_display, target_brand)

@@ -245,11 +245,26 @@ def create_movement_type_pie(df: pd.DataFrame) -> go.Figure:
     return fig
 
 
-def create_brand_comparison_bar(summary_df: pd.DataFrame, metric: str = 'Net_Movement') -> go.Figure:
-    """Create bar chart"""
+def create_brand_comparison_bar(summary_df: pd.DataFrame, metric: str = 'Net_Movement', item_label: str = None) -> go.Figure:
+    """Create bar chart
+    
+    Args:
+        summary_df: Summary dataframe with Brand or Product column
+        metric: Metric to compare
+        item_label: Column name for items (will auto-detect if not provided)
+    """
+    # Auto-detect item column if not provided
+    if item_label is None:
+        if 'Brand' in summary_df.columns:
+            item_label = 'Brand'
+        elif 'Product' in summary_df.columns:
+            item_label = 'Product'
+        else:
+            item_label = summary_df.columns[0]  # Fallback to first column
+    
     sorted_df = summary_df.sort_values(metric, ascending=False)
     colors = ['#4CAF50' if v >= 0 else '#F44336' for v in sorted_df[metric]]
-    fig = go.Figure(data=[go.Bar(x=sorted_df['Brand'], y=sorted_df[metric], marker_color=colors,
+    fig = go.Figure(data=[go.Bar(x=sorted_df[item_label], y=sorted_df[metric], marker_color=colors,
                                   text=sorted_df[metric], texttemplate='%{text:,}')])
     fig.add_hline(y=0, line_dash="dash", line_color="gray")
     fig.update_layout(title=f"Brand Comparison: {metric.replace('_', ' ')}", height=450)
