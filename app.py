@@ -287,7 +287,8 @@ if run_analysis or st.session_state.query_executed:
         kpis = data_processor.calculate_hybrid_kpis(summary_df_full, summary_df_filtered, selected_brands)
     else:
         # Focus View or No Filter: Use standard KPIs
-        kpis = data_processor.calculate_executive_kpis(summary_df, summary_df_full)
+        # Pass summary_df for both parameters to properly detect single-brand case
+        kpis = data_processor.calculate_executive_kpis(summary_df, summary_df)
     
     # Render Executive Summary Section at the top (but calculated here after filtering)
     st.markdown("""
