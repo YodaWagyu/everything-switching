@@ -398,7 +398,9 @@ if run_analysis or st.session_state.query_executed:
             st.info(f"💡 **Category View**: Showing complete category with **{', '.join(selected_brands)}** highlighted")
     
     # Calculate summary AFTER determining df_display (this ensures AI gets correct data)
-    summary_df = data_processor.calculate_brand_summary(df_display)
+    # Use dynamic item label based on analysis mode
+    item_label = 'Product' if is_product_switch_mode else 'Brand'
+    summary_df = data_processor.calculate_brand_summary(df_display, item_label=item_label)
     
     # For Focus View: Remove OTHERS from summary table to show only focused brands
     # But keep OTHERS in df_display so Waterfall/Matrix can show Switch In from OTHERS

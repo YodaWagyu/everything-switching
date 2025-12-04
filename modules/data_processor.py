@@ -62,8 +62,13 @@ def aggregate_to_brand_level(df: pd.DataFrame, product_master_lookup: Dict[str, 
     return brand_df
 
 
-def calculate_brand_summary(df: pd.DataFrame) -> pd.DataFrame:
-    """Calculate movement summary for each brand"""
+def calculate_brand_summary(df: pd.DataFrame, item_label: str = 'Brand') -> pd.DataFrame:
+    """Calculate movement summary for each brand/product
+    
+    Args:
+        df: DataFrame with prod_2024, prod_2025, customers, move_type columns
+        item_label: Label for the item column (default: 'Brand', can be 'Product' in Product Switch mode)
+    """
     
     # IMPORTANT: Only summarize brands that exist in Period 1 (prod_2024)
     # This ensures Total Movement counts customers from Before Period only
@@ -102,7 +107,7 @@ def calculate_brand_summary(df: pd.DataFrame) -> pd.DataFrame:
         period2_total = stayed + switch_in + new_customer
         
         summary_data.append({
-            'Brand': brand,
+            item_label: brand,  # Dynamic column name
             '2024_Total': period1_total,
             'Stayed': stayed,
             'Switch_Out': switch_out,
