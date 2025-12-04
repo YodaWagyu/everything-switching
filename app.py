@@ -210,7 +210,39 @@ if run_analysis or st.session_state.query_executed:
         st.markdown("---")
     
     display_category = selected_categories[0] if selected_categories else None
-    utils.display_filter_summary(analysis_mode, period1_start.strftime("%Y-%m-%d"), period1_end.strftime("%Y-%m-%d"), period2_start.strftime("%Y-%m-%d"), period2_end.strftime("%Y-%m-%d"), display_category, selected_brands, product_name_contains, primary_threshold, len(utils.parse_barcode_mapping(barcode_mapping_text)) if analysis_mode == "Custom Type" else 0)
+    
+    # Extract available brands from query results (exclude special categories)
+    special_categories = ['NEW_TO_CATEGORY', 'LOST_FROM_CATEGORY', 'MIXED']
+    all_brands_in_data = sorted([b for b in df['prod_2024'].unique() if b not in special_categories])
+    
+    # Post-Query Brand Filter
+    st.markdown("""
+    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M17.63 5.84C17.27 5.33 16.67 5 16 5L5 5.01C3.9 5.01 3 5.9 3 7v10c0 1.1.9 1.99 2 1.99L16 19c.67 0 1.27-.33 1.63-.84L22 12l-4.37-6.16zM16 17H5V7h11l3.55 5L16 17z"/></svg>
+            <span style="font-size: 20px; font-weight: 700; color: white;">🏷️ Select Brands to Analyze</span>
+        </div>
+    </div>
+""", unsafe_allow_html=True)
+    
+    selected_brands = st.multiselect(
+        "Choose one or more brands to analyze",
+        options=all_brands_in_data,
+        default=None,
+        help="💡 Select brands to focus your analysis. You can switch brands anytime without re-querying!",
+        key="brand_filter_post_query"
+    )
+    
+    if not selected_brands:
+        st.info("👆 **Please select at least one brand above to view the analysis**")
+        st.caption("All brands are available from your query. Select any brand(s) and results will appear instantly!")
+        st.stop()
+    
+    # Display selected brands
+    st.success(f"✅ Analyzing **{len(selected_brands)} brand(s)**: {', '.join(selected_brands)}")
+    
+    # Note: No need to update filter summary here since we moved brand filter
+    # utils.display_filter_summary(...) - will update this later if needed
     
     # Placeholder for Executive KPIs - will be calculated after filtering
     # Will be rendered after filtering
