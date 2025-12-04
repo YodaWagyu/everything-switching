@@ -158,14 +158,16 @@ if run_analysis or st.session_state.query_executed:
             st.error("⚠️ Please select at least one category to run the analysis.")
             st.stop()
         
-        query = query_builder.build_switching_query(
+        # Query ALL brands in category (no brand filter at BigQuery level)
+        # Brand filtering will be done client-side for Focus View
+        query_all_brands = query_builder.build_switching_query(
             analysis_mode, 
             period1_start.strftime("%Y-%m-%d"), 
             period1_end.strftime("%Y-%m-%d"), 
             period2_start.strftime("%Y-%m-%d"), 
             period2_end.strftime("%Y-%m-%d"), 
             selected_category, 
-            selected_brands, 
+            None,  # No brand filter - get all brands
             product_name_contains or None,
             product_name_not_contains or None,
             primary_threshold, 
@@ -173,8 +175,9 @@ if run_analysis or st.session_state.query_executed:
             store_filter_type,
             store_opening_cutoff
         )
-        utils.show_debug_query(query)
-        df, gb_processed = bigquery_client.execute_query(query)
+        
+        utils.show_debug_query(query_all_brands)
+        df, gb_processed = bigquery_client.execute_query(query_all_brands)
         st.session_state.results_df = df
         st.session_state.gb_processed = gb_processed
         st.session_state.query_executed = True
