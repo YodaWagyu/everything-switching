@@ -217,10 +217,10 @@ if run_analysis or st.session_state.query_executed:
     
     # Post-Query Brand Filter
     st.markdown("""
-    <div style="border-left: 4px solid #0f3d3e; background: #f8f9fa; padding: 15px 20px; border-radius: 8px; margin-bottom: 20px;">
-        <div style="display: flex; align-items: center; gap: 10px;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="#0f3d3e"><path d="M17.63 5.84C17.27 5.33 16.67 5 16 5L5 5.01C3.9 5.01 3 5.9 3 7v10c0 1.1.9 1.99 2 1.99L16 19c.67 0 1.27-.33 1.63-.84L22 12l-4.37-6.16zM16 17H5V7h11l3.55 5L16 17z"/></svg>
-            <span style="font-size: 18px; font-weight: 700; color: #0f3d3e;">Select Brands to Analyze</span>
+    <div style="border: 2px solid #0f3d3e; background: linear-gradient(to right, #e8f4f5, #ffffff); padding: 18px 24px; border-radius: 10px; margin-bottom: 25px; box-shadow: 0 2px 8px rgba(15, 61, 62, 0.1);">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="#0f3d3e"><path d="M17.63 5.84C17.27 5.33 16.67 5 16 5L5 5.01C3.9 5.01 3 5.9 3 7v10c0 1.1.9 1.99 2 1.99L16 19c.67 0 1.27-.33 1.63-.84L22 12l-4.37-6.16zM16 17H5V7h11l3.55 5L16 17z"/></svg>
+            <span style="font-size: 19px; font-weight: 800; color: #0f3d3e;">Select Brands to Analyze</span>
         </div>
     </div>
 """, unsafe_allow_html=True)
@@ -422,34 +422,28 @@ if run_analysis or st.session_state.query_executed:
         with k4:
             if is_hybrid:
                 loser_cat_name = kpis['category']['loser_name']
-                loser_cat_val = kpis['category']['loser_val']
-                loser_filt_name = kpis['filtered']['loser_name']
-                loser_filt_val = kpis['filtered']['loser_val']
-                # Use actual values with proper sign
-                loser_cat_sign = '+' if loser_cat_val >= 0 else ''
-                loser_filt_sign = '+' if loser_filt_val >= 0 else ''
-                loser_cat_fmt = utils.format_number(abs(loser_cat_val))
-                loser_filt_fmt = utils.format_number(abs(loser_filt_val))
+                # Use actual values (not abs) to preserve sign
+                loser_cat_val_formatted = f"{loser_cat_val:+,}" if loser_cat_val != 0 else "0"
+                loser_filt_val_formatted = f"{loser_filt_val:+,}" if loser_filt_val != 0 else "0"
                 st.markdown(f"""
                 <div class="premium-card" style="padding: 15px; text-align: center;">
                     <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Biggest Loser</div>
                     <div style="font-size: 16px; font-weight: 800; color: #0f3d3e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{loser_cat_name}</div>
-                    <div style="font-size: 12px; font-weight: 600; color: #c62828;">{loser_cat_sign}{loser_cat_fmt}</div>
+                    <div style="font-size: 12px; font-weight: 600; color: #c62828;">{loser_cat_val_formatted}</div>
                     <div style="font-size: 10px; color: #888; margin-top: 5px;">Category</div>
                     <div style="font-size: 14px; font-weight: 700; color: #f57c00; margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">🎯 {loser_filt_name}</div>
-                    <div style="font-size: 11px; font-weight: 500; color: #f57c00;">{loser_filt_sign}{loser_filt_fmt}</div>
+                    <div style="font-size: 11px; font-weight: 500; color: #f57c00;">{loser_filt_val_formatted}</div>
                 </div>
                 """, unsafe_allow_html=True)
             else:
-                # Use actual value with proper sign
+                # Use actual value (not abs) to preserve sign
                 loser_val = kpis['loser_val']
-                loser_val_sign = '+' if loser_val >= 0 else ''
-                loser_val_fmt = utils.format_number(abs(loser_val))
+                loser_val_formatted = f"{loser_val:+,}" if loser_val != 0 else "0"
                 st.markdown(f"""
                 <div class="premium-card" style="padding: 15px; text-align: center;">
                     <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Biggest Loser</div>
                     <div style="font-size: 18px; font-weight: 800; color: #0f3d3e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{kpis['loser_name']}</div>
-                    <div style="font-size: 14px; font-weight: 600; color: #c62828;">{loser_val_sign}{loser_val_fmt}</div>
+                    <div style="font-size: 14px; font-weight: 600; color: #c62828;">{loser_val_formatted}</div>
                 </div>
                 """, unsafe_allow_html=True)
             
