@@ -224,35 +224,97 @@ if run_analysis or st.session_state.query_executed:
     
     display_category = selected_categories[0] if selected_categories else None
     
-    # === POST-QUERY CONTROLS - Clean Card Design ===
+    # === MODERN CONTROL PANEL ===
     st.markdown("""
-    <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 20px 24px; border-radius: 16px; margin: 24px 0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-        <div style="display: flex; align-items: center; gap: 12px;">
-            <div style="background: rgba(255,255,255,0.1); padding: 8px; border-radius: 8px;">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+    <style>
+    /* Modern glassmorphism control panel */
+    .control-panel {
+        background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        padding: 28px;
+        margin: 24px 0;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    }
+    .panel-header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+    .panel-icon {
+        width: 48px;
+        height: 48px;
+        background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3);
+    }
+    .panel-title {
+        font-size: 22px;
+        font-weight: 800;
+        color: #ffffff;
+        letter-spacing: -0.5px;
+        margin: 0;
+    }
+    .panel-subtitle {
+        font-size: 14px;
+        color: rgba(255, 255, 255, 0.5);
+        margin-top: 4px;
+    }
+    .toggle-group {
+        display: flex;
+        gap: 8px;
+        background: rgba(255, 255, 255, 0.05);
+        padding: 6px;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .toggle-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.7);
+        margin-bottom: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    </style>
+    
+    <div class="control-panel">
+        <div class="panel-header">
+            <div class="panel-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="white">
+                    <path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/>
+                </svg>
             </div>
             <div>
-                <div style="font-size: 18px; font-weight: 700; color: white; letter-spacing: -0.5px;">Analysis Settings</div>
-                <div style="font-size: 13px; color: rgba(255,255,255,0.6);">Choose view mode and filters</div>
+                <h2 class="panel-title">Control Panel</h2>
+                <p class="panel-subtitle">Configure your analysis view and filters</p>
             </div>
         </div>
+        <div class="toggle-label">📊 Analysis Level</div>
     </div>
     """, unsafe_allow_html=True)
     
-    # View Mode Toggle - Pills Style
-    st.markdown("""
-    <div style="margin-bottom: 16px;">
-        <span style="font-size: 14px; font-weight: 600; color: #475569;">📊 View Level</span>
-    </div>
-    """, unsafe_allow_html=True)
+    # View Mode Toggle with styled radio
+    view_col1, view_col2 = st.columns([1, 3])
+    with view_col1:
+        view_mode = st.radio(
+            "View by",
+            options=["Brand", "Product"],
+            horizontal=True,
+            key="view_mode_toggle",
+            label_visibility="collapsed"
+        )
+    with view_col2:
+        if view_mode == "Brand":
+            st.caption("🏷️ Aggregated by brand name")
+        else:
+            st.caption("📦 Detailed product-level data")
     
-    view_mode = st.radio(
-        "View by",
-        options=["Brand", "Product"],
-        horizontal=True,
-        key="view_mode_toggle",
-        label_visibility="collapsed"
-    )
     is_product_switch_mode = (view_mode == "Product")
     
     # Prepare df_working based on view mode (aggregate if Brand view, before filtering)
@@ -305,77 +367,108 @@ if run_analysis or st.session_state.query_executed:
         filter_label = "Select Brands"
         filter_help = "💡 Select brands to see **brand-level** aggregated switching"
     
-    # Post-Query Brand Filter - Rich Minimal Modern Design
+    # === MODERN BRAND SELECTOR CARD ===
     st.markdown("""
-    <style>
-    /* Target the container directly without needing marker div */
-    div[data-testid="stVerticalBlock"] > div[data-testid="stVerticalBlock"]:has(+ div[data-testid="stMultiSelect"]) {
-        background: #ffffff;
-        border: 1.5px solid #d0d0d0;
-        border-radius: 12px;
-        padding: 28px 32px;
-        margin-bottom: 32px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.05);
-        transition: all 0.2s ease;
-    }
-    div[data-testid="stVerticalBlock"] > div[data-testid="stVerticalBlock"]:has(+ div[data-testid="stMultiSelect"]):hover {
-        border-color: #b0b0b0;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.08);
-    }
-    </style>
-    """, unsafe_allow_html=True)
-    
-    with st.container():
-        st.markdown("""
-        <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #e8e8e8;">
-            <div style="width: 36px; height: 36px; background: linear-gradient(135deg, #0f3d3e 0%, #1a5f60 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(15, 61, 62, 0.2);">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M17.63 5.84C17.27 5.33 16.67 5 16 5L5 5.01C3.9 5.01 3 5.9 3 7v10c0 1.1.9 1.99 2 1.99L16 19c.67 0 1.27-.33 1.63-.84L22 12l-4.37-6.16zM16 17H5V7h11l3.55 5L16 17z"/></svg>
+    <div style="
+        background: linear-gradient(to right, #ffffff, #f8fafc);
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 24px;
+        margin: 16px 0;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+    ">
+        <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 16px;">
+            <div style="
+                width: 44px;
+                height: 44px;
+                background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+                border-radius: 12px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+            ">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="white">
+                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                </svg>
             </div>
             <div>
-                <div style="font-size: 18px; font-weight: 700; color: #1a1a1a; letter-spacing: -0.3px;">Select Brands</div>
-                <div style="font-size: 13px; color: #666; margin-top: 2px;">Choose brands to analyze instantly</div>
+                <div style="font-size: 17px; font-weight: 700; color: #1e293b;">Brand Selection</div>
+                <div style="font-size: 13px; color: #64748b;">Pick brands for instant analysis</div>
             </div>
         </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    selected_brands = st.multiselect(
+        filter_label,
+        options=all_brands_in_data,
+        default=None,
+        help=filter_help,
+        key="brand_filter_post_query",
+        label_visibility="collapsed"
+    )
+    
+    if not selected_brands:
+        st.markdown("""
+        <div style="
+            background: linear-gradient(135deg, #fef3c7 0%, #fef9c3 100%);
+            border: 1px solid #fcd34d;
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-top: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        ">
+            <span style="font-size: 20px;">👆</span>
+            <span style="font-size: 14px; color: #92400e; font-weight: 500;">Select brands above to start analysis</span>
+        </div>
         """, unsafe_allow_html=True)
-        
-        selected_brands = st.multiselect(
-            filter_label,
-            options=all_brands_in_data,
-            default=None,
-            help=filter_help,
-            key="brand_filter_post_query",
-            label_visibility="collapsed"
-        )
-        
-        if not selected_brands:
-            st.markdown("""
-            <div style="background: #f8f9fa; border-left: 3px solid #0f3d3e; padding: 16px 20px; border-radius: 6px; margin-top: 16px;">
-                <div style="font-size: 14px; color: #555; line-height: 1.6;">
-                    <strong>👆 Select brands above</strong> to view insights
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-            st.stop()
-        
-        # Display selected brands elegantly
-        if is_product_switch_mode and product_to_brand_map:
-            # Count products under selected brands
-            selected_products = [p for p, b in product_to_brand_map.items() if b in selected_brands]
-            st.markdown(f"""
-            <div style="background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%); border-left: 3px solid #4caf50; padding: 14px 20px; border-radius: 6px; margin-top: 16px;">
-                <div style="font-size: 13px; color: #2e7d32; font-weight: 600;">
-                    ✓ Analyzing {len(selected_brands)} brand{"s" if len(selected_brands) > 1 else ""} ({len(selected_products)} products): <span style="font-weight: 700;">{", ".join(selected_brands)}</span>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-        else:
-            st.markdown(f"""
-            <div style="background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%); border-left: 3px solid #4caf50; padding: 14px 20px; border-radius: 6px; margin-top: 16px;">
-                <div style="font-size: 13px; color: #2e7d32; font-weight: 600;">
-                    ✓ Analyzing {len(selected_brands)} brand{"s" if len(selected_brands) > 1 else ""}: <span style="font-weight: 700;">{", ".join(selected_brands)}</span>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
+        st.stop()
+    
+    # Success message when brands selected
+    brands_display = ", ".join(selected_brands[:3])
+    if len(selected_brands) > 3:
+        brands_display += f" +{len(selected_brands) - 3} more"
+    
+    if is_product_switch_mode and product_to_brand_map:
+        selected_products = [p for p, b in product_to_brand_map.items() if b in selected_brands]
+        st.markdown(f"""
+        <div style="
+            background: linear-gradient(135deg, #dcfce7 0%, #d1fae5 100%);
+            border: 1px solid #86efac;
+            border-radius: 12px;
+            padding: 14px 18px;
+            margin-top: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        ">
+            <span style="font-size: 18px;">✅</span>
+            <span style="font-size: 14px; color: #166534; font-weight: 600;">
+                {len(selected_brands)} brand{"s" if len(selected_brands) > 1 else ""} • {len(selected_products)} products: <span style="color: #15803d;">{brands_display}</span>
+            </span>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown(f"""
+        <div style="
+            background: linear-gradient(135deg, #dcfce7 0%, #d1fae5 100%);
+            border: 1px solid #86efac;
+            border-radius: 12px;
+            padding: 14px 18px;
+            margin-top: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        ">
+            <span style="font-size: 18px;">✅</span>
+            <span style="font-size: 14px; color: #166534; font-weight: 600;">
+                Analyzing {len(selected_brands)} brand{"s" if len(selected_brands) > 1 else ""}: <span style="color: #15803d;">{brands_display}</span>
+            </span>
+        </div>
+        """, unsafe_allow_html=True)
     
     # Apply Product Filtering for Product Switch Mode
     if is_product_switch_mode and selected_brands and product_to_brand_map:
@@ -435,43 +528,50 @@ if run_analysis or st.session_state.query_executed:
             df_display = brand_filter.filter_dataframe_by_brands(df_working, selected_brands, 'filtered')
     
     # === BARCODE FILTER (AFTER Brand Selection) ===
-    # This allows users to further narrow down within the selected brands
-    st.markdown("""
-    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin: 16px 0;">
-        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-            <span style="font-size: 18px;">📋</span>
-            <span style="font-weight: 600; color: #334155;">Barcode Filter</span>
-            <span style="font-size: 12px; color: #94a3b8; margin-left: 8px;">optional - narrow down within selected brands</span>
+    # Modern collapsible filter card
+    with st.expander("📋 **Barcode Filter** (optional)", expanded=False):
+        st.markdown("""
+        <div style="
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border-radius: 10px;
+            padding: 14px;
+            margin-bottom: 12px;
+        ">
+            <span style="font-size: 13px; color: #0369a1;">
+                💡 Paste barcodes to filter within selected brands. Works in both Brand and Product views.
+            </span>
         </div>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    bc_col1, bc_col2 = st.columns([3, 1])
-    with bc_col1:
-        barcode_filter_input = st.text_area(
-            "Paste barcodes (one per line)",
-            height=80,
-            placeholder="8850123456789\n8850234567891\n...",
-            key="barcode_filter_input",
-            label_visibility="collapsed"
-        )
-    with bc_col2:
-        st.markdown("<div style='height: 8px'></div>", unsafe_allow_html=True)
-        apply_barcode_filter = st.button("✅ Apply Filter", key="apply_bc_filter", use_container_width=True)
-        if st.button("🗑️ Clear", key="clear_bc_filter", use_container_width=True):
-            st.session_state.active_barcode_filter = []
+        """, unsafe_allow_html=True)
+        
+        bc_col1, bc_col2 = st.columns([3, 1])
+        with bc_col1:
+            barcode_filter_input = st.text_area(
+                "Paste barcodes",
+                height=100,
+                placeholder="Paste barcodes here (one per line)\n8850123456789\n8850234567891\n...",
+                key="barcode_filter_input",
+                label_visibility="collapsed"
+            )
+        with bc_col2:
+            st.markdown("<br>", unsafe_allow_html=True)
+            apply_barcode_filter = st.button("✅ Apply", key="apply_bc_filter", use_container_width=True, type="primary")
+            if st.button("🗑️ Clear", key="clear_bc_filter", use_container_width=True):
+                st.session_state.active_barcode_filter = []
+                st.rerun()
+        
+        # Parse and apply barcode filter
+        if apply_barcode_filter and barcode_filter_input.strip():
+            barcode_list = [b.strip() for b in barcode_filter_input.strip().split('\n') if b.strip()]
+            st.session_state.active_barcode_filter = barcode_list
             st.rerun()
+        
+        # Show active filter status inside expander
+        active_barcodes_display = st.session_state.get('active_barcode_filter', [])
+        if active_barcodes_display:
+            st.success(f"🔍 **{len(active_barcodes_display)}** barcodes active")
     
-    # Parse and apply barcode filter
-    if apply_barcode_filter and barcode_filter_input.strip():
-        barcode_list = [b.strip() for b in barcode_filter_input.strip().split('\n') if b.strip()]
-        st.session_state.active_barcode_filter = barcode_list
-        st.rerun()
-    
-    # Show active filter status
+    # Get active barcodes for filtering logic (outside expander)
     active_barcodes = st.session_state.get('active_barcode_filter', [])
-    if active_barcodes:
-        st.info(f"🔍 **Active Filter:** {len(active_barcodes)} barcodes selected")
     
     # === Apply barcode filter (WORKS IN BOTH Brand AND Product modes) ===
     if active_barcodes:
