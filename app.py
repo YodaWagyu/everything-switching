@@ -224,97 +224,16 @@ if run_analysis or st.session_state.query_executed:
     
     display_category = selected_categories[0] if selected_categories else None
     
-    # === MODERN CONTROL PANEL ===
-    st.markdown("""
-    <style>
-    /* Modern glassmorphism control panel */
-    .control-panel {
-        background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%);
-        backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 20px;
-        padding: 28px;
-        margin: 24px 0;
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-    }
-    .panel-header {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        margin-bottom: 24px;
-    }
-    .panel-icon {
-        width: 48px;
-        height: 48px;
-        background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
-        border-radius: 14px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3);
-    }
-    .panel-title {
-        font-size: 22px;
-        font-weight: 800;
-        color: #ffffff;
-        letter-spacing: -0.5px;
-        margin: 0;
-    }
-    .panel-subtitle {
-        font-size: 14px;
-        color: rgba(255, 255, 255, 0.5);
-        margin-top: 4px;
-    }
-    .toggle-group {
-        display: flex;
-        gap: 8px;
-        background: rgba(255, 255, 255, 0.05);
-        padding: 6px;
-        border-radius: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-    .toggle-label {
-        font-size: 13px;
-        font-weight: 600;
-        color: rgba(255, 255, 255, 0.7);
-        margin-bottom: 10px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    </style>
-    
-    <div class="control-panel">
-        <div class="panel-header">
-            <div class="panel-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="white">
-                    <path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/>
-                </svg>
-            </div>
-            <div>
-                <h2 class="panel-title">Control Panel</h2>
-                <p class="panel-subtitle">Configure your analysis view and filters</p>
-            </div>
-        </div>
-        <div class="toggle-label">📊 Analysis Level</div>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # View Mode Toggle with styled radio
-    view_col1, view_col2 = st.columns([1, 3])
-    with view_col1:
-        view_mode = st.radio(
-            "View by",
-            options=["Brand", "Product"],
-            horizontal=True,
-            key="view_mode_toggle",
-            label_visibility="collapsed"
-        )
-    with view_col2:
-        if view_mode == "Brand":
-            st.caption("🏷️ Aggregated by brand name")
-        else:
-            st.caption("📦 Detailed product-level data")
-    
+    # === SIMPLE VIEW MODE SELECTOR (matches existing theme) ===
+    st.markdown("#### 📊 View Mode")
+    view_mode = st.radio(
+        "View by",
+        options=["Brand", "Product"],
+        horizontal=True,
+        key="view_mode_toggle",
+        label_visibility="collapsed",
+        help="Brand = aggregated view, Product = detailed view"
+    )
     is_product_switch_mode = (view_mode == "Product")
     
     # Prepare df_working based on view mode (aggregate if Brand view, before filtering)
@@ -367,39 +286,8 @@ if run_analysis or st.session_state.query_executed:
         filter_label = "Select Brands"
         filter_help = "💡 Select brands to see **brand-level** aggregated switching"
     
-    # === MODERN BRAND SELECTOR CARD ===
-    st.markdown("""
-    <div style="
-        background: linear-gradient(to right, #ffffff, #f8fafc);
-        border: 1px solid #e2e8f0;
-        border-radius: 16px;
-        padding: 24px;
-        margin: 16px 0;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-    ">
-        <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 16px;">
-            <div style="
-                width: 44px;
-                height: 44px;
-                background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
-                border-radius: 12px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
-            ">
-                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="white">
-                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-                </svg>
-            </div>
-            <div>
-                <div style="font-size: 17px; font-weight: 700; color: #1e293b;">Brand Selection</div>
-                <div style="font-size: 13px; color: #64748b;">Pick brands for instant analysis</div>
-            </div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-    
+    # === SIMPLE BRAND SELECTOR (matches existing theme) ===
+    st.markdown("#### 🏷️ Select Brands")
     selected_brands = st.multiselect(
         filter_label,
         options=all_brands_in_data,
@@ -410,65 +298,19 @@ if run_analysis or st.session_state.query_executed:
     )
     
     if not selected_brands:
-        st.markdown("""
-        <div style="
-            background: linear-gradient(135deg, #fef3c7 0%, #fef9c3 100%);
-            border: 1px solid #fcd34d;
-            border-radius: 12px;
-            padding: 16px 20px;
-            margin-top: 12px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        ">
-            <span style="font-size: 20px;">👆</span>
-            <span style="font-size: 14px; color: #92400e; font-weight: 500;">Select brands above to start analysis</span>
-        </div>
-        """, unsafe_allow_html=True)
+        st.warning("👆 Select brands above to start analysis")
         st.stop()
     
-    # Success message when brands selected
-    brands_display = ", ".join(selected_brands[:3])
-    if len(selected_brands) > 3:
-        brands_display += f" +{len(selected_brands) - 3} more"
+    # Simple success message
+    brands_display = ", ".join(selected_brands[:5])
+    if len(selected_brands) > 5:
+        brands_display += f" +{len(selected_brands) - 5} more"
     
     if is_product_switch_mode and product_to_brand_map:
         selected_products = [p for p, b in product_to_brand_map.items() if b in selected_brands]
-        st.markdown(f"""
-        <div style="
-            background: linear-gradient(135deg, #dcfce7 0%, #d1fae5 100%);
-            border: 1px solid #86efac;
-            border-radius: 12px;
-            padding: 14px 18px;
-            margin-top: 12px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        ">
-            <span style="font-size: 18px;">✅</span>
-            <span style="font-size: 14px; color: #166534; font-weight: 600;">
-                {len(selected_brands)} brand{"s" if len(selected_brands) > 1 else ""} • {len(selected_products)} products: <span style="color: #15803d;">{brands_display}</span>
-            </span>
-        </div>
-        """, unsafe_allow_html=True)
+        st.success(f"✅ **{len(selected_brands)}** brands ({len(selected_products)} products): {brands_display}")
     else:
-        st.markdown(f"""
-        <div style="
-            background: linear-gradient(135deg, #dcfce7 0%, #d1fae5 100%);
-            border: 1px solid #86efac;
-            border-radius: 12px;
-            padding: 14px 18px;
-            margin-top: 12px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        ">
-            <span style="font-size: 18px;">✅</span>
-            <span style="font-size: 14px; color: #166534; font-weight: 600;">
-                Analyzing {len(selected_brands)} brand{"s" if len(selected_brands) > 1 else ""}: <span style="color: #15803d;">{brands_display}</span>
-            </span>
-        </div>
-        """, unsafe_allow_html=True)
+        st.success(f"✅ Analyzing **{len(selected_brands)}** brands: {brands_display}")
     
     # Apply Product Filtering for Product Switch Mode
     if is_product_switch_mode and selected_brands and product_to_brand_map:
@@ -499,12 +341,8 @@ if run_analysis or st.session_state.query_executed:
     # Placeholder for Executive KPIs - will be calculated after filtering
     # Will be rendered after filtering
     
-    st.markdown("""
-    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; margin-top: 30px;">
-        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="#0f3d3e"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
-        <span style="font-size: 24px; font-weight: 800; color: #0f3d3e;">Section 1: Customer Flow</span>
-    </div>
-""", unsafe_allow_html=True)
+    st.markdown("---")
+    st.markdown("### 📊 Section 1: Customer Flow")
     
     # Apply brand filtering based on selection from sidebar
     # df_working already has barcode filter applied and is aggregated appropriately for view mode
@@ -527,21 +365,9 @@ if run_analysis or st.session_state.query_executed:
             # Filter directly by selected brand names
             df_display = brand_filter.filter_dataframe_by_brands(df_working, selected_brands, 'filtered')
     
-    # === BARCODE FILTER (AFTER Brand Selection) ===
-    # Modern collapsible filter card
-    with st.expander("📋 **Barcode Filter** (optional)", expanded=False):
-        st.markdown("""
-        <div style="
-            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-            border-radius: 10px;
-            padding: 14px;
-            margin-bottom: 12px;
-        ">
-            <span style="font-size: 13px; color: #0369a1;">
-                💡 Paste barcodes to filter within selected brands. Works in both Brand and Product views.
-            </span>
-        </div>
-        """, unsafe_allow_html=True)
+    # === BARCODE FILTER (AFTER Brand Selection) - Simple expander ===
+    with st.expander("📋 Barcode Filter (optional)", expanded=False):
+        st.caption("💡 Paste barcodes to filter within selected brands")
         
         bc_col1, bc_col2 = st.columns([3, 1])
         with bc_col1:
@@ -553,8 +379,7 @@ if run_analysis or st.session_state.query_executed:
                 label_visibility="collapsed"
             )
         with bc_col2:
-            st.markdown("<br>", unsafe_allow_html=True)
-            apply_barcode_filter = st.button("✅ Apply", key="apply_bc_filter", use_container_width=True, type="primary")
+            apply_barcode_filter = st.button("✅ Apply", key="apply_bc_filter", use_container_width=True)
             if st.button("🗑️ Clear", key="clear_bc_filter", use_container_width=True):
                 st.session_state.active_barcode_filter = []
                 st.rerun()
