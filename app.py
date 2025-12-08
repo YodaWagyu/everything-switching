@@ -69,6 +69,19 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
+# Global CSS for Chart Containers - rounded borders like KPI cards
+st.markdown("""
+<style>
+/* Plotly chart containers - rounded borders and shadow */
+[data-testid="stPlotlyChart"] > div {
+    border: 1px solid #e5e7eb !important;
+    border-radius: 8px !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
+    overflow: hidden !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
 # Add logout button in sidebar
 with st.sidebar:
     if st.button("🚪 Logout", use_container_width=True):
@@ -1242,12 +1255,17 @@ if run_analysis or st.session_state.query_executed:
     
     # Tab 4: Charts (moved from tab3)
     with tab4:
-        st.markdown("### �📈 Market Overview")
+        st.markdown("### ◆📈 Market Overview")
+        
+        # Metric selector at top level
+        metric = st.selectbox("Metric", ['Stayed', 'Net_Movement','Total_In','Total_Out'], key="chart_metric")
+        
         c1, c2 = st.columns(2)
         with c1:
+            st.caption("Movement Distribution")
             st.plotly_chart(visualizations.create_movement_type_pie(df_display), use_container_width=True)
         with c2:
-            metric = st.selectbox("Metric", ['Net_Movement','Total_In','Total_Out','Stayed'])
+            st.caption(f"Brand Comparison: {metric.replace('_', ' ')}")
             st.plotly_chart(visualizations.create_brand_comparison_bar(summary_df, metric), use_container_width=True)
             
         st.markdown("---")

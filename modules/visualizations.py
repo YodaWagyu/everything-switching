@@ -147,10 +147,11 @@ def create_sankey_diagram(labels: List[str], sources: List[int], targets: List[i
     )])
     
     fig.update_layout(
-        title={'text': "Customer Flow (Sankey)", 'x': 0.5}, 
-        plot_bgcolor='white', 
-        height=600,
-        margin=dict(l=10, r=10, t=40, b=10)
+        title='', 
+        plot_bgcolor='white',
+        paper_bgcolor='white',
+        height=550,
+        margin=dict(l=10, r=10, t=10, b=10)
     )
     return fig
 
@@ -167,9 +168,12 @@ def create_competitive_heatmap(heatmap_df: pd.DataFrame) -> go.Figure:
         textfont={"size": 12}  # ไม่กำหนดสี ให้ plotly เลือกเอง
     ))
     fig.update_layout(
-        title="Competitive Matrix",
-        height=600,
-        font=dict(family="Arial", size=13, color="#000000")
+        title='',
+        height=500,
+        font=dict(family="Arial", size=13, color="#000000"),
+        paper_bgcolor='white',
+        plot_bgcolor='white',
+        margin=dict(l=10, r=60, t=10, b=10)
     )
     return fig
 
@@ -224,11 +228,13 @@ def create_net_gain_loss_chart(df: pd.DataFrame, target_brand: str) -> go.Figure
     ))
     
     fig.update_layout(
-        title=f"Net Gain/Loss: {target_brand} vs Competitors",
+        title='',
         xaxis_title="Net Customers (In - Out)",
-        yaxis_title="Competitor",
-        height=max(400, len(comp_df) * 30),
-        plot_bgcolor='white'
+        yaxis_title="",
+        height=max(350, len(comp_df) * 30),
+        plot_bgcolor='white',
+        paper_bgcolor='white',
+        margin=dict(l=10, r=10, t=10, b=40)
     )
     
     return fig
@@ -240,7 +246,7 @@ def create_waterfall_chart(waterfall_data: Dict, brand: str) -> go.Figure:
                                   y=waterfall_data['values'], text=[f"{v:,}" for v in waterfall_data['values']],
                                   textposition="outside", increasing={"marker": {"color": "#4CAF50"}},
                                   decreasing={"marker": {"color": "#F44336"}}, totals={"marker": {"color": "#2196F3"}}))
-    fig.update_layout(title=f"{brand} Movement", height=500)
+    fig.update_layout(title='', height=450, paper_bgcolor='white', plot_bgcolor='white', margin=dict(l=10, r=10, t=10, b=40))
     return fig
 
 
@@ -259,7 +265,7 @@ def create_movement_type_pie(df: pd.DataFrame) -> go.Figure:
     colors = [config.MOVEMENT_COLORS.get(mt, '#999999') for mt in movement_summary['move_type']]
     fig = go.Figure(data=[go.Pie(labels=movement_summary['move_type'], values=movement_summary['customers'],
                                   marker=dict(colors=colors), textinfo='label+percent')])
-    fig.update_layout(title="Movement Distribution", height=400)
+    fig.update_layout(title='', height=350, paper_bgcolor='white', margin=dict(l=10, r=10, t=10, b=10))
     return fig
 
 
@@ -297,5 +303,5 @@ def create_brand_comparison_bar(summary_df: pd.DataFrame, metric: str = 'Net_Mov
     fig = go.Figure(data=[go.Bar(x=sorted_df[item_label], y=sorted_df[metric], marker_color=colors,
                                   text=sorted_df[metric], texttemplate='%{text:,}')])
     fig.add_hline(y=0, line_dash="dash", line_color="gray")
-    fig.update_layout(title=f"Brand Comparison: {metric.replace('_', ' ')}", height=450)
+    fig.update_layout(title='', height=400, paper_bgcolor='white', plot_bgcolor='white', margin=dict(l=10, r=10, t=10, b=40))
     return fig
