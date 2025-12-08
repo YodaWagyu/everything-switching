@@ -386,17 +386,18 @@ if run_analysis or st.session_state.query_executed:
     if selected_brands:
         from modules import brand_filter
         
-        # Apply client-side filter (Focus View only - show selected brands)
-        if product_to_brand_map:
-            # Get list of products that belong to selected brands
+        # Apply client-side filter
+        if is_product_switch_mode and product_to_brand_map:
+            # Product Switch mode: df contains ProductNames
+            # Need to get list of products that belong to selected brands
             products_in_selected_brands = [
                 product for product, brand in product_to_brand_map.items() 
                 if brand in selected_brands
             ]
-            # Filter using product names
             df_display = brand_filter.filter_dataframe_by_brands(df, products_in_selected_brands, 'filtered')
         else:
-            # Fallback if no mapping (should not happen)
+            # Brand Switch mode: df already contains Brand names
+            # Filter directly by selected brand names
             df_display = brand_filter.filter_dataframe_by_brands(df, selected_brands, 'filtered')
     
     # KEY DIFFERENCE BETWEEN MODES:
