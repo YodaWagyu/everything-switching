@@ -170,14 +170,17 @@ if run_analysis or st.session_state.query_executed:
             st.error("⚠️ Please select at least one category to run the analysis.")
             st.stop()
         
-        # Query at Product level with all brands (Brand/Product view toggle is post-query)
+        # Query at Product level (Brand/Product view toggle is post-query)
+        # If brands selected in sidebar, filter at query level (saves data)
+        # If no brands, get all and user can filter client-side later
         query_all_brands = query_builder.build_switching_query(
             period1_start.strftime("%Y-%m-%d"), 
             period1_end.strftime("%Y-%m-%d"), 
             period2_start.strftime("%Y-%m-%d"), 
             period2_end.strftime("%Y-%m-%d"), 
             selected_category, 
-            None,  # No brand filter - get all brands
+            selected_brands if selected_brands else None,  # Use sidebar brands if selected
+            selected_subcategories if selected_subcategories else None,  # Use subcategories
             product_name_contains or None,
             product_name_not_contains or None,
             primary_threshold, 

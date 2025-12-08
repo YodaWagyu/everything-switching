@@ -57,6 +57,7 @@ def build_switching_query(
     period2_end: str,
     category: str,
     brands: list,
+    subcategories: list = None,
     product_name_contains: Optional[str] = None,
     product_name_not_contains: Optional[str] = None,
     primary_threshold: float = 0.60,
@@ -76,7 +77,8 @@ def build_switching_query(
         period2_start (str): Start date for period 2 (YYYY-MM-DD)
         period2_end (str): End date for period 2 (YYYY-MM-DD)
         category (str): Category name to filter
-        brands (list): List of brand names to filter
+        brands (list): List of brand names to filter (optional, filter at query level)
+        subcategories (list): List of subcategory names to filter (optional)
         product_name_contains (str, optional): Text to search in product names (OR condition)
         product_name_not_contains (str, optional): Text to exclude from product names (AND NOT condition)
         primary_threshold (float): Threshold for primary item (0.0 to 1.0)
@@ -156,6 +158,14 @@ def build_switching_query(
     # Escape category name
     category_escaped = category.replace("'", "''")
     
+    # Build subcategory filter
+    if subcategories and len(subcategories) > 0:
+        escaped_subcats = [s.replace("'", "''") for s in subcategories]
+        subcat_list = ", ".join([f"'{s}'" for s in escaped_subcats])
+        subcategory_filter = f"AND pm.SubCategoryName IN ({subcat_list})"
+    else:
+        subcategory_filter = ""
+    
     # Build the complete query with period-conditional brand filtering
     # When brands are filtered: Period 1 applies filter, Period 2 gets all brands
     # This enables "Gone vs Switch to Other Brands" analysis
@@ -200,6 +210,7 @@ WITH base AS (
   JOIN `{config.BIGQUERY_PROJECT}.{config.BIGQUERY_DATASET}.{config.BIGQUERY_TABLE_BRANCH}` br
     ON a.BranchCode = br.BranchCode
   WHERE pm.CategoryName = '{category_escaped}'
+    {subcategory_filter}
     {product_filter}
     {product_not_filter}
     {store_filter}
