@@ -145,43 +145,27 @@ st.sidebar.markdown("---")
 with st.sidebar.expander("⚙️ Advanced Settings", expanded=False):
     primary_threshold = st.slider("Primary %", float(config.MIN_PRIMARY_THRESHOLD*100), float(config.MAX_PRIMARY_THRESHOLD*100), float(config.DEFAULT_PRIMARY_THRESHOLD*100), step=5.0) / 100.0
 
+# Custom Barcode Mapping - Between Advanced Settings and Run Analysis
+with st.sidebar.expander("🏷️ Custom Barcode Mode", expanded=False):
+    st.caption("Map barcodes to custom types (bypasses brand filter)")
+    barcode_mapping_text = st.text_area(
+        "Paste barcode mapping", 
+        "", 
+        height=100, 
+        placeholder="8850002016620\tMEN\n8850002024458\tBasic\n\n(Copy from Excel: Barcode | Type)",
+        help="Paste from Excel (tab-separated) or use comma",
+        key="barcode_mapping_text_area",
+        label_visibility="collapsed"
+    )
+    
+    if barcode_mapping_text and barcode_mapping_text.strip():
+        # Count valid mappings
+        lines = [l.strip() for l in barcode_mapping_text.strip().split('\n') if l.strip()]
+        valid_count = sum(1 for l in lines if '\t' in l or ',' in l or '  ' in l)
+        st.caption(f"✓ {valid_count} barcodes mapped")
+
 st.sidebar.markdown("---")
 run_analysis = st.sidebar.button("🚀 Run Analysis", type="primary", use_container_width=True)
-
-# Custom Barcode Mapping - Separate section at bottom
-st.sidebar.markdown("---")
-st.sidebar.markdown("""
-<div style="
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-    border-radius: 8px;
-    padding: 12px 16px;
-    margin-bottom: 12px;
-">
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-        <span style="font-size:16px;">🏷️</span>
-        <span style="color:#fff;font-size:13px;font-weight:600;">Custom Barcode Mode</span>
-    </div>
-    <div style="color:rgba(255,255,255,0.7);font-size:11px;">
-        Map barcodes to custom types and analyze movement between them
-    </div>
-</div>
-""", unsafe_allow_html=True)
-
-barcode_mapping_text = st.sidebar.text_area(
-    "Paste barcode mapping", 
-    "", 
-    height=100, 
-    placeholder="8850002016620\tMEN\n8850002024458\tBasic\n\n(Copy from Excel: Barcode | Type)",
-    help="Paste from Excel (tab-separated) or CSV format",
-    key="barcode_mapping_text_area",
-    label_visibility="collapsed"
-)
-
-if barcode_mapping_text and barcode_mapping_text.strip():
-    # Count valid mappings
-    lines = [l.strip() for l in barcode_mapping_text.strip().split('\n') if l.strip()]
-    valid_count = sum(1 for l in lines if '\t' in l or ',' in l or '  ' in l)
-    st.sidebar.caption(f"ℹ️ {valid_count} barcodes mapped")
 
 if run_analysis or st.session_state.query_executed:
     if run_analysis:
