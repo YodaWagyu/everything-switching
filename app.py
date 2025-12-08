@@ -221,19 +221,34 @@ if run_analysis or st.session_state.query_executed:
     
     display_category = selected_categories[0] if selected_categories else None
     
-    # === POST-QUERY CONTROLS ===
+    # === POST-QUERY CONTROLS - Clean Card Design ===
     st.markdown("""
-    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 15px 20px; border-radius: 12px; margin: 20px 0;">
-        <span style="font-size: 16px; font-weight: 600; color: white;">⚙️ View Mode</span>
+    <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 20px 24px; border-radius: 16px; margin: 24px 0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="background: rgba(255,255,255,0.1); padding: 8px; border-radius: 8px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+            </div>
+            <div>
+                <div style="font-size: 18px; font-weight: 700; color: white; letter-spacing: -0.5px;">Analysis Settings</div>
+                <div style="font-size: 13px; color: rgba(255,255,255,0.6);">Choose view mode and filters</div>
+            </div>
+        </div>
     </div>
     """, unsafe_allow_html=True)
     
-    # View Mode Toggle
+    # View Mode Toggle - Pills Style
+    st.markdown("""
+    <div style="margin-bottom: 16px;">
+        <span style="font-size: 14px; font-weight: 600; color: #475569;">📊 View Level</span>
+    </div>
+    """, unsafe_allow_html=True)
+    
     view_mode = st.radio(
-        "📊 View by",
+        "View by",
         options=["Brand", "Product"],
         horizontal=True,
-        key="view_mode_toggle"
+        key="view_mode_toggle",
+        label_visibility="collapsed"
     )
     is_product_switch_mode = (view_mode == "Product")
     
@@ -251,8 +266,6 @@ if run_analysis or st.session_state.query_executed:
             'brand_2024': 'prod_2024',
             'brand_2025': 'prod_2025'
         })
-    
-    st.markdown("---")
     
     st.markdown("---")
     
@@ -420,56 +433,82 @@ if run_analysis or st.session_state.query_executed:
     
     # === BARCODE FILTER (AFTER Brand Selection) ===
     # This allows users to further narrow down within the selected brands
-    with st.expander("📋 Barcode Filter (optional - narrow down within selected brands)", expanded=False):
+    st.markdown("""
+    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin: 16px 0;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+            <span style="font-size: 18px;">📋</span>
+            <span style="font-weight: 600; color: #334155;">Barcode Filter</span>
+            <span style="font-size: 12px; color: #94a3b8; margin-left: 8px;">optional - narrow down within selected brands</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    bc_col1, bc_col2 = st.columns([3, 1])
+    with bc_col1:
         barcode_filter_input = st.text_area(
             "Paste barcodes (one per line)",
-            height=100,
+            height=80,
             placeholder="8850123456789\n8850234567891\n...",
-            key="barcode_filter_input"
+            key="barcode_filter_input",
+            label_visibility="collapsed"
         )
-        
-        bc_col1, bc_col2, bc_col3 = st.columns([1, 1, 2])
-        with bc_col1:
-            apply_barcode_filter = st.button("✅ Apply", key="apply_bc_filter")
-        with bc_col2:
-            if st.button("🗑️ Clear", key="clear_bc_filter"):
-                st.session_state.active_barcode_filter = []
-                st.rerun()
-        
-        # Parse and apply barcode filter
-        if apply_barcode_filter and barcode_filter_input.strip():
-            barcode_list = [b.strip() for b in barcode_filter_input.strip().split('\n') if b.strip()]
-            st.session_state.active_barcode_filter = barcode_list
+    with bc_col2:
+        st.markdown("<div style='height: 8px'></div>", unsafe_allow_html=True)
+        apply_barcode_filter = st.button("✅ Apply Filter", key="apply_bc_filter", use_container_width=True)
+        if st.button("🗑️ Clear", key="clear_bc_filter", use_container_width=True):
+            st.session_state.active_barcode_filter = []
             st.rerun()
-        
-        # Show active filter status
-        active_barcodes = st.session_state.get('active_barcode_filter', [])
-        if active_barcodes:
-            st.success(f"🔍 Filtering by {len(active_barcodes)} barcodes")
     
-    # Apply barcode filter to df_display (AFTER brand selection)
+    # Parse and apply barcode filter
+    if apply_barcode_filter and barcode_filter_input.strip():
+        barcode_list = [b.strip() for b in barcode_filter_input.strip().split('\n') if b.strip()]
+        st.session_state.active_barcode_filter = barcode_list
+        st.rerun()
+    
+    # Show active filter status
     active_barcodes = st.session_state.get('active_barcode_filter', [])
-    if active_barcodes and is_product_switch_mode:
-        # Only apply barcode filter in Product mode (Brand mode doesn't have barcode columns)
+    if active_barcodes:
+        st.info(f"🔍 **Active Filter:** {len(active_barcodes)} barcodes selected")
+    
+    # === Apply barcode filter (WORKS IN BOTH Brand AND Product modes) ===
+    if active_barcodes:
+        from modules import brand_filter
+        
+        # Always filter from ORIGINAL df (before any aggregation)
         if 'barcode_2024' in df.columns and 'barcode_2025' in df.columns:
-            # Need to filter BEFORE aggregation - go back to original df
-            # Filter by barcodes, then filter by brands again
+            # Filter by barcodes first
             df_barcode_filtered = df[
                 (df['barcode_2024'].isin(active_barcodes)) |
                 (df['barcode_2025'].isin(active_barcodes))
             ]
-            # Re-apply brand filter on barcode-filtered data
-            if selected_brands and product_to_brand_map:
-                products_in_selected_brands = [
-                    product for product, brand in product_to_brand_map.items() 
-                    if brand in selected_brands
-                ]
-                df_display = brand_filter.filter_dataframe_by_brands(df_barcode_filtered, products_in_selected_brands, 'filtered')
+            
+            # Then apply brand filter on barcode-filtered data
+            if selected_brands:
+                if is_product_switch_mode and product_to_brand_map:
+                    products_in_selected_brands = [
+                        product for product, brand in product_to_brand_map.items() 
+                        if brand in selected_brands
+                    ]
+                    df_display = brand_filter.filter_dataframe_by_brands(df_barcode_filtered, products_in_selected_brands, 'filtered')
+                else:
+                    # Brand mode: need to aggregate barcode-filtered data to brand level first
+                    df_agg = df_barcode_filtered.groupby(['brand_2024', 'brand_2025', 'move_type']).agg({
+                        'customers': 'sum'
+                    }).reset_index()
+                    df_agg = df_agg.rename(columns={'brand_2024': 'prod_2024', 'brand_2025': 'prod_2025'})
+                    df_display = brand_filter.filter_dataframe_by_brands(df_agg, selected_brands, 'filtered')
             else:
-                df_display = df_barcode_filtered
+                # No brand selected, use barcode filtered data
+                if is_product_switch_mode:
+                    df_display = df_barcode_filtered
+                else:
+                    df_display = df_barcode_filtered.groupby(['brand_2024', 'brand_2025', 'move_type']).agg({
+                        'customers': 'sum'
+                    }).reset_index()
+                    df_display = df_display.rename(columns={'brand_2024': 'prod_2024', 'brand_2025': 'prod_2025'})
             
             if len(df_display) == 0:
-                st.warning("⚠️ No products found matching the barcode filter within selected brands")
+                st.warning("⚠️ No products found matching the barcode filter")
     
     # KEY DIFFERENCE BETWEEN MODES:
     # - Brand Switch: Aggregate product-level data to BRAND level for display
