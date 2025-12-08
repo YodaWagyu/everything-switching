@@ -242,14 +242,20 @@ if run_analysis or st.session_state.query_executed:
         # Create product-to-brand mapping
         product_to_brand_map = dict(zip(mapping_df['ProductName'], mapping_df['Brand']))
         
-        # Get unique brands from products in the query results
-        all_products_in_data = [p for p in df['prod_2024'].unique() if p not in special_categories]
-        brands_set = set()
-        for product in all_products_in_data:
-            if product in product_to_brand_map:
-                brands_set.add(product_to_brand_map[product])
-        
-        all_brands_in_data = sorted(brands_set)
+        # Get unique brands based on analysis mode
+        if is_product_switch_mode:
+            # Product Switch mode: df['prod_2024'] contains ProductNames
+            # Map ProductNames to Brands using product_to_brand_map
+            all_products_in_data = [p for p in df['prod_2024'].unique() if p not in special_categories]
+            brands_set = set()
+            for product in all_products_in_data:
+                if product in product_to_brand_map:
+                    brands_set.add(product_to_brand_map[product])
+            all_brands_in_data = sorted(brands_set)
+        else:
+            # Brand Switch mode: df['prod_2024'] already contains Brand names
+            # Get brands directly from the query results
+            all_brands_in_data = sorted([b for b in df['prod_2024'].unique() if b not in special_categories])
         
         if is_product_switch_mode:
             filter_label = "Select Brands"
