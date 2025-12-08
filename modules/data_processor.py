@@ -339,10 +339,9 @@ def calculate_executive_kpis(summary_df: pd.DataFrame, summary_df_full: pd.DataF
     churn_rate = ((total_gone + total_switch_out) / total_movement * 100) if total_movement > 0 else 0
     
     # 5. Net Movement Category Level - FROM FILTERED DATA
-    # Formula: (New + Switch In) - (Switch Out + Gone)
-    total_new = summary_df['New_Customer'].sum()
-    total_switch_in = summary_df['Switch_In'].sum()
-    net_category_movement = (total_new + total_switch_in) - (total_switch_out + total_gone)
+    # Use sum of individual brand Net_Movement (correct for multi-brand selection)
+    # Formula approach would double-count Switch In/Out between selected brands
+    net_category_movement = summary_df['Net_Movement'].sum() if 'Net_Movement' in summary_df.columns else 0
     
     return {
         'total_movement': total_movement,
@@ -352,7 +351,7 @@ def calculate_executive_kpis(summary_df: pd.DataFrame, summary_df_full: pd.DataF
         'loser_val': loser_val,
         'churn_rate': churn_rate,
         'net_category_movement': net_category_movement,
-        'total_new': total_new,
+        'total_new': summary_df['New_Customer'].sum() if 'New_Customer' in summary_df.columns else 0,
         'total_gone': total_gone
     }
 
