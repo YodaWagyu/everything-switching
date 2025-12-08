@@ -407,14 +407,11 @@ if run_analysis or st.session_state.query_executed:
     if is_product_switch_mode:
         # Product Switch: Keep product-level data
         item_label = 'Product'
-        df_for_summary = df_display  # No aggregation
+        df_for_summary = df_display  # No aggregation needed
     else:
-        # Brand Switch: Aggregate to brand level
+        # Brand Switch: df_display already contains Brand names (no aggregation needed)
         item_label = 'Brand'
-        if product_to_brand_map:
-            df_for_summary = data_processor.aggregate_products_to_brands(df_display, product_to_brand_map)
-        else:
-            df_for_summary = df_display
+        df_for_summary = df_display
     
     # Calculate summary
     summary_df = data_processor.calculate_brand_summary(df_for_summary, item_label=item_label)
@@ -529,9 +526,8 @@ if run_analysis or st.session_state.query_executed:
         selected_focus_brand = st.selectbox("Select brand", brand_options, key="focus_brand")
         
         if selected_focus_brand:
-            # Use df (unfiltered) for waterfall to get complete flow data
-            # This ensures New Customers and Switch In from all brands are included
-            st.plotly_chart(visualizations.create_waterfall_chart(data_processor.prepare_waterfall_data(df, selected_focus_brand), selected_focus_brand), use_container_width=True)
+            # Use df_display (filtered) for waterfall to show data for selected brands
+            st.plotly_chart(visualizations.create_waterfall_chart(data_processor.prepare_waterfall_data(df_display, selected_focus_brand), selected_focus_brand), use_container_width=True)
     st.markdown("""
     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; margin-top: 30px;">
         <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="#0f3d3e"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
