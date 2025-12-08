@@ -16,7 +16,20 @@ def load_css():
     except FileNotFoundError:
         pass
 
+# Load Tailwind CSS CDN
+def load_tailwind():
+    st.markdown("""
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            prefix: 'tw-',
+            important: true
+        }
+    </script>
+    """, unsafe_allow_html=True)
+
 load_css()
+load_tailwind()
 
 # Authentication check
 if not auth.is_authenticated():
@@ -444,55 +457,70 @@ if run_analysis or st.session_state.query_executed:
         with k1:
             total_movement_fmt = utils.format_number(kpis['total_movement'])
             st.markdown(f"""
-            <div class="premium-card" style="padding: 15px; text-align: center;">
-                <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Total Movement</div>
-                <div style="font-size: 24px; font-weight: 800; color: #0f3d3e;">{total_movement_fmt}</div>
-                <div style="font-size: 12px; color: #666;">Customers</div>
-            </div>
+            <article class="tw-rounded-xl tw-bg-white tw-p-6 tw-ring-1 tw-ring-inset tw-ring-gray-200 tw-shadow-sm">
+                <p class="tw-text-sm tw-font-medium tw-text-gray-500">Total Movement</p>
+                <p class="tw-mt-2 tw-text-3xl tw-font-bold tw-text-teal-900">{total_movement_fmt}</p>
+                <p class="tw-mt-1 tw-text-xs tw-text-gray-400">Customers</p>
+            </article>
             """, unsafe_allow_html=True)
             
         with k2:
             net_cat = kpis['net_category_movement']
-            color = "#2e7d32" if net_cat >= 0 else "#c62828"
-            icon = "▲" if net_cat >= 0 else "▼"
+            is_positive = net_cat >= 0
+            icon = "↑" if is_positive else "↓"
+            color_class = "tw-text-emerald-600" if is_positive else "tw-text-red-600"
+            bg_class = "tw-bg-emerald-50" if is_positive else "tw-bg-red-50"
             net_cat_fmt = utils.format_number(abs(net_cat))
             st.markdown(f"""
-            <div class="premium-card" style="padding: 15px; text-align: center;">
-                <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Net Movement</div>
-                <div style="font-size: 24px; font-weight: 800; color: {color};">{icon} {net_cat_fmt}</div>
-                <div style="font-size: 12px; color: {color};">Total In - Total Out</div>
-            </div>
+            <article class="tw-rounded-xl tw-bg-white tw-p-6 tw-ring-1 tw-ring-inset tw-ring-gray-200 tw-shadow-sm">
+                <p class="tw-text-sm tw-font-medium tw-text-gray-500">Net Movement</p>
+                <p class="tw-mt-2 tw-text-3xl tw-font-bold {color_class}">{icon} {net_cat_fmt}</p>
+                <span class="tw-inline-flex tw-items-center tw-gap-1 tw-rounded-full {bg_class} tw-px-2 tw-py-0.5 tw-mt-1">
+                    <span class="tw-text-xs tw-font-medium {color_class}">Total In - Out</span>
+                </span>
+            </article>
             """, unsafe_allow_html=True)
             
         with k3:
             winner_val_fmt = utils.format_number(kpis['winner_val'])
             st.markdown(f"""
-            <div class="premium-card" style="padding: 15px; text-align: center;">
-                <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Biggest Winner</div>
-                <div style="font-size: 18px; font-weight: 800; color: #0f3d3e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{kpis['winner_name']}</div>
-                <div style="font-size: 14px; font-weight: 600; color: #2e7d32;">+{winner_val_fmt}</div>
-            </div>
+            <article class="tw-rounded-xl tw-bg-white tw-p-6 tw-ring-1 tw-ring-inset tw-ring-gray-200 tw-shadow-sm">
+                <p class="tw-text-sm tw-font-medium tw-text-gray-500">Biggest Winner</p>
+                <p class="tw-mt-2 tw-text-xl tw-font-bold tw-text-teal-900 tw-truncate" title="{kpis['winner_name']}">{kpis['winner_name']}</p>
+                <span class="tw-inline-flex tw-items-center tw-gap-1 tw-rounded-full tw-bg-emerald-50 tw-px-2 tw-py-0.5 tw-mt-1">
+                    <span class="tw-text-xs tw-font-semibold tw-text-emerald-600">↑ +{winner_val_fmt}</span>
+                </span>
+            </article>
             """, unsafe_allow_html=True)
             
         with k4:
             loser_val = kpis['loser_val']
-            loser_val_formatted = f"{loser_val:+,}" if loser_val != 0 else "0"
+            loser_val_formatted = utils.format_number(abs(loser_val))
             st.markdown(f"""
-            <div class="premium-card" style="padding: 15px; text-align: center;">
-                <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Biggest Loser</div>
-                <div style="font-size: 18px; font-weight: 800; color: #0f3d3e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{kpis['loser_name']}</div>
-                <div style="font-size: 14px; font-weight: 600; color: #c62828;">{loser_val_formatted}</div>
-            </div>
+            <article class="tw-rounded-xl tw-bg-white tw-p-6 tw-ring-1 tw-ring-inset tw-ring-gray-200 tw-shadow-sm">
+                <p class="tw-text-sm tw-font-medium tw-text-gray-500">Biggest Loser</p>
+                <p class="tw-mt-2 tw-text-xl tw-font-bold tw-text-teal-900 tw-truncate" title="{kpis['loser_name']}">{kpis['loser_name']}</p>
+                <span class="tw-inline-flex tw-items-center tw-gap-1 tw-rounded-full tw-bg-red-50 tw-px-2 tw-py-0.5 tw-mt-1">
+                    <span class="tw-text-xs tw-font-semibold tw-text-red-600">↓ {loser_val_formatted}</span>
+                </span>
+            </article>
             """, unsafe_allow_html=True)
             
         with k5:
             churn_rate_fmt = f"{kpis['churn_rate']:.1f}"
+            # Color based on churn rate severity
+            if kpis['churn_rate'] > 50:
+                churn_color = "tw-text-red-600"
+            elif kpis['churn_rate'] > 30:
+                churn_color = "tw-text-amber-600"
+            else:
+                churn_color = "tw-text-emerald-600"
             st.markdown(f"""
-            <div class="premium-card" style="padding: 15px; text-align: center;">
-                <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Attrition Rate</div>
-                <div style="font-size: 24px; font-weight: 800; color: #c62828;">{churn_rate_fmt}%</div>
-                <div style="font-size: 12px; color: #666;">Total Out / Total</div>
-            </div>
+            <article class="tw-rounded-xl tw-bg-white tw-p-6 tw-ring-1 tw-ring-inset tw-ring-gray-200 tw-shadow-sm">
+                <p class="tw-text-sm tw-font-medium tw-text-gray-500">Attrition Rate</p>
+                <p class="tw-mt-2 tw-text-3xl tw-font-bold {churn_color}">{churn_rate_fmt}%</p>
+                <p class="tw-mt-1 tw-text-xs tw-text-gray-400">Out / Total</p>
+            </article>
             """, unsafe_allow_html=True)
     
     # Data source for Sankey - use filtered data
@@ -770,21 +798,88 @@ if run_analysis or st.session_state.query_executed:
                 </div>
                 """, unsafe_allow_html=True)
                 
-            st.markdown("#### Customer Base Composition")
-            comp_data = pd.DataFrame({
-                'Type': ['Retained', 'Switched', 'Churned'],
-                'Customers': [cohort_metrics['stayed_customers'], cohort_metrics['switch_out_customers'], cohort_metrics['gone_customers']]
-            })
-            fig_comp = go.Figure(data=[go.Bar(
-                x=comp_data['Type'], 
-                y=comp_data['Customers'],
-                marker_color=['#2e7d32', '#f57c00', '#c62828'],
-                text=comp_data['Customers'],
-                texttemplate='%{text:,}',
-                textposition='auto'
-            )])
-            fig_comp.update_layout(title="Customer Fate (From Period 1)", height=400, plot_bgcolor='white')
-            st.plotly_chart(fig_comp, use_container_width=True)
+            st.markdown("#### Customer Base Composition by Brand")
+            
+            # Get per-brand cohort metrics
+            brand_cohort = data_processor.calculate_cohort_metrics_by_brand(df_display)
+            
+            if brand_cohort['brands']:
+                # Brand filter for too many brands
+                all_chart_brands = brand_cohort['brands']
+                if len(all_chart_brands) > 6:
+                    chart_brand_filter = st.multiselect(
+                        "Select brands to display (max 10)",
+                        options=all_chart_brands,
+                        default=all_chart_brands[:6],
+                        max_selections=10,
+                        key="chart_brand_filter"
+                    )
+                else:
+                    chart_brand_filter = all_chart_brands
+                
+                # Filter data based on selection
+                if chart_brand_filter:
+                    indices = [i for i, b in enumerate(brand_cohort['brands']) if b in chart_brand_filter]
+                    filtered_brands = [brand_cohort['brands'][i] for i in indices]
+                    filtered_retained = [brand_cohort['retained'][i] for i in indices]
+                    filtered_switched = [brand_cohort['switched'][i] for i in indices]
+                    filtered_churned = [brand_cohort['churned'][i] for i in indices]
+                else:
+                    filtered_brands = brand_cohort['brands']
+                    filtered_retained = brand_cohort['retained']
+                    filtered_switched = brand_cohort['switched']
+                    filtered_churned = brand_cohort['churned']
+                
+                # Create grouped bar chart
+                fig_comp = go.Figure()
+                
+                fig_comp.add_trace(go.Bar(
+                    name='Retained',
+                    x=filtered_brands,
+                    y=filtered_retained,
+                    marker_color='#2e7d32',
+                    text=filtered_retained,
+                    texttemplate='%{text:,.0f}',
+                    textposition='auto'
+                ))
+                
+                fig_comp.add_trace(go.Bar(
+                    name='Switched',
+                    x=filtered_brands,
+                    y=filtered_switched,
+                    marker_color='#f57c00',
+                    text=filtered_switched,
+                    texttemplate='%{text:,.0f}',
+                    textposition='auto'
+                ))
+                
+                fig_comp.add_trace(go.Bar(
+                    name='Churned',
+                    x=filtered_brands,
+                    y=filtered_churned,
+                    marker_color='#c62828',
+                    text=filtered_churned,
+                    texttemplate='%{text:,.0f}',
+                    textposition='auto'
+                ))
+                
+                fig_comp.update_layout(
+                    title="Customer Fate by Brand (From Period 1)",
+                    barmode='group',
+                    height=450,
+                    plot_bgcolor='white',
+                    legend=dict(
+                        orientation="h",
+                        yanchor="bottom",
+                        y=1.02,
+                        xanchor="right",
+                        x=1
+                    ),
+                    xaxis_tickangle=-45 if len(filtered_brands) > 4 else 0
+                )
+                st.plotly_chart(fig_comp, use_container_width=True)
+            else:
+                st.info("No brand data available for cohort chart.")
         else:
             st.info("No data available for cohort analysis.")
     

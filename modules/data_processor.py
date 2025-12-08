@@ -438,3 +438,55 @@ def calculate_cohort_metrics(df: pd.DataFrame) -> Dict:
         'switch_out_customers': switch_out,
         'total_base': total_period1
     }
+
+
+def calculate_cohort_metrics_by_brand(df: pd.DataFrame) -> Dict:
+    """
+    Calculate Cohort and Loyalty metrics for each brand separately
+    
+    Args:
+        df: Switching dataframe
+        
+    Returns:
+        Dictionary with brand-level metrics for grouped bar chart
+    """
+    special_categories = {'NEW_TO_CATEGORY', 'LOST_FROM_CATEGORY', 'MIXED', 'OTHERS'}
+    
+    # Get unique brands from Period 1
+    brands = [b for b in df['prod_2024'].unique() if b not in special_categories]
+    
+    brand_metrics = []
+    
+    for brand in brands:
+        # Filter data for this brand in Period 1
+        brand_df = df[df['prod_2024'] == brand]
+        total_period1 = brand_df['customers'].sum()
+        
+        if total_period1 == 0:
+            continue
+        
+        # Stayed = same brand in both periods
+        stayed = df[(df['prod_2024'] == brand) & (df['prod_2025'] == brand) & (df['move_type'] == 'stayed')]['customers'].sum()
+        
+        # Gone = lost from category
+        gone = df[(df['prod_2024'] == brand) & (df['prod_2025'] == 'LOST_FROM_CATEGORY')]['customers'].sum()
+        
+        # Switched = moved to different brand (not lost)
+        switched = df[(df['prod_2024'] == brand) & (df['prod_2025'] != brand) & 
+                     (df['prod_2025'] != 'LOST_FROM_CATEGORY') & (df['move_type'] == 'switched')]['customers'].sum()
+        
+        brand_metrics.append({
+            'Brand': brand,
+            'Retained': stayed,
+            'Switched': switched,
+            'Churned': gone,
+            'Total': total_period1
+        })
+    
+    return {
+        'brands': [m['Brand'] for m in brand_metrics],
+        'retained': [m['Retained'] for m in brand_metrics],
+        'switched': [m['Switched'] for m in brand_metrics],
+        'churned': [m['Churned'] for m in brand_metrics],
+        'totals': [m['Total'] for m in brand_metrics]
+    }
