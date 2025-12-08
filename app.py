@@ -452,76 +452,85 @@ if run_analysis or st.session_state.query_executed:
     """, unsafe_allow_html=True)
     
     if kpis:
-        k1, k2, k3, k4, k5 = st.columns(5)
+        # Calculate formatted values
+        total_movement_fmt = utils.format_number(kpis['total_movement'])
+        net_cat = kpis['net_category_movement']
+        net_sign = "+" if net_cat >= 0 else ""
+        net_cat_fmt = f"{net_sign}{net_cat:,}"
+        net_color = "color: #16a34a;" if net_cat >= 0 else "color: #dc2626;"
         
-        with k1:
-            total_movement_fmt = utils.format_number(kpis['total_movement'])
-            st.markdown(f"""
-            <article class="tw-rounded-xl tw-bg-white tw-p-6 tw-ring-1 tw-ring-inset tw-ring-gray-200 tw-shadow-sm">
-                <p class="tw-text-sm tw-font-medium tw-text-gray-500">Total Movement</p>
-                <p class="tw-mt-2 tw-text-3xl tw-font-bold tw-text-teal-900">{total_movement_fmt}</p>
-                <p class="tw-mt-1 tw-text-xs tw-text-gray-400">Customers</p>
-            </article>
-            """, unsafe_allow_html=True)
+        winner_val = kpis['winner_val']
+        winner_sign = "+" if winner_val > 0 else ""
+        winner_val_fmt = f"{winner_sign}{winner_val:,}"
+        
+        # Loser: show actual value with + or - sign, just colored red
+        loser_val = kpis['loser_val']
+        loser_sign = "+" if loser_val > 0 else ""
+        loser_val_fmt = f"{loser_sign}{loser_val:,}"
+        
+        churn_rate_fmt = f"{kpis['churn_rate']:.1f}%"
+        
+        # blocks.so style - connected cards with border dividers
+        st.markdown(f"""
+        <div style="display: grid; grid-template-columns: repeat(5, 1fr); background: #e5e7eb; gap: 1px; border-radius: 12px; overflow: hidden;">
+            <!-- Card 1: Total Movement -->
+            <div style="background: white; padding: 16px 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
+                    <span style="font-size: 14px; font-weight: 500; color: #6b7280;">Total Movement</span>
+                </div>
+                <div style="font-size: 28px; font-weight: 500; color: #111827; letter-spacing: -0.02em;">
+                    {total_movement_fmt}
+                </div>
+                <div style="font-size: 12px; color: #9ca3af; margin-top: 4px;">Customers</div>
+            </div>
             
-        with k2:
-            net_cat = kpis['net_category_movement']
-            is_positive = net_cat >= 0
-            icon = "↑" if is_positive else "↓"
-            color_class = "tw-text-emerald-600" if is_positive else "tw-text-red-600"
-            bg_class = "tw-bg-emerald-50" if is_positive else "tw-bg-red-50"
-            net_cat_fmt = utils.format_number(abs(net_cat))
-            st.markdown(f"""
-            <article class="tw-rounded-xl tw-bg-white tw-p-6 tw-ring-1 tw-ring-inset tw-ring-gray-200 tw-shadow-sm">
-                <p class="tw-text-sm tw-font-medium tw-text-gray-500">Net Movement</p>
-                <p class="tw-mt-2 tw-text-3xl tw-font-bold {color_class}">{icon} {net_cat_fmt}</p>
-                <span class="tw-inline-flex tw-items-center tw-gap-1 tw-rounded-full {bg_class} tw-px-2 tw-py-0.5 tw-mt-1">
-                    <span class="tw-text-xs tw-font-medium {color_class}">Total In - Out</span>
-                </span>
-            </article>
-            """, unsafe_allow_html=True)
+            <!-- Card 2: Net Movement -->
+            <div style="background: white; padding: 16px 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
+                    <span style="font-size: 14px; font-weight: 500; color: #6b7280;">Net Movement</span>
+                </div>
+                <div style="font-size: 28px; font-weight: 500; letter-spacing: -0.02em; {net_color}">
+                    {net_cat_fmt}
+                </div>
+                <div style="font-size: 12px; color: #9ca3af; margin-top: 4px;">Total In - Out</div>
+            </div>
             
-        with k3:
-            winner_val_fmt = utils.format_number(kpis['winner_val'])
-            st.markdown(f"""
-            <article class="tw-rounded-xl tw-bg-white tw-p-6 tw-ring-1 tw-ring-inset tw-ring-gray-200 tw-shadow-sm">
-                <p class="tw-text-sm tw-font-medium tw-text-gray-500">Biggest Winner</p>
-                <p class="tw-mt-2 tw-text-xl tw-font-bold tw-text-teal-900 tw-truncate" title="{kpis['winner_name']}">{kpis['winner_name']}</p>
-                <span class="tw-inline-flex tw-items-center tw-gap-1 tw-rounded-full tw-bg-emerald-50 tw-px-2 tw-py-0.5 tw-mt-1">
-                    <span class="tw-text-xs tw-font-semibold tw-text-emerald-600">↑ +{winner_val_fmt}</span>
-                </span>
-            </article>
-            """, unsafe_allow_html=True)
+            <!-- Card 3: Biggest Winner -->
+            <div style="background: white; padding: 16px 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
+                    <span style="font-size: 14px; font-weight: 500; color: #6b7280;">Biggest Winner</span>
+                    <span style="font-size: 12px; font-weight: 500; color: #16a34a;">{winner_val_fmt}</span>
+                </div>
+                <div style="font-size: 28px; font-weight: 500; color: #111827; letter-spacing: -0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{kpis['winner_name']}">
+                    {kpis['winner_name']}
+                </div>
+                <div style="font-size: 12px; color: #16a34a; margin-top: 4px;">↑ {winner_val_fmt}</div>
+            </div>
             
-        with k4:
-            loser_val = kpis['loser_val']
-            loser_val_formatted = utils.format_number(abs(loser_val))
-            st.markdown(f"""
-            <article class="tw-rounded-xl tw-bg-white tw-p-6 tw-ring-1 tw-ring-inset tw-ring-gray-200 tw-shadow-sm">
-                <p class="tw-text-sm tw-font-medium tw-text-gray-500">Biggest Loser</p>
-                <p class="tw-mt-2 tw-text-xl tw-font-bold tw-text-teal-900 tw-truncate" title="{kpis['loser_name']}">{kpis['loser_name']}</p>
-                <span class="tw-inline-flex tw-items-center tw-gap-1 tw-rounded-full tw-bg-red-50 tw-px-2 tw-py-0.5 tw-mt-1">
-                    <span class="tw-text-xs tw-font-semibold tw-text-red-600">↓ {loser_val_formatted}</span>
-                </span>
-            </article>
-            """, unsafe_allow_html=True)
+            <!-- Card 4: Biggest Loser -->
+            <div style="background: white; padding: 16px 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
+                    <span style="font-size: 14px; font-weight: 500; color: #6b7280;">Biggest Loser</span>
+                    <span style="font-size: 12px; font-weight: 500; color: #dc2626;">{loser_val_fmt}</span>
+                </div>
+                <div style="font-size: 28px; font-weight: 500; color: #111827; letter-spacing: -0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{kpis['loser_name']}">
+                    {kpis['loser_name']}
+                </div>
+                <div style="font-size: 12px; color: #dc2626; margin-top: 4px;">{loser_val_fmt}</div>
+            </div>
             
-        with k5:
-            churn_rate_fmt = f"{kpis['churn_rate']:.1f}"
-            # Color based on churn rate severity
-            if kpis['churn_rate'] > 50:
-                churn_color = "tw-text-red-600"
-            elif kpis['churn_rate'] > 30:
-                churn_color = "tw-text-amber-600"
-            else:
-                churn_color = "tw-text-emerald-600"
-            st.markdown(f"""
-            <article class="tw-rounded-xl tw-bg-white tw-p-6 tw-ring-1 tw-ring-inset tw-ring-gray-200 tw-shadow-sm">
-                <p class="tw-text-sm tw-font-medium tw-text-gray-500">Attrition Rate</p>
-                <p class="tw-mt-2 tw-text-3xl tw-font-bold {churn_color}">{churn_rate_fmt}%</p>
-                <p class="tw-mt-1 tw-text-xs tw-text-gray-400">Out / Total</p>
-            </article>
-            """, unsafe_allow_html=True)
+            <!-- Card 5: Attrition Rate -->
+            <div style="background: white; padding: 16px 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
+                    <span style="font-size: 14px; font-weight: 500; color: #6b7280;">Attrition Rate</span>
+                </div>
+                <div style="font-size: 28px; font-weight: 500; color: #dc2626; letter-spacing: -0.02em;">
+                    {churn_rate_fmt}
+                </div>
+                <div style="font-size: 12px; color: #9ca3af; margin-top: 4px;">Out / Total</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
     
     # Data source for Sankey - use filtered data
     labels, sources, targets, values = data_processor.prepare_sankey_data(df_display)
