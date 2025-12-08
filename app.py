@@ -224,44 +224,118 @@ if run_analysis or st.session_state.query_executed:
     
     display_category = selected_categories[0] if selected_categories else None
     
-    # === SIMPLE VIEW MODE SELECTOR (matches existing theme) ===
-    st.markdown("#### 📊 View Mode")
+    # =====================================================
+    # UNIFIED ANALYSIS FILTER PANEL
+    # Matches teal theme (#0f3d3e) from sidebar
+    # =====================================================
+    
+    st.markdown("""
+    <style>
+    .filter-panel {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 0;
+        margin: 16px 0 24px 0;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        overflow: hidden;
+    }
+    .filter-panel-header {
+        background: linear-gradient(135deg, #0f3d3e 0%, #1a5a5c 100%);
+        padding: 14px 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .filter-panel-title {
+        color: #ffffff;
+        font-size: 15px;
+        font-weight: 600;
+        margin: 0;
+        letter-spacing: 0.3px;
+    }
+    .filter-panel-body {
+        padding: 20px;
+    }
+    .filter-section {
+        margin-bottom: 20px;
+    }
+    .filter-section:last-child {
+        margin-bottom: 0;
+    }
+    .filter-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 8px;
+    }
+    .status-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: #ecfdf5;
+        border: 1px solid #a7f3d0;
+        color: #047857;
+        font-size: 13px;
+        font-weight: 500;
+        padding: 6px 12px;
+        border-radius: 20px;
+        margin-top: 8px;
+    }
+    .status-chip-warning {
+        background: #fef3c7;
+        border: 1px solid #fcd34d;
+        color: #92400e;
+    }
+    .filter-divider {
+        height: 1px;
+        background: #e2e8f0;
+        margin: 16px 0;
+    }
+    </style>
+    
+    <div class="filter-panel">
+        <div class="filter-panel-header">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="white">
+                <path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/>
+            </svg>
+            <h3 class="filter-panel-title">Analysis Filters</h3>
+        </div>
+        <div class="filter-panel-body">
+            <div class="filter-section">
+                <div class="filter-label">View Level</div>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # View Mode - Segmented control
     view_mode = st.radio(
-        "View by",
+        "View Level",
         options=["Brand", "Product"],
         horizontal=True,
         key="view_mode_toggle",
-        label_visibility="collapsed",
-        help="Brand = aggregated view, Product = detailed view"
+        label_visibility="collapsed"
     )
     is_product_switch_mode = (view_mode == "Product")
     
-    # Prepare df_working based on view mode (aggregate if Brand view, before filtering)
+    # Prepare df_working based on view mode
     df_working = df.copy()
-    
-    # Aggregate to Brand view if needed (BEFORE brand filter so brand selection works correctly)
     if not is_product_switch_mode:
-        # Brand view: aggregate product-level data to brand level
         df_working = df_working.groupby(['brand_2024', 'brand_2025', 'move_type']).agg({
             'customers': 'sum'
         }).reset_index()
-        # Rename columns to match expected format
         df_working = df_working.rename(columns={
             'brand_2024': 'prod_2024',
             'brand_2025': 'prod_2025'
         })
     
-    st.markdown("---")
-    
-    # Smart Brand/Product Filter based on View Mode
+    # Brand data preparation
     special_categories = ['NEW_TO_CATEGORY', 'LOST_FROM_CATEGORY', 'MIXED']
     
-    # Now that query includes brand columns, we can get brands directly
-    # For Brand view: prod_2024/prod_2025 = brand names
-    # For Product view: need to use brand_2024/brand_2025 columns from original df
-    
     if is_product_switch_mode:
-        # Product view: get brands from the brand columns in original df
         brands_from_data = set()
         if 'brand_2024' in df.columns:
             brands_from_data.update([b for b in df['brand_2024'].unique() if b not in special_categories and b is not None])
@@ -269,80 +343,120 @@ if run_analysis or st.session_state.query_executed:
             brands_from_data.update([b for b in df['brand_2025'].unique() if b not in special_categories and b is not None])
         all_brands_in_data = sorted(brands_from_data)
         
-        # Create product-to-brand map from the original data
         product_to_brand_map = {}
         for _, row in df.iterrows():
             if row['prod_2024'] not in special_categories and 'brand_2024' in df.columns:
                 product_to_brand_map[row['prod_2024']] = row['brand_2024']
             if row['prod_2025'] not in special_categories and 'brand_2025' in df.columns:
                 product_to_brand_map[row['prod_2025']] = row['brand_2025']
-        
-        filter_label = "Select Brands"
-        filter_help = "💡 Select brands to see **product-level** switching within those brands"
     else:
-        # Brand view: prod_2024/prod_2025 are already brand names (after aggregation)
         all_brands_in_data = sorted([b for b in df_working['prod_2024'].unique() if b not in special_categories])
-        product_to_brand_map = {}  # Not needed for brand view
-        filter_label = "Select Brands"
-        filter_help = "💡 Select brands to see **brand-level** aggregated switching"
+        product_to_brand_map = {}
     
-    # === SIMPLE BRAND SELECTOR (matches existing theme) ===
-    st.markdown("#### 🏷️ Select Brands")
+    # Divider
+    st.markdown('<div style="height:1px;background:#e2e8f0;margin:12px 0 16px 0;"></div>', unsafe_allow_html=True)
+    
+    # Brand selector label
+    st.markdown('<div style="font-size:12px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Select Brands</div>', unsafe_allow_html=True)
+    
     selected_brands = st.multiselect(
-        filter_label,
+        "Brands",
         options=all_brands_in_data,
         default=None,
-        help=filter_help,
         key="brand_filter_post_query",
-        label_visibility="collapsed"
+        label_visibility="collapsed",
+        placeholder="Choose brands to analyze..."
     )
     
+    # Status chip
     if not selected_brands:
-        st.warning("👆 Select brands above to start analysis")
+        st.markdown('''
+        <div class="status-chip status-chip-warning">
+            <span>⚠️</span>
+            <span>Select brands to continue</span>
+        </div>
+        ''', unsafe_allow_html=True)
         st.stop()
-    
-    # Simple success message
-    brands_display = ", ".join(selected_brands[:5])
-    if len(selected_brands) > 5:
-        brands_display += f" +{len(selected_brands) - 5} more"
-    
-    if is_product_switch_mode and product_to_brand_map:
-        selected_products = [p for p, b in product_to_brand_map.items() if b in selected_brands]
-        st.success(f"✅ **{len(selected_brands)}** brands ({len(selected_products)} products): {brands_display}")
     else:
-        st.success(f"✅ Analyzing **{len(selected_brands)}** brands: {brands_display}")
+        brands_text = ", ".join(selected_brands[:3])
+        if len(selected_brands) > 3:
+            brands_text += f" +{len(selected_brands) - 3}"
+        
+        if is_product_switch_mode and product_to_brand_map:
+            selected_products = [p for p, b in product_to_brand_map.items() if b in selected_brands]
+            st.markdown(f'''
+            <div class="status-chip">
+                <span>✓</span>
+                <span>{len(selected_brands)} brands · {len(selected_products)} products</span>
+            </div>
+            ''', unsafe_allow_html=True)
+        else:
+            st.markdown(f'''
+            <div class="status-chip">
+                <span>✓</span>
+                <span>Analyzing {len(selected_brands)} brand{"s" if len(selected_brands) > 1 else ""}</span>
+            </div>
+            ''', unsafe_allow_html=True)
+    
+    # Optional filters section (collapsible)
+    st.markdown('<div style="height:1px;background:#e2e8f0;margin:16px 0;"></div>', unsafe_allow_html=True)
+    
+    with st.expander("⚙️ Advanced Filters", expanded=False):
+        st.markdown('<div style="font-size:12px;font-weight:600;color:#64748b;margin-bottom:8px;">BARCODE FILTER</div>', unsafe_allow_html=True)
+        
+        barcode_filter_input = st.text_area(
+            "Barcodes",
+            height=80,
+            placeholder="Paste barcodes (one per line)",
+            key="barcode_filter_input",
+            label_visibility="collapsed"
+        )
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            apply_barcode_filter = st.button("Apply", key="apply_bc_filter", use_container_width=True)
+        with col2:
+            if st.button("Clear", key="clear_bc_filter", use_container_width=True):
+                st.session_state.active_barcode_filter = []
+                st.rerun()
+        
+        if apply_barcode_filter and barcode_filter_input.strip():
+            barcode_list = [b.strip() for b in barcode_filter_input.strip().split('\n') if b.strip()]
+            st.session_state.active_barcode_filter = barcode_list
+            st.rerun()
+        
+        active_barcodes_display = st.session_state.get('active_barcode_filter', [])
+        if active_barcodes_display:
+            st.success(f"🔍 {len(active_barcodes_display)} barcodes active")
+    
+    # End of Filter Panel - close visual container
+    st.markdown('<div style="margin-bottom:24px;"></div>', unsafe_allow_html=True)
+    
+    # =====================================================
+    # DATA PROCESSING (after filter panel)
+    # =====================================================
     
     # Apply Product Filtering for Product Switch Mode
     if is_product_switch_mode and selected_brands and product_to_brand_map:
-        # Filter DataFrame to show only products from selected brands
-        # Use accurate product_to_brand_map from BigQuery
         def is_product_in_brand(product_name, selected_brands, mapping):
-            """Check if product belongs to any selected brand using accurate mapping"""
             if product_name in special_categories:
-                return True  # Keep special categories
-            # Use BigQuery mapping for accurate brand lookup
+                return True
             brand = mapping.get(product_name)
             if brand and brand in selected_brands:
                 return True
             return False
         
-        # Filter rows where either prod_2024 or prod_2025 belongs to selected brands
         mask = (
             df['prod_2024'].apply(lambda x: is_product_in_brand(x, selected_brands, product_to_brand_map)) |
             df['prod_2025'].apply(lambda x: is_product_in_brand(x, selected_brands, product_to_brand_map))
         )
         df = df[mask].copy()
-        
-        st.caption(f"🔍 Filtered to {len(df)} customer flows involving products from {', '.join(selected_brands)}")
     
-    # Note: No need to update filter summary here since we moved brand filter
-    # utils.display_filter_summary(...) - will update this later if needed
+    # Get active barcodes for filtering logic
+    active_barcodes = st.session_state.get('active_barcode_filter', [])
     
-    # Placeholder for Executive KPIs - will be calculated after filtering
-    # Will be rendered after filtering
-    
-    st.markdown("---")
-    st.markdown("### 📊 Section 1: Customer Flow")
+    # Section header
+    st.markdown("### 📊 Customer Flow Analysis")
     
     # Apply brand filtering based on selection from sidebar
     # df_working already has barcode filter applied and is aggregated appropriately for view mode
@@ -364,39 +478,6 @@ if run_analysis or st.session_state.query_executed:
             # Brand Switch mode: df already contains Brand names
             # Filter directly by selected brand names
             df_display = brand_filter.filter_dataframe_by_brands(df_working, selected_brands, 'filtered')
-    
-    # === BARCODE FILTER (AFTER Brand Selection) - Simple expander ===
-    with st.expander("📋 Barcode Filter (optional)", expanded=False):
-        st.caption("💡 Paste barcodes to filter within selected brands")
-        
-        bc_col1, bc_col2 = st.columns([3, 1])
-        with bc_col1:
-            barcode_filter_input = st.text_area(
-                "Paste barcodes",
-                height=100,
-                placeholder="Paste barcodes here (one per line)\n8850123456789\n8850234567891\n...",
-                key="barcode_filter_input",
-                label_visibility="collapsed"
-            )
-        with bc_col2:
-            apply_barcode_filter = st.button("✅ Apply", key="apply_bc_filter", use_container_width=True)
-            if st.button("🗑️ Clear", key="clear_bc_filter", use_container_width=True):
-                st.session_state.active_barcode_filter = []
-                st.rerun()
-        
-        # Parse and apply barcode filter
-        if apply_barcode_filter and barcode_filter_input.strip():
-            barcode_list = [b.strip() for b in barcode_filter_input.strip().split('\n') if b.strip()]
-            st.session_state.active_barcode_filter = barcode_list
-            st.rerun()
-        
-        # Show active filter status inside expander
-        active_barcodes_display = st.session_state.get('active_barcode_filter', [])
-        if active_barcodes_display:
-            st.success(f"🔍 **{len(active_barcodes_display)}** barcodes active")
-    
-    # Get active barcodes for filtering logic (outside expander)
-    active_barcodes = st.session_state.get('active_barcode_filter', [])
     
     # === Apply barcode filter (WORKS IN BOTH Brand AND Product modes) ===
     if active_barcodes:
