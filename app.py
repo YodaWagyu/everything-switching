@@ -224,64 +224,23 @@ if run_analysis or st.session_state.query_executed:
     # === POST-QUERY CONTROLS ===
     st.markdown("""
     <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 15px 20px; border-radius: 12px; margin: 20px 0;">
-        <span style="font-size: 16px; font-weight: 600; color: white;">⚙️ View & Filter Options</span>
+        <span style="font-size: 16px; font-weight: 600; color: white;">⚙️ View Mode</span>
     </div>
     """, unsafe_allow_html=True)
     
-    ctrl_col1, ctrl_col2 = st.columns([1, 2])
+    # View Mode Toggle
+    view_mode = st.radio(
+        "📊 View by",
+        options=["Brand", "Product"],
+        horizontal=True,
+        key="view_mode_toggle"
+    )
+    is_product_switch_mode = (view_mode == "Product")
     
-    with ctrl_col1:
-        # View Mode Toggle
-        view_mode = st.radio(
-            "📊 View by",
-            options=["Brand", "Product"],
-            horizontal=True,
-            key="view_mode_toggle"
-        )
-        is_product_switch_mode = (view_mode == "Product")
-    
-    with ctrl_col2:
-        # Barcode Mass Filter
-        with st.expander("📋 Barcode Filter (paste list)", expanded=False):
-            barcode_filter_input = st.text_area(
-                "Paste barcodes (one per line)",
-                height=100,
-                placeholder="8850123456789\n8850234567891\n...",
-                key="barcode_filter_input"
-            )
-            
-            bc_col1, bc_col2, bc_col3 = st.columns([1, 1, 2])
-            with bc_col1:
-                apply_barcode_filter = st.button("✅ Apply", key="apply_bc_filter")
-            with bc_col2:
-                if st.button("🗑️ Clear", key="clear_bc_filter"):
-                    st.session_state.active_barcode_filter = []
-                    st.rerun()
-            
-            # Parse and apply barcode filter
-            if apply_barcode_filter and barcode_filter_input.strip():
-                barcode_list = [b.strip() for b in barcode_filter_input.strip().split('\n') if b.strip()]
-                st.session_state.active_barcode_filter = barcode_list
-                st.rerun()
-            
-            # Show active filter status
-            active_barcodes = st.session_state.get('active_barcode_filter', [])
-            if active_barcodes:
-                st.success(f"🔍 Filtering by {len(active_barcodes)} barcodes")
-    
-    # Apply barcode filter to dataframe
+    # Prepare df_working based on view mode (aggregate if Brand view, before filtering)
     df_working = df.copy()
-    active_barcodes = st.session_state.get('active_barcode_filter', [])
-    if active_barcodes:
-        # Filter rows where barcode_2024 OR barcode_2025 is in the list
-        df_working = df_working[
-            (df_working['barcode_2024'].isin(active_barcodes)) |
-            (df_working['barcode_2025'].isin(active_barcodes))
-        ]
-        if len(df_working) == 0:
-            st.warning("⚠️ No products found matching the barcode filter")
     
-    # Aggregate to Brand view if needed
+    # Aggregate to Brand view if needed (BEFORE brand filter so brand selection works correctly)
     if not is_product_switch_mode:
         # Brand view: aggregate product-level data to brand level
         df_working = df_working.groupby(['brand_2024', 'brand_2025', 'move_type']).agg({
@@ -458,6 +417,59 @@ if run_analysis or st.session_state.query_executed:
             # Brand Switch mode: df already contains Brand names
             # Filter directly by selected brand names
             df_display = brand_filter.filter_dataframe_by_brands(df_working, selected_brands, 'filtered')
+    
+    # === BARCODE FILTER (AFTER Brand Selection) ===
+    # This allows users to further narrow down within the selected brands
+    with st.expander("📋 Barcode Filter (optional - narrow down within selected brands)", expanded=False):
+        barcode_filter_input = st.text_area(
+            "Paste barcodes (one per line)",
+            height=100,
+            placeholder="8850123456789\n8850234567891\n...",
+            key="barcode_filter_input"
+        )
+        
+        bc_col1, bc_col2, bc_col3 = st.columns([1, 1, 2])
+        with bc_col1:
+            apply_barcode_filter = st.button("✅ Apply", key="apply_bc_filter")
+        with bc_col2:
+            if st.button("🗑️ Clear", key="clear_bc_filter"):
+                st.session_state.active_barcode_filter = []
+                st.rerun()
+        
+        # Parse and apply barcode filter
+        if apply_barcode_filter and barcode_filter_input.strip():
+            barcode_list = [b.strip() for b in barcode_filter_input.strip().split('\n') if b.strip()]
+            st.session_state.active_barcode_filter = barcode_list
+            st.rerun()
+        
+        # Show active filter status
+        active_barcodes = st.session_state.get('active_barcode_filter', [])
+        if active_barcodes:
+            st.success(f"🔍 Filtering by {len(active_barcodes)} barcodes")
+    
+    # Apply barcode filter to df_display (AFTER brand selection)
+    active_barcodes = st.session_state.get('active_barcode_filter', [])
+    if active_barcodes and is_product_switch_mode:
+        # Only apply barcode filter in Product mode (Brand mode doesn't have barcode columns)
+        if 'barcode_2024' in df.columns and 'barcode_2025' in df.columns:
+            # Need to filter BEFORE aggregation - go back to original df
+            # Filter by barcodes, then filter by brands again
+            df_barcode_filtered = df[
+                (df['barcode_2024'].isin(active_barcodes)) |
+                (df['barcode_2025'].isin(active_barcodes))
+            ]
+            # Re-apply brand filter on barcode-filtered data
+            if selected_brands and product_to_brand_map:
+                products_in_selected_brands = [
+                    product for product, brand in product_to_brand_map.items() 
+                    if brand in selected_brands
+                ]
+                df_display = brand_filter.filter_dataframe_by_brands(df_barcode_filtered, products_in_selected_brands, 'filtered')
+            else:
+                df_display = df_barcode_filtered
+            
+            if len(df_display) == 0:
+                st.warning("⚠️ No products found matching the barcode filter within selected brands")
     
     # KEY DIFFERENCE BETWEEN MODES:
     # - Brand Switch: Aggregate product-level data to BRAND level for display
