@@ -324,22 +324,19 @@ if run_analysis or st.session_state.query_executed:
         display: none !important;
     }
     
-    /* Multiselect - VISIBLE with STRONGER border */
-    [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stMultiSelect"] {
-        padding: 0 20px 16px 20px;
-    }
-    [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stMultiSelect"] > div > div {
+    /* Multiselect - GLOBAL VISIBLE BORDER (dark gray) */
+    [data-testid="stMultiSelect"] [data-baseweb="select"] > div {
         background: #ffffff !important;
-        border: 2px solid #94a3b8 !important;
+        border: 2px solid #475569 !important;
         border-radius: 6px !important;
-        min-height: 42px !important;
+        min-height: 44px !important;
     }
-    [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stMultiSelect"] > div > div:hover {
-        border-color: #64748b !important;
+    [data-testid="stMultiSelect"] [data-baseweb="select"] > div:hover {
+        border-color: #334155 !important;
     }
-    [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stMultiSelect"] > div > div:focus-within {
+    [data-testid="stMultiSelect"] [data-baseweb="select"] > div:focus-within {
         border-color: #0f3d3e !important;
-        box-shadow: 0 0 0 3px rgba(15,61,62,0.2) !important;
+        box-shadow: 0 0 0 3px rgba(15,61,62,0.25) !important;
     }
     
     /* Expander styling */
@@ -412,7 +409,7 @@ if run_analysis or st.session_state.query_executed:
         # PANEL HEADER
         st.markdown('''
         <div class="panel-header">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="white">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="white">
                 <path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/>
             </svg>
             <span class="panel-title">Analysis Scope</span>
@@ -420,17 +417,22 @@ if run_analysis or st.session_state.query_executed:
         </div>
         ''', unsafe_allow_html=True)
         
-        # SECTION 1: VIEW LEVEL
-        st.markdown('<div class="section-label">View Level</div>', unsafe_allow_html=True)
-        
-        view_mode = st.radio(
-            "View",
-            options=["Brand", "Product"],
-            horizontal=True,
-            key="view_mode_toggle",
-            label_visibility="collapsed"
-        )
+        # SECTION 1: VIEW LEVEL - Label and Radio on SAME LINE
+        st.markdown('<div style="padding: 16px 20px 0 20px;"></div>', unsafe_allow_html=True)
+        view_label_col, view_radio_col = st.columns([1, 3])
+        with view_label_col:
+            st.markdown('<div style="font-size:12px;font-weight:700;color:#57606a;text-transform:uppercase;letter-spacing:0.5px;padding-top:8px;">View Level</div>', unsafe_allow_html=True)
+        with view_radio_col:
+            view_mode = st.radio(
+                "View",
+                options=["Brand", "Product"],
+                horizontal=True,
+                key="view_mode_toggle",
+                label_visibility="collapsed"
+            )
         is_product_switch_mode = (view_mode == "Product")
+        
+        st.markdown('<div style="height:12px;"></div>', unsafe_allow_html=True)
         
         # Prepare df_working
         df_working = df.copy()
@@ -464,13 +466,14 @@ if run_analysis or st.session_state.query_executed:
             all_brands_in_data = sorted([b for b in df_working['prod_2024'].unique() if b not in special_categories])
             product_to_brand_map = {}
         
-        # SECTION 2: BRANDS
-        st.markdown('<div class="section-label">Brands</div>', unsafe_allow_html=True)
+        # SECTION 2: BRANDS - Label and Dropdown on SAME LINE
+        st.markdown('<div style="padding: 8px 20px 0 20px;"></div>', unsafe_allow_html=True)
+        brand_label_col, brand_select_col, status_col = st.columns([1, 2.5, 0.8])
         
-        # Brand selector and status in one row
-        brand_col, status_col = st.columns([3, 1])
+        with brand_label_col:
+            st.markdown('<div style="font-size:12px;font-weight:700;color:#57606a;text-transform:uppercase;letter-spacing:0.5px;padding-top:8px;">Brands</div>', unsafe_allow_html=True)
         
-        with brand_col:
+        with brand_select_col:
             selected_brands = st.multiselect(
                 "Brands",
                 options=all_brands_in_data,
