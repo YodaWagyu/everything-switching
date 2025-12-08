@@ -225,212 +225,282 @@ if run_analysis or st.session_state.query_executed:
     display_category = selected_categories[0] if selected_categories else None
     
     # =====================================================
-    # UNIFIED ANALYSIS FILTER PANEL
-    # Matches teal theme (#0f3d3e) from sidebar
+    # ANALYSIS SCOPE - UNIFIED CONTROL PANEL
+    # All controls inside ONE visual container
     # =====================================================
     
+    # CSS for unified control panel - targets Streamlit components inside container
     st.markdown("""
     <style>
-    .filter-panel {
-        background: #ffffff;
+    /* Control Panel Container */
+    [data-testid="stVerticalBlock"]:has(> div.control-panel-start) {
+        background: #f8fafc;
         border: 1px solid #e2e8f0;
-        border-radius: 12px;
-        padding: 0;
-        margin: 16px 0 24px 0;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        border-radius: 8px;
+        padding: 0 !important;
+        margin: 12px 0 20px 0;
         overflow: hidden;
     }
-    .filter-panel-header {
-        background: linear-gradient(135deg, #0f3d3e 0%, #1a5a5c 100%);
-        padding: 14px 20px;
+    
+    /* Panel Header */
+    .panel-header {
+        background: #0f3d3e;
+        padding: 12px 16px;
+        margin: 0;
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 8px;
     }
-    .filter-panel-title {
-        color: #ffffff;
-        font-size: 15px;
+    .panel-title {
+        color: #fff;
+        font-size: 13px;
         font-weight: 600;
         margin: 0;
         letter-spacing: 0.3px;
     }
-    .filter-panel-body {
-        padding: 20px;
+    .panel-subtitle {
+        color: rgba(255,255,255,0.6);
+        font-size: 11px;
+        margin-left: auto;
     }
-    .filter-section {
-        margin-bottom: 20px;
+    
+    /* Section styling */
+    .control-section {
+        padding: 16px;
+        border-bottom: 1px solid #e2e8f0;
     }
-    .filter-section:last-child {
-        margin-bottom: 0;
+    .control-section:last-child {
+        border-bottom: none;
     }
-    .filter-label {
+    .section-label {
+        font-size: 10px;
+        font-weight: 700;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        margin-bottom: 10px;
+    }
+    
+    /* Segmented Toggle Pills */
+    .toggle-pills {
+        display: inline-flex;
+        background: #e2e8f0;
+        border-radius: 6px;
+        padding: 3px;
+        gap: 2px;
+    }
+    .toggle-pill {
+        padding: 6px 16px;
         font-size: 12px;
+        font-weight: 600;
+        color: #64748b;
+        background: transparent;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+    .toggle-pill.active {
+        background: #0f3d3e;
+        color: #fff;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+    
+    /* Brand Zone */
+    .brand-zone {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        padding: 12px;
+    }
+    
+    /* Inline Status Badge */
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 4px 10px;
+        border-radius: 4px;
+        margin-left: 12px;
+    }
+    .status-badge.ready {
+        background: #dcfce7;
+        color: #166534;
+    }
+    .status-badge.waiting {
+        background: #fef3c7;
+        color: #92400e;
+    }
+    
+    /* Hide default Streamlit radio styling, use custom */
+    [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stRadio"] > div {
+        flex-direction: row !important;
+        gap: 0 !important;
+        background: #e2e8f0;
+        border-radius: 6px;
+        padding: 3px;
+        display: inline-flex !important;
+    }
+    [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stRadio"] label {
+        padding: 6px 16px !important;
+        font-size: 12px !important;
+        font-weight: 600 !important;
+        color: #64748b !important;
+        background: transparent !important;
+        border-radius: 4px !important;
+        margin: 0 !important;
+        border: none !important;
+    }
+    [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stRadio"] label[data-checked="true"] {
+        background: #0f3d3e !important;
+        color: #fff !important;
+    }
+    [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stRadio"] label span {
+        display: none !important;
+    }
+    
+    /* Multiselect compact */
+    [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stMultiSelect"] {
+        margin-top: 0;
+    }
+    
+    /* Expander styling */
+    [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stExpander"] {
+        border: none !important;
+        background: transparent !important;
+    }
+    [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stExpander"] summary {
+        font-size: 11px;
         font-weight: 600;
         color: #64748b;
         text-transform: uppercase;
         letter-spacing: 0.5px;
-        margin-bottom: 8px;
-    }
-    .status-chip {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        background: #ecfdf5;
-        border: 1px solid #a7f3d0;
-        color: #047857;
-        font-size: 13px;
-        font-weight: 500;
-        padding: 6px 12px;
-        border-radius: 20px;
-        margin-top: 8px;
-    }
-    .status-chip-warning {
-        background: #fef3c7;
-        border: 1px solid #fcd34d;
-        color: #92400e;
-    }
-    .filter-divider {
-        height: 1px;
-        background: #e2e8f0;
-        margin: 16px 0;
     }
     </style>
-    
-    <div class="filter-panel">
-        <div class="filter-panel-header">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="white">
-                <path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/>
-            </svg>
-            <h3 class="filter-panel-title">Analysis Filters</h3>
-        </div>
-        <div class="filter-panel-body">
-            <div class="filter-section">
-                <div class="filter-label">View Level</div>
-            </div>
-        </div>
-    </div>
     """, unsafe_allow_html=True)
     
-    # View Mode - Segmented control
-    view_mode = st.radio(
-        "View Level",
-        options=["Brand", "Product"],
-        horizontal=True,
-        key="view_mode_toggle",
-        label_visibility="collapsed"
-    )
-    is_product_switch_mode = (view_mode == "Product")
-    
-    # Prepare df_working based on view mode
-    df_working = df.copy()
-    if not is_product_switch_mode:
-        df_working = df_working.groupby(['brand_2024', 'brand_2025', 'move_type']).agg({
-            'customers': 'sum'
-        }).reset_index()
-        df_working = df_working.rename(columns={
-            'brand_2024': 'prod_2024',
-            'brand_2025': 'prod_2025'
-        })
-    
-    # Brand data preparation
-    special_categories = ['NEW_TO_CATEGORY', 'LOST_FROM_CATEGORY', 'MIXED']
-    
-    if is_product_switch_mode:
-        brands_from_data = set()
-        if 'brand_2024' in df.columns:
-            brands_from_data.update([b for b in df['brand_2024'].unique() if b not in special_categories and b is not None])
-        if 'brand_2025' in df.columns:
-            brands_from_data.update([b for b in df['brand_2025'].unique() if b not in special_categories and b is not None])
-        all_brands_in_data = sorted(brands_from_data)
+    # Start Control Panel Container
+    with st.container():
+        # Marker for CSS targeting
+        st.markdown('<div class="control-panel-start"></div>', unsafe_allow_html=True)
         
-        product_to_brand_map = {}
-        for _, row in df.iterrows():
-            if row['prod_2024'] not in special_categories and 'brand_2024' in df.columns:
-                product_to_brand_map[row['prod_2024']] = row['brand_2024']
-            if row['prod_2025'] not in special_categories and 'brand_2025' in df.columns:
-                product_to_brand_map[row['prod_2025']] = row['brand_2025']
-    else:
-        all_brands_in_data = sorted([b for b in df_working['prod_2024'].unique() if b not in special_categories])
-        product_to_brand_map = {}
-    
-    # Divider
-    st.markdown('<div style="height:1px;background:#e2e8f0;margin:12px 0 16px 0;"></div>', unsafe_allow_html=True)
-    
-    # Brand selector label
-    st.markdown('<div style="font-size:12px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Select Brands</div>', unsafe_allow_html=True)
-    
-    selected_brands = st.multiselect(
-        "Brands",
-        options=all_brands_in_data,
-        default=None,
-        key="brand_filter_post_query",
-        label_visibility="collapsed",
-        placeholder="Choose brands to analyze..."
-    )
-    
-    # Status chip
-    if not selected_brands:
+        # PANEL HEADER
         st.markdown('''
-        <div class="status-chip status-chip-warning">
-            <span>⚠️</span>
-            <span>Select brands to continue</span>
+        <div class="panel-header">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="white">
+                <path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/>
+            </svg>
+            <span class="panel-title">Analysis Scope</span>
+            <span class="panel-subtitle">Configure view and filters</span>
         </div>
         ''', unsafe_allow_html=True)
-        st.stop()
-    else:
-        brands_text = ", ".join(selected_brands[:3])
-        if len(selected_brands) > 3:
-            brands_text += f" +{len(selected_brands) - 3}"
         
-        if is_product_switch_mode and product_to_brand_map:
-            selected_products = [p for p, b in product_to_brand_map.items() if b in selected_brands]
-            st.markdown(f'''
-            <div class="status-chip">
-                <span>✓</span>
-                <span>{len(selected_brands)} brands · {len(selected_products)} products</span>
-            </div>
-            ''', unsafe_allow_html=True)
-        else:
-            st.markdown(f'''
-            <div class="status-chip">
-                <span>✓</span>
-                <span>Analyzing {len(selected_brands)} brand{"s" if len(selected_brands) > 1 else ""}</span>
-            </div>
-            ''', unsafe_allow_html=True)
-    
-    # Optional filters section (collapsible)
-    st.markdown('<div style="height:1px;background:#e2e8f0;margin:16px 0;"></div>', unsafe_allow_html=True)
-    
-    with st.expander("⚙️ Advanced Filters", expanded=False):
-        st.markdown('<div style="font-size:12px;font-weight:600;color:#64748b;margin-bottom:8px;">BARCODE FILTER</div>', unsafe_allow_html=True)
+        # SECTION 1: VIEW LEVEL
+        st.markdown('<div class="control-section"><div class="section-label">View Level</div></div>', unsafe_allow_html=True)
         
-        barcode_filter_input = st.text_area(
-            "Barcodes",
-            height=80,
-            placeholder="Paste barcodes (one per line)",
-            key="barcode_filter_input",
+        view_mode = st.radio(
+            "View",
+            options=["Brand", "Product"],
+            horizontal=True,
+            key="view_mode_toggle",
             label_visibility="collapsed"
         )
+        is_product_switch_mode = (view_mode == "Product")
         
-        col1, col2 = st.columns(2)
-        with col1:
-            apply_barcode_filter = st.button("Apply", key="apply_bc_filter", use_container_width=True)
-        with col2:
-            if st.button("Clear", key="clear_bc_filter", use_container_width=True):
-                st.session_state.active_barcode_filter = []
+        # Prepare df_working
+        df_working = df.copy()
+        if not is_product_switch_mode:
+            df_working = df_working.groupby(['brand_2024', 'brand_2025', 'move_type']).agg({
+                'customers': 'sum'
+            }).reset_index()
+            df_working = df_working.rename(columns={
+                'brand_2024': 'prod_2024',
+                'brand_2025': 'prod_2025'
+            })
+        
+        # Brand data preparation
+        special_categories = ['NEW_TO_CATEGORY', 'LOST_FROM_CATEGORY', 'MIXED']
+        
+        if is_product_switch_mode:
+            brands_from_data = set()
+            if 'brand_2024' in df.columns:
+                brands_from_data.update([b for b in df['brand_2024'].unique() if b not in special_categories and b is not None])
+            if 'brand_2025' in df.columns:
+                brands_from_data.update([b for b in df['brand_2025'].unique() if b not in special_categories and b is not None])
+            all_brands_in_data = sorted(brands_from_data)
+            
+            product_to_brand_map = {}
+            for _, row in df.iterrows():
+                if row['prod_2024'] not in special_categories and 'brand_2024' in df.columns:
+                    product_to_brand_map[row['prod_2024']] = row['brand_2024']
+                if row['prod_2025'] not in special_categories and 'brand_2025' in df.columns:
+                    product_to_brand_map[row['prod_2025']] = row['brand_2025']
+        else:
+            all_brands_in_data = sorted([b for b in df_working['prod_2024'].unique() if b not in special_categories])
+            product_to_brand_map = {}
+        
+        # SECTION 2: BRANDS
+        st.markdown('<div class="control-section"><div class="section-label">Brands</div></div>', unsafe_allow_html=True)
+        
+        # Brand selector and status in one row
+        brand_col, status_col = st.columns([3, 1])
+        
+        with brand_col:
+            selected_brands = st.multiselect(
+                "Brands",
+                options=all_brands_in_data,
+                default=None,
+                key="brand_filter_post_query",
+                label_visibility="collapsed",
+                placeholder="Select brands..."
+            )
+        
+        with status_col:
+            if selected_brands:
+                if is_product_switch_mode and product_to_brand_map:
+                    selected_products = [p for p, b in product_to_brand_map.items() if b in selected_brands]
+                    st.markdown(f'<div class="status-badge ready">✓ {len(selected_brands)}B · {len(selected_products)}P</div>', unsafe_allow_html=True)
+                else:
+                    st.markdown(f'<div class="status-badge ready">✓ {len(selected_brands)} brands</div>', unsafe_allow_html=True)
+            else:
+                st.markdown('<div class="status-badge waiting">Select brands</div>', unsafe_allow_html=True)
+        
+        if not selected_brands:
+            st.stop()
+        
+        # SECTION 3: ADVANCED FILTERS (collapsible)
+        st.markdown('<div class="control-section" style="padding:12px 16px;background:#f1f5f9;"></div>', unsafe_allow_html=True)
+        
+        with st.expander("Advanced Filters", expanded=False):
+            st.caption("Barcode Filter")
+            barcode_filter_input = st.text_area(
+                "Barcodes",
+                height=60,
+                placeholder="Paste barcodes (one per line)",
+                key="barcode_filter_input",
+                label_visibility="collapsed"
+            )
+            
+            c1, c2 = st.columns(2)
+            with c1:
+                apply_barcode_filter = st.button("Apply", key="apply_bc_filter", use_container_width=True)
+            with c2:
+                if st.button("Clear", key="clear_bc_filter", use_container_width=True):
+                    st.session_state.active_barcode_filter = []
+                    st.rerun()
+            
+            if apply_barcode_filter and barcode_filter_input.strip():
+                barcode_list = [b.strip() for b in barcode_filter_input.strip().split('\n') if b.strip()]
+                st.session_state.active_barcode_filter = barcode_list
                 st.rerun()
-        
-        if apply_barcode_filter and barcode_filter_input.strip():
-            barcode_list = [b.strip() for b in barcode_filter_input.strip().split('\n') if b.strip()]
-            st.session_state.active_barcode_filter = barcode_list
-            st.rerun()
-        
-        active_barcodes_display = st.session_state.get('active_barcode_filter', [])
-        if active_barcodes_display:
-            st.success(f"🔍 {len(active_barcodes_display)} barcodes active")
+            
+            active_barcodes_display = st.session_state.get('active_barcode_filter', [])
+            if active_barcodes_display:
+                st.success(f"{len(active_barcodes_display)} barcodes active")
     
-    # End of Filter Panel - close visual container
-    st.markdown('<div style="margin-bottom:24px;"></div>', unsafe_allow_html=True)
+    # END OF CONTROL PANEL
     
     # =====================================================
     # DATA PROCESSING (after filter panel)
