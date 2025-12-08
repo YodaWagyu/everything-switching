@@ -78,13 +78,8 @@ if 'query_executed' not in st.session_state:
     st.session_state.query_executed = False
 
 
-st.sidebar.markdown("""
-    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
-        <span style="font-size: 18px; font-weight: 700; color: white;">Analysis Mode</span>
-    </div>
-""", unsafe_allow_html=True)
-analysis_mode = st.sidebar.radio("Select mode", config.ANALYSIS_MODES, label_visibility="collapsed")
+
+# Analysis Mode removed - view toggle is now in post-query UI
 
 st.sidebar.markdown("""
     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px; margin-top: 20px;">
@@ -149,15 +144,10 @@ st.sidebar.markdown("---")
 with st.sidebar.expander("⚙️ Advanced Settings", expanded=False):
     primary_threshold = st.slider("Primary %", float(config.MIN_PRIMARY_THRESHOLD*100), float(config.MAX_PRIMARY_THRESHOLD*100), float(config.DEFAULT_PRIMARY_THRESHOLD*100), step=5.0) / 100.0
 
+    # Custom barcode mapping (advanced)
     barcode_mapping_text = ""
-    if analysis_mode == "Custom Type":
-        st.markdown("""
-        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px; margin-top: 20px;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/></svg>
-            <span style="font-size: 18px; font-weight: 700; color: white;">Barcode Mapping</span>
-        </div>
-    """, unsafe_allow_html=True)
-        barcode_mapping_text = st.text_area("Paste barcode mapping", barcode_mapping_text, height=150, placeholder="barcode,product_type", help="Format: barcode,product_type (one per line)")
+    with st.expander("🔧 Custom Barcode Mapping (Advanced)", expanded=False):
+        barcode_mapping_text = st.text_area("Paste barcode mapping", "", height=100, placeholder="barcode,product_type\n8850...,Type A", help="Override product names with custom types")
 
 st.sidebar.markdown("---")
 run_analysis = st.sidebar.button("🚀 Run Analysis", type="primary", use_container_width=True)
@@ -171,10 +161,8 @@ if run_analysis or st.session_state.query_executed:
             st.error("⚠️ Please select at least one category to run the analysis.")
             st.stop()
         
-        # Query ALL brands in category (no brand filter at BigQuery level)
-        # Brand filtering will be done client-side for Focus View
+        # Query at Product level with all brands (Brand/Product view toggle is post-query)
         query_all_brands = query_builder.build_switching_query(
-            analysis_mode, 
             period1_start.strftime("%Y-%m-%d"), 
             period1_end.strftime("%Y-%m-%d"), 
             period2_start.strftime("%Y-%m-%d"), 
@@ -184,7 +172,7 @@ if run_analysis or st.session_state.query_executed:
             product_name_contains or None,
             product_name_not_contains or None,
             primary_threshold, 
-            barcode_mapping_text if analysis_mode == "Custom Type" else None,
+            barcode_mapping_text if barcode_mapping_text.strip() else None,
             store_filter_type,
             store_opening_cutoff
         )
@@ -224,66 +212,114 @@ if run_analysis or st.session_state.query_executed:
     
     display_category = selected_categories[0] if selected_categories else None
     
-    # Smart Brand/Product Filter based on Analysis Mode
+    # === POST-QUERY CONTROLS ===
+    st.markdown("""
+    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 15px 20px; border-radius: 12px; margin: 20px 0;">
+        <span style="font-size: 16px; font-weight: 600; color: white;">⚙️ View & Filter Options</span>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    ctrl_col1, ctrl_col2 = st.columns([1, 2])
+    
+    with ctrl_col1:
+        # View Mode Toggle
+        view_mode = st.radio(
+            "📊 View by",
+            options=["Brand", "Product"],
+            horizontal=True,
+            key="view_mode_toggle"
+        )
+        is_product_switch_mode = (view_mode == "Product")
+    
+    with ctrl_col2:
+        # Barcode Mass Filter
+        with st.expander("📋 Barcode Filter (paste list)", expanded=False):
+            barcode_filter_input = st.text_area(
+                "Paste barcodes (one per line)",
+                height=100,
+                placeholder="8850123456789\n8850234567891\n...",
+                key="barcode_filter_input"
+            )
+            
+            bc_col1, bc_col2, bc_col3 = st.columns([1, 1, 2])
+            with bc_col1:
+                apply_barcode_filter = st.button("✅ Apply", key="apply_bc_filter")
+            with bc_col2:
+                if st.button("🗑️ Clear", key="clear_bc_filter"):
+                    st.session_state.active_barcode_filter = []
+                    st.rerun()
+            
+            # Parse and apply barcode filter
+            if apply_barcode_filter and barcode_filter_input.strip():
+                barcode_list = [b.strip() for b in barcode_filter_input.strip().split('\n') if b.strip()]
+                st.session_state.active_barcode_filter = barcode_list
+                st.rerun()
+            
+            # Show active filter status
+            active_barcodes = st.session_state.get('active_barcode_filter', [])
+            if active_barcodes:
+                st.success(f"🔍 Filtering by {len(active_barcodes)} barcodes")
+    
+    # Apply barcode filter to dataframe
+    df_working = df.copy()
+    active_barcodes = st.session_state.get('active_barcode_filter', [])
+    if active_barcodes:
+        # Filter rows where barcode_2024 OR barcode_2025 is in the list
+        df_working = df_working[
+            (df_working['barcode_2024'].isin(active_barcodes)) |
+            (df_working['barcode_2025'].isin(active_barcodes))
+        ]
+        if len(df_working) == 0:
+            st.warning("⚠️ No products found matching the barcode filter")
+    
+    # Aggregate to Brand view if needed
+    if not is_product_switch_mode:
+        # Brand view: aggregate product-level data to brand level
+        df_working = df_working.groupby(['brand_2024', 'brand_2025', 'move_type']).agg({
+            'customers': 'sum'
+        }).reset_index()
+        # Rename columns to match expected format
+        df_working = df_working.rename(columns={
+            'brand_2024': 'prod_2024',
+            'brand_2025': 'prod_2025'
+        })
+    
+    st.markdown("---")
+    
+    st.markdown("---")
+    
+    # Smart Brand/Product Filter based on View Mode
     special_categories = ['NEW_TO_CATEGORY', 'LOST_FROM_CATEGORY', 'MIXED']
     
-    # Check if we're in Product Switch mode (for display logic later)
-    is_product_switch_mode = (analysis_mode == "Product Switch")
+    # Now that query includes brand columns, we can get brands directly
+    # For Brand view: prod_2024/prod_2025 = brand names
+    # For Product view: need to use brand_2024/brand_2025 columns from original df
     
-    # BOTH Brand Switch and Product Switch:
-    # - SQL query returns PRODUCT-level data
-    # - Dropdown shows BRANDS (from mapping)
-    # - The difference is in DISPLAY:
-    #   - Brand Switch: aggregate to brand level
-    #   - Product Switch: keep product level
-    
-    # Load product-to-brand mapping (needed for BOTH modes)
-    st.caption("🔄 Loading product-brand mapping...")
-    
-    # Query product master to get Brand for all products in the category
-    mapping_query = f"""
-    SELECT DISTINCT
-      ProductName,
-      Brand
-    FROM `{config.BIGQUERY_PROJECT}.{config.BIGQUERY_DATASET}.{config.BIGQUERY_TABLE_PRODUCT_MASTER}`
-    WHERE CategoryName = '{selected_categories[0] if selected_categories else ""}'
-    """
-    
-    try:
-        mapping_df, _ = bigquery_client.execute_query(mapping_query)
+    if is_product_switch_mode:
+        # Product view: get brands from the brand columns in original df
+        brands_from_data = set()
+        if 'brand_2024' in df.columns:
+            brands_from_data.update([b for b in df['brand_2024'].unique() if b not in special_categories and b is not None])
+        if 'brand_2025' in df.columns:
+            brands_from_data.update([b for b in df['brand_2025'].unique() if b not in special_categories and b is not None])
+        all_brands_in_data = sorted(brands_from_data)
         
-        # Create product-to-brand mapping
-        product_to_brand_map = dict(zip(mapping_df['ProductName'], mapping_df['Brand']))
-        
-        # Get unique brands based on analysis mode
-        if is_product_switch_mode:
-            # Product Switch mode: df['prod_2024'] contains ProductNames
-            # Map ProductNames to Brands using product_to_brand_map
-            all_products_in_data = [p for p in df['prod_2024'].unique() if p not in special_categories]
-            brands_set = set()
-            for product in all_products_in_data:
-                if product in product_to_brand_map:
-                    brands_set.add(product_to_brand_map[product])
-            all_brands_in_data = sorted(brands_set)
-        else:
-            # Brand Switch mode: df['prod_2024'] already contains Brand names
-            # Get brands directly from the query results
-            all_brands_in_data = sorted([b for b in df['prod_2024'].unique() if b not in special_categories])
-        
-        if is_product_switch_mode:
-            filter_label = "Select Brands"
-            filter_help = "💡 Select brands to see **product-level** switching within those brands"
-        else:
-            filter_label = "Select Brands"
-            filter_help = "💡 Select brands to see **brand-level** aggregated switching"
-        
-    except Exception as e:
-        st.error(f"Error loading product mapping: {e}")
-        # Fallback: use direct values from query
-        all_brands_in_data = sorted([b for b in df['prod_2024'].unique() if b not in special_categories])
+        # Create product-to-brand map from the original data
         product_to_brand_map = {}
-        filter_label = "Select Items"
-        filter_help = "💡 Select items to analyze"
+        for _, row in df.iterrows():
+            if row['prod_2024'] not in special_categories and 'brand_2024' in df.columns:
+                product_to_brand_map[row['prod_2024']] = row['brand_2024']
+            if row['prod_2025'] not in special_categories and 'brand_2025' in df.columns:
+                product_to_brand_map[row['prod_2025']] = row['brand_2025']
+        
+        filter_label = "Select Brands"
+        filter_help = "💡 Select brands to see **product-level** switching within those brands"
+    else:
+        # Brand view: prod_2024/prod_2025 are already brand names (after aggregation)
+        all_brands_in_data = sorted([b for b in df_working['prod_2024'].unique() if b not in special_categories])
+        product_to_brand_map = {}  # Not needed for brand view
+        filter_label = "Select Brands"
+        filter_help = "💡 Select brands to see **brand-level** aggregated switching"
     
     # Post-Query Brand Filter - Rich Minimal Modern Design
     st.markdown("""
@@ -394,7 +430,8 @@ if run_analysis or st.session_state.query_executed:
 """, unsafe_allow_html=True)
     
     # Apply brand filtering based on selection from sidebar
-    df_display = df  # Default to full data
+    # df_working already has barcode filter applied and is aggregated appropriately for view mode
+    df_display = df_working.copy()  # Default to working data (with barcode filter and aggregation)
     
     if selected_brands:
         from modules import brand_filter
@@ -407,11 +444,11 @@ if run_analysis or st.session_state.query_executed:
                 product for product, brand in product_to_brand_map.items() 
                 if brand in selected_brands
             ]
-            df_display = brand_filter.filter_dataframe_by_brands(df, products_in_selected_brands, 'filtered')
+            df_display = brand_filter.filter_dataframe_by_brands(df_working, products_in_selected_brands, 'filtered')
         else:
             # Brand Switch mode: df already contains Brand names
             # Filter directly by selected brand names
-            df_display = brand_filter.filter_dataframe_by_brands(df, selected_brands, 'filtered')
+            df_display = brand_filter.filter_dataframe_by_brands(df_working, selected_brands, 'filtered')
     
     # KEY DIFFERENCE BETWEEN MODES:
     # - Brand Switch: Aggregate product-level data to BRAND level for display
@@ -1040,7 +1077,7 @@ if run_analysis or st.session_state.query_executed:
                 top_brands = brand_customers.nlargest(10).index.tolist()
                 brands_for_ai = [b for b in brands_for_ai if b in top_brands]
         
-        insights = ai_analyzer.generate_insights(df_display, summary_df, ai_category, brands_for_ai, analysis_mode, f"{period1_start} to {period1_end}", f"{period2_start} to {period2_end}")
+        insights = ai_analyzer.generate_insights(df_display, summary_df, ai_category, brands_for_ai, view_mode, f"{period1_start} to {period1_end}", f"{period2_start} to {period2_end}")
         if insights:
             st.markdown(insights, unsafe_allow_html=True)
 else:

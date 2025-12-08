@@ -51,7 +51,6 @@ def build_case_statement(barcode_mapping: str) -> str:
 
 
 def build_switching_query(
-    analysis_mode: str,
     period1_start: str,
     period1_end: str,
     period2_start: str,
@@ -68,8 +67,10 @@ def build_switching_query(
     """
     Build the complete switching analysis SQL query
     
+    Always runs at Product level with ProductName, Barcode, and Brand.
+    View toggle (Brand/Product) is handled post-query in the UI.
+    
     Args:
-        analysis_mode (str): Analysis mode ('Brand Switch', 'Product Switch', 'Custom Type')
         period1_start (str): Start date for period 1 (YYYY-MM-DD)
         period1_end (str): End date for period 1 (YYYY-MM-DD)
         period2_start (str): Start date for period 2 (YYYY-MM-DD)
@@ -87,13 +88,11 @@ def build_switching_query(
         str: Complete SQL query
     """
     
-    # Determine TargetItem expression based on analysis mode
-    if analysis_mode == "Custom Type" and barcode_mapping:
+    # Always use ProductName as TargetItem (unless custom mapping provided)
+    if barcode_mapping:
         target_item_expr = build_case_statement(barcode_mapping)
-    elif analysis_mode == "Product Switch":
+    else:
         target_item_expr = "pm.ProductName"
-    else:  # Brand Switch (default)
-        target_item_expr = "pm.Brand"
     
     # Build brand filter - ASYMMETRIC: Period 1 filtered, Period 2 unfiltered
     if brands:
@@ -184,7 +183,6 @@ DECLARE PRIMARY_THRESHOLD FLOAT64 DEFAULT {primary_threshold};
 WITH base AS (
   SELECT
     a.Date,
-    -- Create Year flag for easy grouping
     CASE
       WHEN a.Date BETWEEN start_2024 AND end_2024 THEN 2024
       WHEN a.Date BETWEEN start_2025 AND end_2025 THEN 2025
@@ -192,8 +190,10 @@ WITH base AS (
     a.CustomerCode,
     a.DocNo,
     COALESCE(a.TotalSales, 0) AS TotalSales,
-    -- Dynamic TargetItem based on analysis mode
-    {target_item_expr} AS TargetItem
+    -- Always capture all 3 identifiers
+    {target_item_expr} AS TargetItem,
+    a.Barcode AS Barcode,
+    pm.Brand AS Brand
   FROM `{config.BIGQUERY_PROJECT}.{config.BIGQUERY_DATASET}.{config.BIGQUERY_TABLE_SALES}` a
   JOIN `{config.BIGQUERY_PROJECT}.{config.BIGQUERY_DATASET}.{config.BIGQUERY_TABLE_PRODUCT_MASTER}` pm
     ON a.Barcode = pm.Barcode
@@ -212,26 +212,34 @@ cust_item_stats AS (
     Year,
     CustomerCode,
     TargetItem,
+    Brand,
+    -- Get any barcode for this product (for filtering purposes)
+    ANY_VALUE(Barcode) AS Barcode,
     SUM(TotalSales) AS sales_item,
     MAX(Date) AS last_tx,
-    -- Calculate % Share using Window Function
     SAFE_DIVIDE(SUM(TotalSales), SUM(SUM(TotalSales)) OVER(PARTITION BY Year, CustomerCode)) AS share_item
   FROM base
-  WHERE Year IS NOT NULL -- Filter out dates outside the periods
-  GROUP BY 1, 2, 3
+  WHERE Year IS NOT NULL
+  GROUP BY 1, 2, 3, 4
 ),
 
 primary_identification AS (
   SELECT
     Year,
     CustomerCode,
-    -- Logic: If Share >= threshold, assign item name, otherwise 'MIXED'
     CASE
       WHEN share_item >= PRIMARY_THRESHOLD THEN TargetItem
       ELSE 'MIXED'
-    END AS primary_item
+    END AS primary_item,
+    CASE
+      WHEN share_item >= PRIMARY_THRESHOLD THEN Barcode
+      ELSE NULL
+    END AS primary_barcode,
+    CASE
+      WHEN share_item >= PRIMARY_THRESHOLD THEN Brand
+      ELSE 'MIXED'
+    END AS primary_brand
   FROM cust_item_stats
-  -- Use QUALIFY to get only the #1 item for each customer in each year
   QUALIFY ROW_NUMBER() OVER(
     PARTITION BY Year, CustomerCode
     ORDER BY
@@ -245,27 +253,40 @@ primary_identification AS (
 customer_flow AS (
   SELECT
     CustomerCode,
-    -- Pivot data so each customer is on one row
-    MAX( CASE WHEN Year = 2024 THEN primary_item END) AS item_2024,
-    MAX(CASE WHEN Year = 2025 THEN primary_item END) AS item_2025
+    -- Period 1 (2024)
+    MAX(CASE WHEN Year = 2024 THEN primary_item END) AS item_2024,
+    MAX(CASE WHEN Year = 2024 THEN primary_barcode END) AS barcode_2024,
+    MAX(CASE WHEN Year = 2024 THEN primary_brand END) AS brand_2024,
+    -- Period 2 (2025)
+    MAX(CASE WHEN Year = 2025 THEN primary_item END) AS item_2025,
+    MAX(CASE WHEN Year = 2025 THEN primary_barcode END) AS barcode_2025,
+    MAX(CASE WHEN Year = 2025 THEN primary_brand END) AS brand_2025
   FROM primary_identification
   GROUP BY CustomerCode
 ),
 
 classify AS (
   SELECT
+    -- Product columns
     COALESCE(item_2024, 'NEW_TO_CATEGORY') AS prod_2024,
     COALESCE(item_2025, 'LOST_FROM_CATEGORY') AS prod_2025,
+    -- Barcode columns
+    barcode_2024,
+    barcode_2025,
+    -- Brand columns
+    COALESCE(brand_2024, 'NEW_TO_CATEGORY') AS brand_2024,
+    COALESCE(brand_2025, 'LOST_FROM_CATEGORY') AS brand_2025,
+    -- Counts and move type
     COUNT(*) AS customers,
     CASE
       WHEN item_2024 IS NULL AND item_2025 IS NOT NULL THEN 'new_to_category'
       WHEN item_2024 IS NOT NULL AND item_2025 IS NULL THEN 'lost_from_category'
       WHEN item_2024 = item_2025 THEN 'stayed'
-      WHEN item_2024 != item_2025 THEN 'switched' -- Includes Mixed -> Brand or Brand A -> Brand B
+      WHEN item_2024 != item_2025 THEN 'switched'
       ELSE 'unknown'
     END AS move_type
   FROM customer_flow
-  GROUP BY 1, 2, 4
+  GROUP BY 1, 2, 3, 4, 5, 6, 8
 )
 
 SELECT * FROM classify
