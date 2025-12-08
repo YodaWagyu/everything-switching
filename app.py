@@ -140,14 +140,23 @@ with st.sidebar.expander("🔍 Product Filters", expanded=True):
 
     product_name_not_contains = st.text_input("Product NOT Contains", placeholder="เช่น PM_, PROMO", help="กรองสินค้าที่มีคำนี้ออก (AND NOT condition)")
 
+
 st.sidebar.markdown("---")
 with st.sidebar.expander("⚙️ Advanced Settings", expanded=False):
     primary_threshold = st.slider("Primary %", float(config.MIN_PRIMARY_THRESHOLD*100), float(config.MAX_PRIMARY_THRESHOLD*100), float(config.DEFAULT_PRIMARY_THRESHOLD*100), step=5.0) / 100.0
-
-    # Custom barcode mapping (advanced)
-    barcode_mapping_text = ""
-    with st.expander("🔧 Custom Barcode Mapping (Advanced)", expanded=False):
-        barcode_mapping_text = st.text_area("Paste barcode mapping", "", height=100, placeholder="barcode,product_type\n8850...,Type A", help="Override product names with custom types")
+    
+    # Custom barcode mapping (advanced) - now at same level, not nested
+    st.markdown("---")
+    st.markdown("**🔧 Custom Barcode Mapping**")
+    st.caption("Override product names with custom types (optional)")
+    barcode_mapping_text = st.text_area(
+        "Paste barcode mapping", 
+        "", 
+        height=100, 
+        placeholder="barcode,product_type\n8850...,Type A", 
+        help="Format: barcode,product_type (one per line)",
+        key="barcode_mapping_text_area"
+    )
 
 st.sidebar.markdown("---")
 run_analysis = st.sidebar.button("🚀 Run Analysis", type="primary", use_container_width=True)
@@ -172,7 +181,7 @@ if run_analysis or st.session_state.query_executed:
             product_name_contains or None,
             product_name_not_contains or None,
             primary_threshold, 
-            barcode_mapping_text if barcode_mapping_text.strip() else None,
+            barcode_mapping_text if barcode_mapping_text and barcode_mapping_text.strip() else None,
             store_filter_type,
             store_opening_cutoff
         )
