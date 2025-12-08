@@ -108,8 +108,22 @@ def create_sankey_diagram(labels: List[str], sources: List[int], targets: List[i
             # No highlighting - standard grey
             link_colors.append('rgba(189, 189, 189, 0.3)')
 
-    # Calculate percentages for hover
-    link_percentages = [f"{(v/total_volume*100):.1f}%" if total_volume > 0 else "0%" for v in final_values]
+    # Calculate source node totals for correct percentage
+    source_totals = {}
+    for s, v in zip(final_sources, final_values):
+        if s not in source_totals:
+            source_totals[s] = 0
+        source_totals[s] += v
+    
+    # Calculate percentages based on source node total (not overall total)
+    link_percentages = []
+    for s, v in zip(final_sources, final_values):
+        source_total = source_totals.get(s, 0)
+        if source_total > 0:
+            pct = (v / source_total) * 100
+            link_percentages.append(f"{pct:.1f}%")
+        else:
+            link_percentages.append("0%")
 
     fig = go.Figure(data=[go.Sankey(
         node=dict(
@@ -127,7 +141,7 @@ def create_sankey_diagram(labels: List[str], sources: List[int], targets: List[i
             value=final_values,
             color=link_colors,
             customdata=link_percentages,
-            hovertemplate='From %{source.label}<br>To %{target.label}<br>Flow: %{value:,}<br>%{customdata} of total<extra></extra>'
+            hovertemplate='From %{source.label}<br>To %{target.label}<br>Flow: %{value:,}<br>%{customdata} of source<extra></extra>'
         ),
         textfont=dict(family="Inter", size=12, color="#1a1a1a")
     )])
