@@ -108,6 +108,9 @@ def create_sankey_diagram(labels: List[str], sources: List[int], targets: List[i
             # No highlighting - standard grey
             link_colors.append('rgba(189, 189, 189, 0.3)')
 
+    # Calculate percentages for hover
+    link_percentages = [f"{(v/total_volume*100):.1f}%" if total_volume > 0 else "0%" for v in final_values]
+
     fig = go.Figure(data=[go.Sankey(
         node=dict(
             pad=20, 
@@ -123,7 +126,8 @@ def create_sankey_diagram(labels: List[str], sources: List[int], targets: List[i
             target=final_targets, 
             value=final_values,
             color=link_colors,
-            hovertemplate='From %{source.label}<br>To %{target.label}<br>Flow: %{value:,}<br>%{percent} of total<extra></extra>'
+            customdata=link_percentages,
+            hovertemplate='From %{source.label}<br>To %{target.label}<br>Flow: %{value:,}<br>%{customdata} of total<extra></extra>'
         ),
         textfont=dict(family="Inter", size=12, color="#1a1a1a")
     )])
