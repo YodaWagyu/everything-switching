@@ -242,34 +242,36 @@ if run_analysis or st.session_state.query_executed:
         overflow: hidden;
     }
     
-    /* Panel Header */
+    /* Panel Header - LARGER */
     .panel-header {
         background: #0f3d3e;
-        padding: 10px 16px;
+        padding: 14px 20px;
         margin: 0;
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 10px;
     }
     .panel-title {
         color: #fff;
-        font-size: 13px;
-        font-weight: 600;
+        font-size: 15px;
+        font-weight: 700;
         margin: 0;
     }
     .panel-subtitle {
-        color: rgba(255,255,255,0.6);
-        font-size: 11px;
+        color: rgba(255,255,255,0.7);
+        font-size: 12px;
         margin-left: auto;
     }
     
     /* Section styling - LARGER LABELS */
     .section-label {
-        font-size: 13px;
+        font-size: 12px;
         font-weight: 700;
-        color: #24292f;
+        color: #57606a;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
         margin-bottom: 8px;
-        padding: 12px 16px 0 16px;
+        padding: 16px 20px 0 20px;
     }
     
     /* Inline Status Badge */
@@ -291,9 +293,9 @@ if run_analysis or st.session_state.query_executed:
         color: #9a6700;
     }
     
-    /* Radio as segmented control */
+    /* Radio as segmented control - FLUSH LEFT */
     [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stRadio"] {
-        padding: 0 16px 12px 16px;
+        padding: 0 20px 16px 20px;
     }
     [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stRadio"] > div {
         flex-direction: row !important;
@@ -301,11 +303,11 @@ if run_analysis or st.session_state.query_executed:
         background: #f6f8fa;
         border: 1px solid #d0d7de;
         border-radius: 6px;
-        padding: 2px;
+        padding: 3px;
         display: inline-flex !important;
     }
     [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stRadio"] label {
-        padding: 6px 20px !important;
+        padding: 8px 24px !important;
         font-size: 13px !important;
         font-weight: 600 !important;
         color: #57606a !important;
@@ -322,19 +324,22 @@ if run_analysis or st.session_state.query_executed:
         display: none !important;
     }
     
-    /* Multiselect - VISIBLE with clear border */
+    /* Multiselect - VISIBLE with STRONGER border */
     [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stMultiSelect"] {
-        padding: 0 16px 12px 16px;
+        padding: 0 20px 16px 20px;
     }
     [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stMultiSelect"] > div > div {
         background: #ffffff !important;
-        border: 1px solid #d0d7de !important;
+        border: 2px solid #94a3b8 !important;
         border-radius: 6px !important;
-        box-shadow: inset 0 1px 2px rgba(0,0,0,0.05) !important;
+        min-height: 42px !important;
+    }
+    [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stMultiSelect"] > div > div:hover {
+        border-color: #64748b !important;
     }
     [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stMultiSelect"] > div > div:focus-within {
         border-color: #0f3d3e !important;
-        box-shadow: 0 0 0 3px rgba(15,61,62,0.15) !important;
+        box-shadow: 0 0 0 3px rgba(15,61,62,0.2) !important;
     }
     
     /* Expander styling */
