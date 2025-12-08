@@ -812,32 +812,54 @@ if run_analysis or st.session_state.query_executed:
             # Show which brand is being analyzed
             brand_label = f" ({selected_loyalty_brand})" if selected_loyalty_brand != "All Brands" else ""
             
+            retention_rate_fmt = f"{cohort_metrics['retention_rate']:.1f}%"
+            switch_rate_fmt = f"{cohort_metrics['switch_rate']:.1f}%"
+            churn_rate_fmt_2 = f"{cohort_metrics['churn_rate']:.1f}%"
+            
+            # Display customer counts for context
+            stayed_count = f"{cohort_metrics['stayed_customers']:,}"
+            switched_count = f"{cohort_metrics['switch_out_customers']:,}"
+            churned_count = f"{cohort_metrics['gone_customers']:,}"
+            
+            card_style = """
+                background: white; 
+                padding: 16px 20px; 
+                border-right: 1px solid #e5e7eb;
+                height: 100%;
+            """
+            
             c1, c2, c3 = st.columns(3)
             with c1:
-                retention_rate_fmt = f"{cohort_metrics['retention_rate']:.1f}"
                 st.markdown(f"""
-                <div class="premium-card" style="padding: 20px; text-align: center; border-left: 5px solid #2e7d32;">
-                    <div style="font-size: 16px; color: #666; margin-bottom: 5px;">Retention Rate{brand_label}</div>
-                    <div style="font-size: 32px; font-weight: 800; color: #2e7d32;">{retention_rate_fmt}%</div>
-                    <div style="font-size: 12px; color: #666;">Customers who stayed with same brand</div>
+                <div style="{card_style} border-radius: 12px 0 0 12px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span style="font-size: 14px; font-weight: 500; color: #6b7280;">Retention Rate{brand_label}</span>
+                        <span style="font-size: 12px; font-weight: 500; color: #16a34a;">{stayed_count} customers</span>
+                    </div>
+                    <div style="font-size: 28px; font-weight: 500; color: #16a34a; letter-spacing: -0.02em;">{retention_rate_fmt}</div>
+                    <div style="font-size: 12px; color: #9ca3af; margin-top: 4px;">Stayed with same brand</div>
                 </div>
                 """, unsafe_allow_html=True)
             with c2:
-                switch_rate_fmt = f"{cohort_metrics['switch_rate']:.1f}"
                 st.markdown(f"""
-                <div class="premium-card" style="padding: 20px; text-align: center; border-left: 5px solid #f57c00;">
-                    <div style="font-size: 16px; color: #666; margin-bottom: 5px;">Switch Rate{brand_label}</div>
-                    <div style="font-size: 32px; font-weight: 800; color: #f57c00;">{switch_rate_fmt}%</div>
-                    <div style="font-size: 12px; color: #666;">Customers who switched brands</div>
+                <div style="{card_style}">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span style="font-size: 14px; font-weight: 500; color: #6b7280;">Switch Rate{brand_label}</span>
+                        <span style="font-size: 12px; font-weight: 500; color: #f59e0b;">{switched_count} customers</span>
+                    </div>
+                    <div style="font-size: 28px; font-weight: 500; color: #f59e0b; letter-spacing: -0.02em;">{switch_rate_fmt}</div>
+                    <div style="font-size: 12px; color: #9ca3af; margin-top: 4px;">Switched to other brands</div>
                 </div>
                 """, unsafe_allow_html=True)
             with c3:
-                churn_rate_fmt_2 = f"{cohort_metrics['churn_rate']:.1f}"
                 st.markdown(f"""
-                <div class="premium-card" style="padding: 20px; text-align: center; border-left: 5px solid #c62828;">
-                    <div style="font-size: 16px; color: #666; margin-bottom: 5px;">Churn Rate{brand_label}</div>
-                    <div style="font-size: 32px; font-weight: 800; color: #c62828;">{churn_rate_fmt_2}%</div>
-                    <div style="font-size: 12px; color: #666;">Customers lost from category</div>
+                <div style="{card_style} border-right: none; border-radius: 0 12px 12px 0;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span style="font-size: 14px; font-weight: 500; color: #6b7280;">Churn Rate{brand_label}</span>
+                        <span style="font-size: 12px; font-weight: 500; color: #dc2626;">{churned_count} customers</span>
+                    </div>
+                    <div style="font-size: 28px; font-weight: 500; color: #dc2626; letter-spacing: -0.02em;">{churn_rate_fmt_2}</div>
+                    <div style="font-size: 12px; color: #9ca3af; margin-top: 4px;">Lost from category</div>
                 </div>
                 """, unsafe_allow_html=True)
                 
