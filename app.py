@@ -457,80 +457,78 @@ if run_analysis or st.session_state.query_executed:
         net_cat = kpis['net_category_movement']
         net_sign = "+" if net_cat >= 0 else ""
         net_cat_fmt = f"{net_sign}{net_cat:,}"
-        net_color = "color: #16a34a;" if net_cat >= 0 else "color: #dc2626;"
+        net_color = "#16a34a" if net_cat >= 0 else "#dc2626"
         
         winner_val = kpis['winner_val']
         winner_sign = "+" if winner_val > 0 else ""
         winner_val_fmt = f"{winner_sign}{winner_val:,}"
         
-        # Loser: show actual value with + or - sign, just colored red
         loser_val = kpis['loser_val']
         loser_sign = "+" if loser_val > 0 else ""
         loser_val_fmt = f"{loser_sign}{loser_val:,}"
         
         churn_rate_fmt = f"{kpis['churn_rate']:.1f}%"
         
-        # blocks.so style - connected cards with border dividers
-        st.markdown(f"""
-        <div style="display: grid; grid-template-columns: repeat(5, 1fr); background: #e5e7eb; gap: 1px; border-radius: 12px; overflow: hidden;">
-            <!-- Card 1: Total Movement -->
-            <div style="background: white; padding: 16px 20px;">
-                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
-                    <span style="font-size: 14px; font-weight: 500; color: #6b7280;">Total Movement</span>
-                </div>
-                <div style="font-size: 28px; font-weight: 500; color: #111827; letter-spacing: -0.02em;">
-                    {total_movement_fmt}
-                </div>
+        # blocks.so style using st.columns
+        k1, k2, k3, k4, k5 = st.columns(5)
+        
+        card_style = """
+            background: white; 
+            padding: 16px 20px; 
+            border-right: 1px solid #e5e7eb;
+            height: 100%;
+        """
+        
+        with k1:
+            st.markdown(f"""
+            <div style="{card_style} border-radius: 12px 0 0 12px;">
+                <div style="font-size: 14px; font-weight: 500; color: #6b7280; margin-bottom: 8px;">Total Movement</div>
+                <div style="font-size: 28px; font-weight: 500; color: #111827; letter-spacing: -0.02em;">{total_movement_fmt}</div>
                 <div style="font-size: 12px; color: #9ca3af; margin-top: 4px;">Customers</div>
             </div>
-            
-            <!-- Card 2: Net Movement -->
-            <div style="background: white; padding: 16px 20px;">
-                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
-                    <span style="font-size: 14px; font-weight: 500; color: #6b7280;">Net Movement</span>
-                </div>
-                <div style="font-size: 28px; font-weight: 500; letter-spacing: -0.02em; {net_color}">
-                    {net_cat_fmt}
-                </div>
+            """, unsafe_allow_html=True)
+        
+        with k2:
+            st.markdown(f"""
+            <div style="{card_style}">
+                <div style="font-size: 14px; font-weight: 500; color: #6b7280; margin-bottom: 8px;">Net Movement</div>
+                <div style="font-size: 28px; font-weight: 500; color: {net_color}; letter-spacing: -0.02em;">{net_cat_fmt}</div>
                 <div style="font-size: 12px; color: #9ca3af; margin-top: 4px;">Total In - Out</div>
             </div>
-            
-            <!-- Card 3: Biggest Winner -->
-            <div style="background: white; padding: 16px 20px;">
-                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
+            """, unsafe_allow_html=True)
+        
+        with k3:
+            st.markdown(f"""
+            <div style="{card_style}">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
                     <span style="font-size: 14px; font-weight: 500; color: #6b7280;">Biggest Winner</span>
                     <span style="font-size: 12px; font-weight: 500; color: #16a34a;">{winner_val_fmt}</span>
                 </div>
-                <div style="font-size: 28px; font-weight: 500; color: #111827; letter-spacing: -0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{kpis['winner_name']}">
-                    {kpis['winner_name']}
-                </div>
+                <div style="font-size: 24px; font-weight: 500; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{kpis['winner_name']}">{kpis['winner_name']}</div>
                 <div style="font-size: 12px; color: #16a34a; margin-top: 4px;">↑ {winner_val_fmt}</div>
             </div>
-            
-            <!-- Card 4: Biggest Loser -->
-            <div style="background: white; padding: 16px 20px;">
-                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
+            """, unsafe_allow_html=True)
+        
+        with k4:
+            st.markdown(f"""
+            <div style="{card_style}">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
                     <span style="font-size: 14px; font-weight: 500; color: #6b7280;">Biggest Loser</span>
                     <span style="font-size: 12px; font-weight: 500; color: #dc2626;">{loser_val_fmt}</span>
                 </div>
-                <div style="font-size: 28px; font-weight: 500; color: #111827; letter-spacing: -0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{kpis['loser_name']}">
-                    {kpis['loser_name']}
-                </div>
+                <div style="font-size: 24px; font-weight: 500; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{kpis['loser_name']}">{kpis['loser_name']}</div>
                 <div style="font-size: 12px; color: #dc2626; margin-top: 4px;">{loser_val_fmt}</div>
             </div>
-            
-            <!-- Card 5: Attrition Rate -->
-            <div style="background: white; padding: 16px 20px;">
-                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
-                    <span style="font-size: 14px; font-weight: 500; color: #6b7280;">Attrition Rate</span>
-                </div>
-                <div style="font-size: 28px; font-weight: 500; color: #dc2626; letter-spacing: -0.02em;">
-                    {churn_rate_fmt}
-                </div>
+            """, unsafe_allow_html=True)
+        
+        with k5:
+            st.markdown(f"""
+            <div style="{card_style} border-right: none; border-radius: 0 12px 12px 0;">
+                <div style="font-size: 14px; font-weight: 500; color: #6b7280; margin-bottom: 8px;">Attrition Rate</div>
+                <div style="font-size: 28px; font-weight: 500; color: #dc2626; letter-spacing: -0.02em;">{churn_rate_fmt}</div>
                 <div style="font-size: 12px; color: #9ca3af; margin-top: 4px;">Out / Total</div>
             </div>
-        </div>
-        """, unsafe_allow_html=True)
+            """, unsafe_allow_html=True)
     
     # Data source for Sankey - use filtered data
     labels, sources, targets, values = data_processor.prepare_sankey_data(df_display)
@@ -772,18 +770,54 @@ if run_analysis or st.session_state.query_executed:
     
     # Tab 3: Loyalty (moved from tab6)
     with tab3:
-        st.markdown("### � Cohort & Loyalty Analysis")
+        st.markdown("### ◈ Cohort & Loyalty Analysis")
         st.caption("Analysis of customer retention and churn behavior between the two periods.")
         
-        cohort_metrics = data_processor.calculate_cohort_metrics(df_display)
+        # Brand filter for Loyalty metrics
+        brand_cohort_data = data_processor.calculate_cohort_metrics_by_brand(df_display)
+        
+        if brand_cohort_data['brands']:
+            loyalty_brand_options = ["All Brands"] + brand_cohort_data['brands']
+            selected_loyalty_brand = st.selectbox(
+                "Select brand for analysis",
+                options=loyalty_brand_options,
+                key="loyalty_brand_filter"
+            )
+            
+            if selected_loyalty_brand == "All Brands":
+                # Calculate aggregated metrics
+                cohort_metrics = data_processor.calculate_cohort_metrics(df_display)
+            else:
+                # Calculate metrics for selected brand only
+                brand_idx = brand_cohort_data['brands'].index(selected_loyalty_brand)
+                total = brand_cohort_data['totals'][brand_idx]
+                stayed = brand_cohort_data['retained'][brand_idx]
+                switched = brand_cohort_data['switched'][brand_idx]
+                churned = brand_cohort_data['churned'][brand_idx]
+                
+                cohort_metrics = {
+                    'retention_rate': (stayed / total * 100) if total > 0 else 0,
+                    'switch_rate': (switched / total * 100) if total > 0 else 0,
+                    'churn_rate': (churned / total * 100) if total > 0 else 0,
+                    'stayed_customers': stayed,
+                    'switch_out_customers': switched,
+                    'gone_customers': churned,
+                    'total_base': total
+                }
+        else:
+            cohort_metrics = data_processor.calculate_cohort_metrics(df_display)
+            selected_loyalty_brand = "All Brands"
         
         if cohort_metrics:
+            # Show which brand is being analyzed
+            brand_label = f" ({selected_loyalty_brand})" if selected_loyalty_brand != "All Brands" else ""
+            
             c1, c2, c3 = st.columns(3)
             with c1:
                 retention_rate_fmt = f"{cohort_metrics['retention_rate']:.1f}"
                 st.markdown(f"""
                 <div class="premium-card" style="padding: 20px; text-align: center; border-left: 5px solid #2e7d32;">
-                    <div style="font-size: 16px; color: #666; margin-bottom: 5px;">Retention Rate</div>
+                    <div style="font-size: 16px; color: #666; margin-bottom: 5px;">Retention Rate{brand_label}</div>
                     <div style="font-size: 32px; font-weight: 800; color: #2e7d32;">{retention_rate_fmt}%</div>
                     <div style="font-size: 12px; color: #666;">Customers who stayed with same brand</div>
                 </div>
@@ -792,7 +826,7 @@ if run_analysis or st.session_state.query_executed:
                 switch_rate_fmt = f"{cohort_metrics['switch_rate']:.1f}"
                 st.markdown(f"""
                 <div class="premium-card" style="padding: 20px; text-align: center; border-left: 5px solid #f57c00;">
-                    <div style="font-size: 16px; color: #666; margin-bottom: 5px;">Switch Rate</div>
+                    <div style="font-size: 16px; color: #666; margin-bottom: 5px;">Switch Rate{brand_label}</div>
                     <div style="font-size: 32px; font-weight: 800; color: #f57c00;">{switch_rate_fmt}%</div>
                     <div style="font-size: 12px; color: #666;">Customers who switched brands</div>
                 </div>
@@ -801,7 +835,7 @@ if run_analysis or st.session_state.query_executed:
                 churn_rate_fmt_2 = f"{cohort_metrics['churn_rate']:.1f}"
                 st.markdown(f"""
                 <div class="premium-card" style="padding: 20px; text-align: center; border-left: 5px solid #c62828;">
-                    <div style="font-size: 16px; color: #666; margin-bottom: 5px;">Churn Rate</div>
+                    <div style="font-size: 16px; color: #666; margin-bottom: 5px;">Churn Rate{brand_label}</div>
                     <div style="font-size: 32px; font-weight: 800; color: #c62828;">{churn_rate_fmt_2}%</div>
                     <div style="font-size: 12px; color: #666;">Customers lost from category</div>
                 </div>
