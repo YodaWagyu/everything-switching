@@ -234,8 +234,8 @@ if run_analysis or st.session_state.query_executed:
     <style>
     /* Control Panel Container */
     [data-testid="stVerticalBlock"]:has(> div.control-panel-start) {
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
+        background: #ffffff;
+        border: 1px solid #d0d7de;
         border-radius: 8px;
         padding: 0 !important;
         margin: 12px 0 20px 0;
@@ -245,7 +245,7 @@ if run_analysis or st.session_state.query_executed:
     /* Panel Header */
     .panel-header {
         background: #0f3d3e;
-        padding: 12px 16px;
+        padding: 10px 16px;
         margin: 0;
         display: flex;
         align-items: center;
@@ -256,7 +256,6 @@ if run_analysis or st.session_state.query_executed:
         font-size: 13px;
         font-weight: 600;
         margin: 0;
-        letter-spacing: 0.3px;
     }
     .panel-subtitle {
         color: rgba(255,255,255,0.6);
@@ -264,54 +263,13 @@ if run_analysis or st.session_state.query_executed:
         margin-left: auto;
     }
     
-    /* Section styling */
-    .control-section {
-        padding: 16px;
-        border-bottom: 1px solid #e2e8f0;
-    }
-    .control-section:last-child {
-        border-bottom: none;
-    }
+    /* Section styling - LARGER LABELS */
     .section-label {
-        font-size: 10px;
+        font-size: 13px;
         font-weight: 700;
-        color: #64748b;
-        text-transform: uppercase;
-        letter-spacing: 0.8px;
-        margin-bottom: 10px;
-    }
-    
-    /* Segmented Toggle Pills */
-    .toggle-pills {
-        display: inline-flex;
-        background: #e2e8f0;
-        border-radius: 6px;
-        padding: 3px;
-        gap: 2px;
-    }
-    .toggle-pill {
-        padding: 6px 16px;
-        font-size: 12px;
-        font-weight: 600;
-        color: #64748b;
-        background: transparent;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        transition: all 0.15s;
-    }
-    .toggle-pill.active {
-        background: #0f3d3e;
-        color: #fff;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-    }
-    
-    /* Brand Zone */
-    .brand-zone {
-        background: #fff;
-        border: 1px solid #e2e8f0;
-        border-radius: 6px;
-        padding: 12px;
+        color: #24292f;
+        margin-bottom: 8px;
+        padding: 12px 16px 0 16px;
     }
     
     /* Inline Status Badge */
@@ -319,35 +277,38 @@ if run_analysis or st.session_state.query_executed:
         display: inline-flex;
         align-items: center;
         gap: 4px;
-        font-size: 11px;
+        font-size: 12px;
         font-weight: 600;
         padding: 4px 10px;
         border-radius: 4px;
-        margin-left: 12px;
     }
     .status-badge.ready {
-        background: #dcfce7;
-        color: #166534;
+        background: #dafbe1;
+        color: #1a7f37;
     }
     .status-badge.waiting {
-        background: #fef3c7;
-        color: #92400e;
+        background: #fff8c5;
+        color: #9a6700;
     }
     
-    /* Hide default Streamlit radio styling, use custom */
+    /* Radio as segmented control */
+    [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stRadio"] {
+        padding: 0 16px 12px 16px;
+    }
     [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stRadio"] > div {
         flex-direction: row !important;
         gap: 0 !important;
-        background: #e2e8f0;
+        background: #f6f8fa;
+        border: 1px solid #d0d7de;
         border-radius: 6px;
-        padding: 3px;
+        padding: 2px;
         display: inline-flex !important;
     }
     [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stRadio"] label {
-        padding: 6px 16px !important;
-        font-size: 12px !important;
+        padding: 6px 20px !important;
+        font-size: 13px !important;
         font-weight: 600 !important;
-        color: #64748b !important;
+        color: #57606a !important;
         background: transparent !important;
         border-radius: 4px !important;
         margin: 0 !important;
@@ -361,22 +322,79 @@ if run_analysis or st.session_state.query_executed:
         display: none !important;
     }
     
-    /* Multiselect compact */
+    /* Multiselect - VISIBLE with clear border */
     [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stMultiSelect"] {
-        margin-top: 0;
+        padding: 0 16px 12px 16px;
+    }
+    [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stMultiSelect"] > div > div {
+        background: #ffffff !important;
+        border: 1px solid #d0d7de !important;
+        border-radius: 6px !important;
+        box-shadow: inset 0 1px 2px rgba(0,0,0,0.05) !important;
+    }
+    [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stMultiSelect"] > div > div:focus-within {
+        border-color: #0f3d3e !important;
+        box-shadow: 0 0 0 3px rgba(15,61,62,0.15) !important;
     }
     
     /* Expander styling */
     [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stExpander"] {
-        border: none !important;
-        background: transparent !important;
+        border-top: 1px solid #d0d7de !important;
+        border-bottom: none !important;
+        border-left: none !important;
+        border-right: none !important;
+        background: #f6f8fa !important;
+        border-radius: 0 !important;
     }
     [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stExpander"] summary {
-        font-size: 11px;
+        font-size: 12px;
         font-weight: 600;
-        color: #64748b;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
+        color: #57606a;
+        padding: 10px 16px;
+    }
+    [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stExpander"] [data-testid="stVerticalBlock"] {
+        padding: 0 16px 12px 16px;
+    }
+    
+    /* Text area inside expander */
+    [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stTextArea"] textarea {
+        background: #ffffff !important;
+        border: 1px solid #d0d7de !important;
+        border-radius: 6px !important;
+        font-size: 12px !important;
+    }
+    
+    /* BUTTONS - smaller, not full teal block */
+    [data-testid="stVerticalBlock"]:has(> div.control-panel-start) button {
+        font-size: 12px !important;
+        padding: 6px 16px !important;
+        border-radius: 6px !important;
+        font-weight: 600 !important;
+    }
+    [data-testid="stVerticalBlock"]:has(> div.control-panel-start) button[kind="primary"],
+    [data-testid="stVerticalBlock"]:has(> div.control-panel-start) button:first-of-type {
+        background: #0f3d3e !important;
+        color: white !important;
+        border: none !important;
+    }
+    [data-testid="stVerticalBlock"]:has(> div.control-panel-start) button[kind="secondary"],
+    [data-testid="stVerticalBlock"]:has(> div.control-panel-start) button:last-of-type {
+        background: #f6f8fa !important;
+        color: #24292f !important;
+        border: 1px solid #d0d7de !important;
+    }
+    
+    /* Caption styling */
+    [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stCaptionContainer"] {
+        font-size: 12px;
+        color: #57606a;
+        margin-bottom: 8px;
+    }
+    
+    /* Success message compact */
+    [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stAlert"] {
+        padding: 8px 12px !important;
+        font-size: 12px !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -398,7 +416,7 @@ if run_analysis or st.session_state.query_executed:
         ''', unsafe_allow_html=True)
         
         # SECTION 1: VIEW LEVEL
-        st.markdown('<div class="control-section"><div class="section-label">View Level</div></div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-label">View Level</div>', unsafe_allow_html=True)
         
         view_mode = st.radio(
             "View",
@@ -442,7 +460,7 @@ if run_analysis or st.session_state.query_executed:
             product_to_brand_map = {}
         
         # SECTION 2: BRANDS
-        st.markdown('<div class="control-section"><div class="section-label">Brands</div></div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-label">Brands</div>', unsafe_allow_html=True)
         
         # Brand selector and status in one row
         brand_col, status_col = st.columns([3, 1])
@@ -471,8 +489,6 @@ if run_analysis or st.session_state.query_executed:
             st.stop()
         
         # SECTION 3: ADVANCED FILTERS (collapsible)
-        st.markdown('<div class="control-section" style="padding:12px 16px;background:#f1f5f9;"></div>', unsafe_allow_html=True)
-        
         with st.expander("Advanced Filters", expanded=False):
             st.caption("Barcode Filter")
             barcode_filter_input = st.text_area(
