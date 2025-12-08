@@ -144,22 +144,44 @@ with st.sidebar.expander("🔍 Product Filters", expanded=True):
 st.sidebar.markdown("---")
 with st.sidebar.expander("⚙️ Advanced Settings", expanded=False):
     primary_threshold = st.slider("Primary %", float(config.MIN_PRIMARY_THRESHOLD*100), float(config.MAX_PRIMARY_THRESHOLD*100), float(config.DEFAULT_PRIMARY_THRESHOLD*100), step=5.0) / 100.0
-    
-    # Custom barcode mapping (advanced) - now at same level, not nested
-    st.markdown("---")
-    st.markdown("**🔧 Custom Barcode Mapping**")
-    st.caption("Override product names with custom types (optional)")
-    barcode_mapping_text = st.text_area(
-        "Paste barcode mapping", 
-        "", 
-        height=100, 
-        placeholder="barcode,product_type\n8850...,Type A", 
-        help="Format: barcode,product_type (one per line)",
-        key="barcode_mapping_text_area"
-    )
 
 st.sidebar.markdown("---")
 run_analysis = st.sidebar.button("🚀 Run Analysis", type="primary", use_container_width=True)
+
+# Custom Barcode Mapping - Separate section at bottom
+st.sidebar.markdown("---")
+st.sidebar.markdown("""
+<div style="
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 12px;
+">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <span style="font-size:16px;">🏷️</span>
+        <span style="color:#fff;font-size:13px;font-weight:600;">Custom Barcode Mode</span>
+    </div>
+    <div style="color:rgba(255,255,255,0.7);font-size:11px;">
+        Map barcodes to custom types and analyze movement between them
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+barcode_mapping_text = st.sidebar.text_area(
+    "Paste barcode mapping", 
+    "", 
+    height=100, 
+    placeholder="8850002016620\tMEN\n8850002024458\tBasic\n\n(Copy from Excel: Barcode | Type)",
+    help="Paste from Excel (tab-separated) or CSV format",
+    key="barcode_mapping_text_area",
+    label_visibility="collapsed"
+)
+
+if barcode_mapping_text and barcode_mapping_text.strip():
+    # Count valid mappings
+    lines = [l.strip() for l in barcode_mapping_text.strip().split('\n') if l.strip()]
+    valid_count = sum(1 for l in lines if '\t' in l or ',' in l or '  ' in l)
+    st.sidebar.caption(f"ℹ️ {valid_count} barcodes mapped")
 
 if run_analysis or st.session_state.query_executed:
     if run_analysis:
@@ -225,304 +247,384 @@ if run_analysis or st.session_state.query_executed:
     display_category = selected_categories[0] if selected_categories else None
     
     # =====================================================
-    # ANALYSIS SCOPE - UNIFIED CONTROL PANEL
-    # All controls inside ONE visual container
+    # DETECT CUSTOM BARCODE MODE
+    # When user provides barcode mapping, skip brand filter
     # =====================================================
     
-    # CSS for unified control panel - targets Streamlit components inside container
-    st.markdown("""
-    <style>
-    /* Control Panel Container */
-    [data-testid="stVerticalBlock"]:has(> div.control-panel-start) {
-        background: #ffffff;
-        border: 1px solid #d0d7de;
-        border-radius: 8px;
-        padding: 0 !important;
-        margin: 12px 0 20px 0;
-        overflow: hidden;
-    }
-    
-    /* Panel Header - LARGER */
-    .panel-header {
-        background: #0f3d3e;
-        padding: 14px 20px;
-        margin: 0;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-    .panel-title {
-        color: #fff;
-        font-size: 15px;
-        font-weight: 700;
-        margin: 0;
-    }
-    .panel-subtitle {
-        color: rgba(255,255,255,0.7);
-        font-size: 12px;
-        margin-left: auto;
-    }
-    
-    /* Section styling - LARGER LABELS */
-    .section-label {
-        font-size: 12px;
-        font-weight: 700;
-        color: #57606a;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin-bottom: 8px;
-        padding: 16px 20px 0 20px;
-    }
-    
-    /* Inline Status Badge */
-    .status-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        font-size: 12px;
-        font-weight: 600;
-        padding: 4px 10px;
-        border-radius: 4px;
-    }
-    .status-badge.ready {
-        background: #dafbe1;
-        color: #1a7f37;
-    }
-    .status-badge.waiting {
-        background: #fff8c5;
-        color: #9a6700;
-    }
-    
-    /* Radio as segmented control - FLUSH LEFT */
-    [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stRadio"] {
-        padding: 0 20px 16px 20px;
-    }
-    [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stRadio"] > div {
-        flex-direction: row !important;
-        gap: 0 !important;
-        background: #f6f8fa;
-        border: 1px solid #d0d7de;
-        border-radius: 6px;
-        padding: 3px;
-        display: inline-flex !important;
-    }
-    [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stRadio"] label {
-        padding: 8px 24px !important;
-        font-size: 13px !important;
-        font-weight: 600 !important;
-        color: #57606a !important;
-        background: transparent !important;
-        border-radius: 4px !important;
-        margin: 0 !important;
-        border: none !important;
-    }
-    [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stRadio"] label[data-checked="true"] {
-        background: #0f3d3e !important;
-        color: #fff !important;
-    }
-    [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stRadio"] label span {
-        display: none !important;
-    }
-    
-    /* Multiselect - GLOBAL VISIBLE BORDER (dark gray) */
-    [data-testid="stMultiSelect"] [data-baseweb="select"] > div {
-        background: #ffffff !important;
-        border: 2px solid #475569 !important;
-        border-radius: 6px !important;
-        min-height: 44px !important;
-    }
-    [data-testid="stMultiSelect"] [data-baseweb="select"] > div:hover {
-        border-color: #334155 !important;
-    }
-    [data-testid="stMultiSelect"] [data-baseweb="select"] > div:focus-within {
-        border-color: #0f3d3e !important;
-        box-shadow: 0 0 0 3px rgba(15,61,62,0.25) !important;
-    }
-    
-    /* Expander styling */
-    [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stExpander"] {
-        border-top: 1px solid #d0d7de !important;
-        border-bottom: none !important;
-        border-left: none !important;
-        border-right: none !important;
-        background: #f6f8fa !important;
-        border-radius: 0 !important;
-    }
-    [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stExpander"] summary {
-        font-size: 12px;
-        font-weight: 600;
-        color: #57606a;
-        padding: 10px 16px;
-    }
-    [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stExpander"] [data-testid="stVerticalBlock"] {
-        padding: 0 16px 12px 16px;
-    }
-    
-    /* Text area inside expander */
-    [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stTextArea"] textarea {
-        background: #ffffff !important;
-        border: 1px solid #d0d7de !important;
-        border-radius: 6px !important;
-        font-size: 12px !important;
-    }
-    
-    /* BUTTONS - smaller, not full teal block */
-    [data-testid="stVerticalBlock"]:has(> div.control-panel-start) button {
-        font-size: 12px !important;
-        padding: 6px 16px !important;
-        border-radius: 6px !important;
-        font-weight: 600 !important;
-    }
-    [data-testid="stVerticalBlock"]:has(> div.control-panel-start) button[kind="primary"],
-    [data-testid="stVerticalBlock"]:has(> div.control-panel-start) button:first-of-type {
-        background: #0f3d3e !important;
-        color: white !important;
-        border: none !important;
-    }
-    [data-testid="stVerticalBlock"]:has(> div.control-panel-start) button[kind="secondary"],
-    [data-testid="stVerticalBlock"]:has(> div.control-panel-start) button:last-of-type {
-        background: #f6f8fa !important;
-        color: #24292f !important;
-        border: 1px solid #d0d7de !important;
-    }
-    
-    /* Caption styling */
-    [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stCaptionContainer"] {
-        font-size: 12px;
-        color: #57606a;
-        margin-bottom: 8px;
-    }
-    
-    /* Success message compact */
-    [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stAlert"] {
-        padding: 8px 12px !important;
-        font-size: 12px !important;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-    
-    # Start Control Panel Container
-    with st.container():
-        # Marker for CSS targeting
-        st.markdown('<div class="control-panel-start"></div>', unsafe_allow_html=True)
+    def parse_custom_mapping(mapping_text):
+        """Parse barcode mapping text and return dict + list of types."""
+        if not mapping_text or not mapping_text.strip():
+            return {}, []
         
-        # PANEL HEADER
-        st.markdown('''
-        <div class="panel-header">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="white">
-                <path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/>
-            </svg>
-            <span class="panel-title">Analysis Scope</span>
-            <span class="panel-subtitle">Configure view and filters</span>
+        mapping = {}
+        types_set = set()
+        lines = mapping_text.strip().split('\n')
+        
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+            # Support tab, comma, space separated
+            parts = line.replace('\t', ',').replace('  ', ',').split(',', 1)
+            if len(parts) == 2:
+                barcode = parts[0].strip()
+                custom_type = parts[1].strip()
+                if barcode and custom_type:
+                    mapping[barcode] = custom_type
+                    types_set.add(custom_type)
+        
+        return mapping, sorted(types_set)
+    
+    custom_barcode_map, custom_types = parse_custom_mapping(barcode_mapping_text)
+    is_custom_mode = len(custom_barcode_map) > 0
+    
+    # =====================================================
+    # CUSTOM BARCODE MODE - Shows custom type movement
+    # =====================================================
+    
+    if is_custom_mode:
+        # Show Custom Mode Banner instead of Analysis Scope
+        st.markdown(f'''
+        <div style="
+            background: linear-gradient(135deg, #0f3d3e 0%, #1a5a5c 100%);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 12px 0 20px 0;
+            color: #fff;
+        ">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white">
+                    <path d="M17.63 5.84C17.27 5.33 16.67 5 16 5L5 5.01C3.9 5.01 3 5.9 3 7v10c0 1.1.9 1.99 2 1.99L16 19c.67 0 1.27-.33 1.63-.84L22 12l-4.37-6.16zM16 17H5V7h11l3.55 5L16 17z"/>
+                </svg>
+                <span style="font-size:18px;font-weight:700;">Custom Barcode Mode</span>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+        ''', unsafe_allow_html=True)
+        
+        # Show custom types as pills
+        pills_html = ""
+        for ct in custom_types[:10]:  # Limit to 10 for display
+            pills_html += f'<span style="background:rgba(255,255,255,0.2);padding:4px 12px;border-radius:4px;font-size:13px;font-weight:500;">{ct}</span>'
+        if len(custom_types) > 10:
+            pills_html += f'<span style="padding:4px 12px;font-size:13px;opacity:0.7;">+{len(custom_types)-10} more</span>'
+        
+        st.markdown(f'''
+            {pills_html}
+            </div>
+            <div style="font-size:12px;opacity:0.8;">
+                {len(custom_barcode_map)} barcodes mapped • Analysis shows movement between custom types
+            </div>
         </div>
         ''', unsafe_allow_html=True)
         
-        # SECTION 1: VIEW LEVEL - Label and Radio on SAME LINE
-        st.markdown('<div style="padding: 16px 20px 0 20px;"></div>', unsafe_allow_html=True)
-        view_label_col, view_radio_col = st.columns([1, 3])
-        with view_label_col:
-            st.markdown('<div style="font-size:12px;font-weight:700;color:#57606a;text-transform:uppercase;letter-spacing:0.5px;padding-top:8px;">View Level</div>', unsafe_allow_html=True)
-        with view_radio_col:
-            view_mode = st.radio(
-                "View",
-                options=["Brand", "Product"],
-                horizontal=True,
-                key="view_mode_toggle",
-                label_visibility="collapsed"
-            )
-        is_product_switch_mode = (view_mode == "Product")
+        # Use custom types for analysis - skip brand selection
+        # The df already has custom types instead of brand names (from query)
+        selected_brands = custom_types  # Use custom types as "brands" for downstream logic
+        is_product_switch_mode = False  # Custom mode works at type level
+        product_to_brand_map = custom_barcode_map  # Map barcodes to types
         
-        st.markdown('<div style="height:12px;"></div>', unsafe_allow_html=True)
-        
-        # Prepare df_working
+        # Use df as-is, it already has custom types from SQL CASE statement
         df_working = df.copy()
-        if not is_product_switch_mode:
-            df_working = df_working.groupby(['brand_2024', 'brand_2025', 'move_type']).agg({
-                'customers': 'sum'
-            }).reset_index()
-            df_working = df_working.rename(columns={
-                'brand_2024': 'prod_2024',
-                'brand_2025': 'prod_2025'
-            })
+    
+    # =====================================================
+    # ANALYSIS SCOPE - UNIFIED CONTROL PANEL (Normal Mode)
+    # Only show when NOT in custom barcode mode
+    # =====================================================
+    
+    if not is_custom_mode:
+        st.markdown("""
+        <style>
+        /* Control Panel Container */
+        [data-testid="stVerticalBlock"]:has(> div.control-panel-start) {
+            background: #ffffff;
+            border: 1px solid #d0d7de;
+            border-radius: 8px;
+            padding: 0 !important;
+            margin: 12px 0 20px 0;
+            overflow: hidden;
+        }
+    
+        /* Panel Header - LARGER */
+        .panel-header {
+            background: #0f3d3e;
+            padding: 14px 20px;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .panel-title {
+            color: #fff;
+            font-size: 15px;
+            font-weight: 700;
+            margin: 0;
+        }
+        .panel-subtitle {
+            color: rgba(255,255,255,0.7);
+            font-size: 12px;
+            margin-left: auto;
+        }
+    
+        /* Section styling - LARGER LABELS */
+        .section-label {
+            font-size: 12px;
+            font-weight: 700;
+            color: #57606a;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+            padding: 16px 20px 0 20px;
+        }
+    
+        /* Inline Status Badge */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 4px;
+        }
+        .status-badge.ready {
+            background: #dafbe1;
+            color: #1a7f37;
+        }
+        .status-badge.waiting {
+            background: #fff8c5;
+            color: #9a6700;
+        }
+    
+        /* Radio as segmented control - FLUSH LEFT */
+        [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stRadio"] {
+            padding: 0 20px 16px 20px;
+        }
+        [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stRadio"] > div {
+            flex-direction: row !important;
+            gap: 0 !important;
+            background: #f6f8fa;
+            border: 1px solid #d0d7de;
+            border-radius: 6px;
+            padding: 3px;
+            display: inline-flex !important;
+        }
+        [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stRadio"] label {
+            padding: 8px 24px !important;
+            font-size: 13px !important;
+            font-weight: 600 !important;
+            color: #57606a !important;
+            background: transparent !important;
+            border-radius: 4px !important;
+            margin: 0 !important;
+            border: none !important;
+        }
+        [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stRadio"] label[data-checked="true"] {
+            background: #0f3d3e !important;
+            color: #fff !important;
+        }
+        [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stRadio"] label span {
+            display: none !important;
+        }
+    
+        /* Multiselect - GLOBAL VISIBLE BORDER (dark gray) */
+        [data-testid="stMultiSelect"] [data-baseweb="select"] > div {
+            background: #ffffff !important;
+            border: 2px solid #475569 !important;
+            border-radius: 6px !important;
+            min-height: 44px !important;
+        }
+        [data-testid="stMultiSelect"] [data-baseweb="select"] > div:hover {
+            border-color: #334155 !important;
+        }
+        [data-testid="stMultiSelect"] [data-baseweb="select"] > div:focus-within {
+            border-color: #0f3d3e !important;
+            box-shadow: 0 0 0 3px rgba(15,61,62,0.25) !important;
+        }
+    
+        /* Expander styling */
+        [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stExpander"] {
+            border-top: 1px solid #d0d7de !important;
+            border-bottom: none !important;
+            border-left: none !important;
+            border-right: none !important;
+            background: #f6f8fa !important;
+            border-radius: 0 !important;
+        }
+        [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stExpander"] summary {
+            font-size: 12px;
+            font-weight: 600;
+            color: #57606a;
+            padding: 10px 16px;
+        }
+        [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stExpander"] [data-testid="stVerticalBlock"] {
+            padding: 0 16px 12px 16px;
+        }
+    
+        /* Text area inside expander */
+        [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stTextArea"] textarea {
+            background: #ffffff !important;
+            border: 1px solid #d0d7de !important;
+            border-radius: 6px !important;
+            font-size: 12px !important;
+        }
+    
+        /* BUTTONS - smaller, not full teal block */
+        [data-testid="stVerticalBlock"]:has(> div.control-panel-start) button {
+            font-size: 12px !important;
+            padding: 6px 16px !important;
+            border-radius: 6px !important;
+            font-weight: 600 !important;
+        }
+        [data-testid="stVerticalBlock"]:has(> div.control-panel-start) button[kind="primary"],
+        [data-testid="stVerticalBlock"]:has(> div.control-panel-start) button:first-of-type {
+            background: #0f3d3e !important;
+            color: white !important;
+            border: none !important;
+        }
+        [data-testid="stVerticalBlock"]:has(> div.control-panel-start) button[kind="secondary"],
+        [data-testid="stVerticalBlock"]:has(> div.control-panel-start) button:last-of-type {
+            background: #f6f8fa !important;
+            color: #24292f !important;
+            border: 1px solid #d0d7de !important;
+        }
+    
+        /* Caption styling */
+        [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stCaptionContainer"] {
+            font-size: 12px;
+            color: #57606a;
+            margin-bottom: 8px;
+        }
+    
+        /* Success message compact */
+        [data-testid="stVerticalBlock"]:has(> div.control-panel-start) [data-testid="stAlert"] {
+            padding: 8px 12px !important;
+            font-size: 12px !important;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+    
+        # Start Control Panel Container
+        with st.container():
+            # Marker for CSS targeting
+            st.markdown('<div class="control-panel-start"></div>', unsafe_allow_html=True)
         
-        # Brand data preparation
-        special_categories = ['NEW_TO_CATEGORY', 'LOST_FROM_CATEGORY', 'MIXED']
+            # PANEL HEADER
+            st.markdown('''
+            <div class="panel-header">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="white">
+                    <path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/>
+                </svg>
+                <span class="panel-title">Analysis Scope</span>
+                <span class="panel-subtitle">Configure view and filters</span>
+            </div>
+            ''', unsafe_allow_html=True)
         
-        if is_product_switch_mode:
-            brands_from_data = set()
-            if 'brand_2024' in df.columns:
-                brands_from_data.update([b for b in df['brand_2024'].unique() if b not in special_categories and b is not None])
-            if 'brand_2025' in df.columns:
-                brands_from_data.update([b for b in df['brand_2025'].unique() if b not in special_categories and b is not None])
-            all_brands_in_data = sorted(brands_from_data)
+            # SECTION 1: VIEW LEVEL - Label and Radio on SAME LINE
+            st.markdown('<div style="padding: 16px 20px 0 20px;"></div>', unsafe_allow_html=True)
+            view_label_col, view_radio_col = st.columns([1, 3])
+            with view_label_col:
+                st.markdown('<div style="font-size:12px;font-weight:700;color:#57606a;text-transform:uppercase;letter-spacing:0.5px;padding-top:8px;">View Level</div>', unsafe_allow_html=True)
+            with view_radio_col:
+                view_mode = st.radio(
+                    "View",
+                    options=["Brand", "Product"],
+                    horizontal=True,
+                    key="view_mode_toggle",
+                    label_visibility="collapsed"
+                )
+            is_product_switch_mode = (view_mode == "Product")
+        
+            st.markdown('<div style="height:12px;"></div>', unsafe_allow_html=True)
+        
+            # Prepare df_working
+            df_working = df.copy()
+            if not is_product_switch_mode:
+                df_working = df_working.groupby(['brand_2024', 'brand_2025', 'move_type']).agg({
+                    'customers': 'sum'
+                }).reset_index()
+                df_working = df_working.rename(columns={
+                    'brand_2024': 'prod_2024',
+                    'brand_2025': 'prod_2025'
+                })
+        
+            # Brand data preparation
+            special_categories = ['NEW_TO_CATEGORY', 'LOST_FROM_CATEGORY', 'MIXED']
+        
+            if is_product_switch_mode:
+                brands_from_data = set()
+                if 'brand_2024' in df.columns:
+                    brands_from_data.update([b for b in df['brand_2024'].unique() if b not in special_categories and b is not None])
+                if 'brand_2025' in df.columns:
+                    brands_from_data.update([b for b in df['brand_2025'].unique() if b not in special_categories and b is not None])
+                all_brands_in_data = sorted(brands_from_data)
             
-            product_to_brand_map = {}
-            for _, row in df.iterrows():
-                if row['prod_2024'] not in special_categories and 'brand_2024' in df.columns:
-                    product_to_brand_map[row['prod_2024']] = row['brand_2024']
-                if row['prod_2025'] not in special_categories and 'brand_2025' in df.columns:
-                    product_to_brand_map[row['prod_2025']] = row['brand_2025']
-        else:
-            all_brands_in_data = sorted([b for b in df_working['prod_2024'].unique() if b not in special_categories])
-            product_to_brand_map = {}
-        
-        # SECTION 2: BRANDS - Label and Dropdown on SAME LINE
-        st.markdown('<div style="padding: 8px 20px 0 20px;"></div>', unsafe_allow_html=True)
-        brand_label_col, brand_select_col, status_col = st.columns([1, 2.5, 0.8])
-        
-        with brand_label_col:
-            st.markdown('<div style="font-size:12px;font-weight:700;color:#57606a;text-transform:uppercase;letter-spacing:0.5px;padding-top:8px;">Brands</div>', unsafe_allow_html=True)
-        
-        with brand_select_col:
-            selected_brands = st.multiselect(
-                "Brands",
-                options=all_brands_in_data,
-                default=None,
-                key="brand_filter_post_query",
-                label_visibility="collapsed",
-                placeholder="Select brands..."
-            )
-        
-        with status_col:
-            if selected_brands:
-                if is_product_switch_mode and product_to_brand_map:
-                    selected_products = [p for p, b in product_to_brand_map.items() if b in selected_brands]
-                    st.markdown(f'<div class="status-badge ready">✓ {len(selected_brands)}B · {len(selected_products)}P</div>', unsafe_allow_html=True)
-                else:
-                    st.markdown(f'<div class="status-badge ready">✓ {len(selected_brands)} brands</div>', unsafe_allow_html=True)
+                product_to_brand_map = {}
+                for _, row in df.iterrows():
+                    if row['prod_2024'] not in special_categories and 'brand_2024' in df.columns:
+                        product_to_brand_map[row['prod_2024']] = row['brand_2024']
+                    if row['prod_2025'] not in special_categories and 'brand_2025' in df.columns:
+                        product_to_brand_map[row['prod_2025']] = row['brand_2025']
             else:
-                st.markdown('<div class="status-badge waiting">Select brands</div>', unsafe_allow_html=True)
+                all_brands_in_data = sorted([b for b in df_working['prod_2024'].unique() if b not in special_categories])
+                product_to_brand_map = {}
         
-        if not selected_brands:
-            st.stop()
+            # SECTION 2: BRANDS - Label and Dropdown on SAME LINE
+            st.markdown('<div style="padding: 8px 20px 0 20px;"></div>', unsafe_allow_html=True)
+            brand_label_col, brand_select_col, status_col = st.columns([1, 2.5, 0.8])
         
-        # SECTION 3: ADVANCED FILTERS (collapsible)
-        with st.expander("Advanced Filters", expanded=False):
-            st.caption("Barcode Filter")
-            barcode_filter_input = st.text_area(
-                "Barcodes",
-                height=60,
-                placeholder="Paste barcodes (one per line)",
-                key="barcode_filter_input",
-                label_visibility="collapsed"
-            )
+            with brand_label_col:
+                st.markdown('<div style="font-size:12px;font-weight:700;color:#57606a;text-transform:uppercase;letter-spacing:0.5px;padding-top:8px;">Brands</div>', unsafe_allow_html=True)
+        
+            with brand_select_col:
+                selected_brands = st.multiselect(
+                    "Brands",
+                    options=all_brands_in_data,
+                    default=None,
+                    key="brand_filter_post_query",
+                    label_visibility="collapsed",
+                    placeholder="Select brands..."
+                )
+        
+            with status_col:
+                if selected_brands:
+                    if is_product_switch_mode and product_to_brand_map:
+                        selected_products = [p for p, b in product_to_brand_map.items() if b in selected_brands]
+                        st.markdown(f'<div class="status-badge ready">✓ {len(selected_brands)}B · {len(selected_products)}P</div>', unsafe_allow_html=True)
+                    else:
+                        st.markdown(f'<div class="status-badge ready">✓ {len(selected_brands)} brands</div>', unsafe_allow_html=True)
+                else:
+                    st.markdown('<div class="status-badge waiting">Select brands</div>', unsafe_allow_html=True)
+        
+            if not selected_brands:
+                st.stop()
+        
+            # SECTION 3: ADVANCED FILTERS (collapsible)
+            with st.expander("Advanced Filters", expanded=False):
+                st.caption("Barcode Filter")
+                barcode_filter_input = st.text_area(
+                    "Barcodes",
+                    height=60,
+                    placeholder="Paste barcodes (one per line)",
+                    key="barcode_filter_input",
+                    label_visibility="collapsed"
+                )
             
-            c1, c2 = st.columns(2)
-            with c1:
-                apply_barcode_filter = st.button("Apply", key="apply_bc_filter", use_container_width=True)
-            with c2:
-                if st.button("Clear", key="clear_bc_filter", use_container_width=True):
-                    st.session_state.active_barcode_filter = []
+                c1, c2 = st.columns(2)
+                with c1:
+                    apply_barcode_filter = st.button("Apply", key="apply_bc_filter", use_container_width=True)
+                with c2:
+                    if st.button("Clear", key="clear_bc_filter", use_container_width=True):
+                        st.session_state.active_barcode_filter = []
+                        st.rerun()
+            
+                if apply_barcode_filter and barcode_filter_input.strip():
+                    barcode_list = [b.strip() for b in barcode_filter_input.strip().split('\n') if b.strip()]
+                    st.session_state.active_barcode_filter = barcode_list
                     st.rerun()
             
-            if apply_barcode_filter and barcode_filter_input.strip():
-                barcode_list = [b.strip() for b in barcode_filter_input.strip().split('\n') if b.strip()]
-                st.session_state.active_barcode_filter = barcode_list
-                st.rerun()
-            
-            active_barcodes_display = st.session_state.get('active_barcode_filter', [])
-            if active_barcodes_display:
-                st.success(f"{len(active_barcodes_display)} barcodes active")
+                active_barcodes_display = st.session_state.get('active_barcode_filter', [])
+                if active_barcodes_display:
+                    st.success(f"{len(active_barcodes_display)} barcodes active")
     
     # END OF CONTROL PANEL
     
