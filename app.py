@@ -380,30 +380,13 @@ if run_analysis or st.session_state.query_executed:
     </div>
 """, unsafe_allow_html=True)
     
-    # Apply brand filtering based on view mode toggle (only shown when brands are filtered)
+    # Apply brand filtering based on selection from sidebar
     df_display = df  # Default to full data
-    filter_mode = 'filtered'  # Default filter mode
     
     if selected_brands:
         from modules import brand_filter
         
-        # Show view mode toggle
-        col_toggle, col_spacer = st.columns([4, 6])
-        with col_toggle:
-            view_mode = st.radio(
-                "🔍 View Mode",
-                options=['🎯 Focus View', '🌐 Category View'],
-                index=0,  # Default to Focus View
-                horizontal=True,
-                help="🎯 Focus: Selected brands only | 🌐 Category: Full category with filtered brands highlighted",
-                key="view_mode_toggle"
-            )
-        
-        # Determine filter mode from selection
-        filter_mode = 'filtered' if '🎯' in view_mode else 'full'
-        
-        # Apply client-side filter
-        # BOTH modes: df contains PRODUCT-level data, so we need to filter by products
+        # Apply client-side filter (Focus View only - show selected brands)
         if product_to_brand_map:
             # Get list of products that belong to selected brands
             products_in_selected_brands = [
@@ -411,14 +394,10 @@ if run_analysis or st.session_state.query_executed:
                 if brand in selected_brands
             ]
             # Filter using product names
-            df_display = brand_filter.filter_dataframe_by_brands(df, products_in_selected_brands, filter_mode)
+            df_display = brand_filter.filter_dataframe_by_brands(df, products_in_selected_brands, 'filtered')
         else:
             # Fallback if no mapping (should not happen)
-            df_display = brand_filter.filter_dataframe_by_brands(df, selected_brands, filter_mode)
-        
-        # Show filter description
-        if filter_mode == 'full':
-            st.info(f"💡 **Category View**: Showing complete category with **{', '.join(selected_brands)}** highlighted")
+            df_display = brand_filter.filter_dataframe_by_brands(df, selected_brands, 'filtered')
     
     # KEY DIFFERENCE BETWEEN MODES:
     # - Brand Switch: Aggregate product-level data to BRAND level for display
@@ -428,68 +407,30 @@ if run_analysis or st.session_state.query_executed:
         # Product Switch: Keep product-level data
         item_label = 'Product'
         df_for_summary = df_display  # No aggregation
-        df_for_full_summary = df  # No aggregation
     else:
         # Brand Switch: Aggregate to brand level
         item_label = 'Brand'
         if product_to_brand_map:
             df_for_summary = data_processor.aggregate_products_to_brands(df_display, product_to_brand_map)
-            df_for_full_summary = data_processor.aggregate_products_to_brands(df, product_to_brand_map)
         else:
             df_for_summary = df_display
-            df_for_full_summary = df
     
     # Calculate summary
     summary_df = data_processor.calculate_brand_summary(df_for_summary, item_label=item_label)
     
-    # For Focus View: Remove OTHERS from summary table to show only focused brands
+    # Remove OTHERS from summary table to show only focused brands
     # But keep OTHERS in df_display so Waterfall/Matrix can show Switch In from OTHERS
-    if selected_brands and filter_mode == 'filtered' and len(summary_df) > 0:
+    if selected_brands and len(summary_df) > 0:
         # Safety check: ensure column exists before filtering
         if item_label in summary_df.columns:
             summary_df = summary_df[summary_df[item_label] != 'OTHERS'].copy()
         # Note: We keep df_display as-is (with OTHERS flows) for Waterfall/Matrix visualization
     
-    # Calculate full category summary (all brands) - using aggregated data for Brand Switch
-    summary_df_full = data_processor.calculate_brand_summary(df_for_full_summary, item_label=item_label)
+    # Use summary_df for display
+    summary_df_display = summary_df
     
-    # For Category View: We need both full category data and filtered data
-    # summary_df_full = all brands (for tables and category-wide KPIs)
-    # summary_df_filtered = only selected brands from full category (for filtered KPIs)
-    if selected_brands and filter_mode == 'full' and len(summary_df_full) > 0:
-        # Category View: Filter selected brands from FULL category data
-        # This gives us the selected brands' metrics within the full category context
-        if item_label in summary_df_full.columns:
-            # In Product Switch mode, need to filter by product names, not brand names
-            if is_product_switch_mode and product_to_brand_map:
-                products_in_selected_brands = [
-                    product for product, brand in product_to_brand_map.items() 
-                    if brand in selected_brands
-                ]
-                summary_df_filtered = summary_df_full[summary_df_full[item_label].isin(products_in_selected_brands)].copy()
-            else:
-                summary_df_filtered = summary_df_full[summary_df_full[item_label].isin(selected_brands)].copy()
-        else:
-            summary_df_filtered = summary_df
-    else:
-        summary_df_filtered = summary_df
-    
-    # Determine which summary to use for display tables
-    # Category View: Use summary_df_full (all brands with 🎯 badges)
-    # Focus View: Use summary_df (filtered brands only)
-    if selected_brands and filter_mode == 'full':
-        summary_df_display = summary_df_full
-    else:
-        summary_df_display = summary_df
-    
-    # --- Executive KPIs (Hybrid approach for Category View) ---
-    if selected_brands and filter_mode == 'full':
-        # Category View: Use hybrid KPIs (show both category + filtered)
-        kpis = data_processor.calculate_hybrid_kpis(summary_df_full, summary_df_filtered, selected_brands, item_label=item_label)
-    else:
-        # Focus View or No Filter: Use standard KPIs
-        # Pass summary_df for both parameters to properly detect single-brand case
-        kpis = data_processor.calculate_executive_kpis(summary_df, summary_df, item_label=item_label)
+    # --- Executive KPIs ---
+    kpis = data_processor.calculate_executive_kpis(summary_df, summary_df, item_label=item_label)
     
     # Render Executive Summary Section at the top (but calculated here after filtering)
     st.markdown("""
@@ -500,160 +441,65 @@ if run_analysis or st.session_state.query_executed:
     """, unsafe_allow_html=True)
     
     if kpis:
-        # Check if we're in Category View with hybrid KPIs
-        is_hybrid = 'category' in kpis and 'filtered' in kpis
-        
         k1, k2, k3, k4, k5 = st.columns(5)
         
         with k1:
-            if is_hybrid:
-                total_cat_fmt = utils.format_number(kpis['category']['total_movement'])
-                total_filt_fmt = utils.format_number(kpis['filtered']['total_movement'])
-                pct = kpis['filtered_percentage']
-                st.markdown(f"""
-                <div class="premium-card" style="padding: 15px; text-align: center;">
-                    <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Total Movement</div>
-                    <div style="font-size: 24px; font-weight: 800; color: #0f3d3e;">{total_cat_fmt}</div>
-                    <div style="font-size: 11px; color: #888; margin-top: 5px;">Category-wide</div>
-                    <div style="font-size: 16px; font-weight: 600; color: #f57c00; margin-top: 8px;">🎯 {total_filt_fmt}</div>
-                    <div style="font-size: 10px; color: #f57c00;">{pct}% of category</div>
-                </div>
-                """, unsafe_allow_html=True)
-            else:
-                total_movement_fmt = utils.format_number(kpis['total_movement'])
-                st.markdown(f"""
-                <div class="premium-card" style="padding: 15px; text-align: center;">
-                    <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Total Movement</div>
-                    <div style="font-size: 24px; font-weight: 800; color: #0f3d3e;">{total_movement_fmt}</div>
-                    <div style="font-size: 12px; color: #666;">Customers</div>
-                </div>
-                """, unsafe_allow_html=True)
+            total_movement_fmt = utils.format_number(kpis['total_movement'])
+            st.markdown(f"""
+            <div class="premium-card" style="padding: 15px; text-align: center;">
+                <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Total Movement</div>
+                <div style="font-size: 24px; font-weight: 800; color: #0f3d3e;">{total_movement_fmt}</div>
+                <div style="font-size: 12px; color: #666;">Customers</div>
+            </div>
+            """, unsafe_allow_html=True)
             
         with k2:
-            if is_hybrid:
-                net_cat = kpis['category']['net_category_movement']
-                net_filt = kpis['filtered']['net_category_movement']
-                color = "#2e7d32" if net_cat >= 0 else "#c62828"
-                icon = "▲" if net_cat >= 0 else "▼"
-                net_cat_fmt = utils.format_number(abs(net_cat))
-                net_filt_fmt = utils.format_number(abs(net_filt))
-                filt_icon = "▲" if net_filt >= 0 else "▼"
-                st.markdown(f"""
-                <div class="premium-card" style="padding: 15px; text-align: center;">
-                    <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Net Movement</div>
-                    <div style="font-size: 24px; font-weight: 800; color: {color};">{icon} {net_cat_fmt}</div>
-                    <div style="font-size: 11px; color: #888; margin-top: 5px;">Category-wide</div>
-                    <div style="font-size: 16px; font-weight: 600; color: #f57c00; margin-top: 8px;">🎯 {filt_icon} {net_filt_fmt}</div>
-                    <div style="font-size: 10px; color: #f57c00;">Filtered brands</div>
-                </div>
-                """, unsafe_allow_html=True)
-            else:
-                net_cat = kpis['net_category_movement']
-                color = "#2e7d32" if net_cat >= 0 else "#c62828"
-                icon = "▲" if net_cat >= 0 else "▼"
-                net_cat_fmt = utils.format_number(abs(net_cat))
-                st.markdown(f"""
-                <div class="premium-card" style="padding: 15px; text-align: center;">
-                    <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Net Movement</div>
-                    <div style="font-size: 24px; font-weight: 800; color: {color};">{icon} {net_cat_fmt}</div>
-                    <div style="font-size: 12px; color: {color};">Total In - Total Out</div>
-                </div>
-                """, unsafe_allow_html=True)
+            net_cat = kpis['net_category_movement']
+            color = "#2e7d32" if net_cat >= 0 else "#c62828"
+            icon = "▲" if net_cat >= 0 else "▼"
+            net_cat_fmt = utils.format_number(abs(net_cat))
+            st.markdown(f"""
+            <div class="premium-card" style="padding: 15px; text-align: center;">
+                <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Net Movement</div>
+                <div style="font-size: 24px; font-weight: 800; color: {color};">{icon} {net_cat_fmt}</div>
+                <div style="font-size: 12px; color: {color};">Total In - Total Out</div>
+            </div>
+            """, unsafe_allow_html=True)
             
         with k3:
-            if is_hybrid:
-                winner_cat_name = kpis['category']['winner_name']
-                winner_cat_val = kpis['category']['winner_val']
-                winner_filt_name = kpis['filtered']['winner_name']
-                winner_filt_val = kpis['filtered']['winner_val']
-                winner_cat_fmt = utils.format_number(winner_cat_val)
-                winner_filt_fmt = utils.format_number(winner_filt_val)
-                st.markdown(f"""
-                <div class="premium-card" style="padding: 15px; text-align: center;">
-                    <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Biggest Winner</div>
-                    <div style="font-size: 16px; font-weight: 800; color: #0f3d3e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{winner_cat_name}</div>
-                    <div style="font-size: 12px; font-weight: 600; color: #2e7d32;">+{winner_cat_fmt}</div>
-                    <div style="font-size: 10px; color: #888; margin-top: 5px;">Category</div>
-                    <div style="font-size: 14px; font-weight: 700; color: #f57c00; margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">🎯 {winner_filt_name}</div>
-                    <div style="font-size: 11px; font-weight: 500; color: #f57c00;">+{winner_filt_fmt}</div>
-                </div>
-                """, unsafe_allow_html=True)
-            else:
-                winner_val_fmt = utils.format_number(kpis['winner_val'])
-                st.markdown(f"""
-                <div class="premium-card" style="padding: 15px; text-align: center;">
-                    <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Biggest Winner</div>
-                    <div style="font-size: 18px; font-weight: 800; color: #0f3d3e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{kpis['winner_name']}</div>
-                    <div style="font-size: 14px; font-weight: 600; color: #2e7d32;">+{winner_val_fmt}</div>
-                </div>
-                """, unsafe_allow_html=True)
+            winner_val_fmt = utils.format_number(kpis['winner_val'])
+            st.markdown(f"""
+            <div class="premium-card" style="padding: 15px; text-align: center;">
+                <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Biggest Winner</div>
+                <div style="font-size: 18px; font-weight: 800; color: #0f3d3e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{kpis['winner_name']}</div>
+                <div style="font-size: 14px; font-weight: 600; color: #2e7d32;">+{winner_val_fmt}</div>
+            </div>
+            """, unsafe_allow_html=True)
             
         with k4:
-            if is_hybrid:
-                loser_cat_name = kpis['category']['loser_name']
-                loser_cat_val = kpis['category']['loser_val']
-                loser_filt_name = kpis['filtered']['loser_name']
-                loser_filt_val = kpis['filtered']['loser_val']
-                # Use actual values (not abs) to preserve sign
-                loser_cat_val_formatted = f"{loser_cat_val:+,}" if loser_cat_val != 0 else "0"
-                loser_filt_val_formatted = f"{loser_filt_val:+,}" if loser_filt_val != 0 else "0"
-                st.markdown(f"""
-                <div class="premium-card" style="padding: 15px; text-align: center;">
-                    <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Biggest Loser</div>
-                    <div style="font-size: 16px; font-weight: 800; color: #0f3d3e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{loser_cat_name}</div>
-                    <div style="font-size: 12px; font-weight: 600; color: #c62828;">{loser_cat_val_formatted}</div>
-                    <div style="font-size: 10px; color: #888; margin-top: 5px;">Category</div>
-                    <div style="font-size: 14px; font-weight: 700; color: #f57c00; margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">🎯 {loser_filt_name}</div>
-                    <div style="font-size: 11px; font-weight: 500; color: #f57c00;">{loser_filt_val_formatted}</div>
-                </div>
-                """, unsafe_allow_html=True)
-            else:
-                # Use actual value (not abs) to preserve sign
-                loser_val = kpis['loser_val']
-                loser_val_formatted = f"{loser_val:+,}" if loser_val != 0 else "0"
-                st.markdown(f"""
-                <div class="premium-card" style="padding: 15px; text-align: center;">
-                    <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Biggest Loser</div>
-                    <div style="font-size: 18px; font-weight: 800; color: #0f3d3e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{kpis['loser_name']}</div>
-                    <div style="font-size: 14px; font-weight: 600; color: #c62828;">{loser_val_formatted}</div>
-                </div>
-                """, unsafe_allow_html=True)
+            loser_val = kpis['loser_val']
+            loser_val_formatted = f"{loser_val:+,}" if loser_val != 0 else "0"
+            st.markdown(f"""
+            <div class="premium-card" style="padding: 15px; text-align: center;">
+                <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Biggest Loser</div>
+                <div style="font-size: 18px; font-weight: 800; color: #0f3d3e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{kpis['loser_name']}</div>
+                <div style="font-size: 14px; font-weight: 600; color: #c62828;">{loser_val_formatted}</div>
+            </div>
+            """, unsafe_allow_html=True)
             
         with k5:
-            if is_hybrid:
-                churn_cat = kpis['category']['churn_rate']
-                churn_filt = kpis['filtered']['churn_rate']
-                st.markdown(f"""
-                <div class="premium-card" style="padding: 15px; text-align: center;">
-                    <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Attrition Rate</div>
-                    <div style="font-size: 24px; font-weight: 800; color: #c62828;">{churn_cat:.1f}%</div>
-                    <div style="font-size: 11px; color: #888; margin-top: 5px;">Category-wide</div>
-                    <div style="font-size: 16px; font-weight: 600; color: #f57c00; margin-top: 8px;">🎯 {churn_filt:.1f}%</div>
-                    <div style="font-size: 10px; color: #f57c00;">Filtered brands</div>
-                </div>
-                """, unsafe_allow_html=True)
-            else:
-                churn_rate_fmt = f"{kpis['churn_rate']:.1f}"
-                st.markdown(f"""
-                <div class="premium-card" style="padding: 15px; text-align: center;">
-                    <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Attrition Rate</div>
-                    <div style="font-size: 24px; font-weight: 800; color: #c62828;">{churn_rate_fmt}%</div>
-                    <div style="font-size: 12px; color: #666;">Total Out / Total</div>
-                </div>
-                """, unsafe_allow_html=True)
+            churn_rate_fmt = f"{kpis['churn_rate']:.1f}"
+            st.markdown(f"""
+            <div class="premium-card" style="padding: 15px; text-align: center;">
+                <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Attrition Rate</div>
+                <div style="font-size: 24px; font-weight: 800; color: #c62828;">{churn_rate_fmt}%</div>
+                <div style="font-size: 12px; color: #666;">Total Out / Total</div>
+            </div>
+            """, unsafe_allow_html=True)
     
-    # Determine data source for Sankey based on View Mode
-    # Category View: Use full category data (df) to show all brands
-    # Focus View: Use filtered data (df_display) to show only focused brands
-    if selected_brands and filter_mode == 'full':
-        sankey_df = df  # Full category data
-        highlighted_brands = selected_brands
-    else:
-        sankey_df = df_display  # Filtered data
-        highlighted_brands = None
-    
-    labels, sources, targets, values = data_processor.prepare_sankey_data(sankey_df)
-    st.plotly_chart(visualizations.create_sankey_diagram(labels, sources, targets, values, highlighted_brands), use_container_width=True)
+    # Data source for Sankey - use filtered data
+    labels, sources, targets, values = data_processor.prepare_sankey_data(df_display)
+    st.plotly_chart(visualizations.create_sankey_diagram(labels, sources, targets, values, None), use_container_width=True)
     st.markdown("""
     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; margin-top: 30px;">
         <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="#0f3d3e"><path d="M13.5.67s.74 2.65.74 4.8c0 2.06-1.35 3.73-3.41 3.73-2.07 0-3.63-1.67-3.63-3.73l.03-.36C5.21 7.51 4 10.62 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8C20 8.61 17.41 3.8 13.5.67zM11.71 19c-1.78 0-3.22-1.4-3.22-3.14 0-1.62 1.05-2.76 2.81-3.12 1.77-.36 3.6-1.21 4.62-2.58.39 1.29.59 2.65.59 4.04 0 2.65-2.15 4.8-4.8 4.8z"/></svg>
@@ -677,21 +523,14 @@ if run_analysis or st.session_state.query_executed:
     else:
         available_brands_for_analysis = []
     if available_brands_for_analysis:
-        # Add badge to filtered brands in Category View
-        if selected_brands and filter_mode == 'full':
-            brand_options = [f"🎯 {brand}" if brand in selected_brands else brand for brand in available_brands_for_analysis]
-        else:
-            brand_options = available_brands_for_analysis
+        brand_options = available_brands_for_analysis
         
         selected_focus_brand = st.selectbox("Select brand", brand_options, key="focus_brand")
         
-        # Remove badge for data processing
-        selected_focus_brand_clean = selected_focus_brand.replace("🎯 ", "")
-        
-        if selected_focus_brand_clean:
+        if selected_focus_brand:
             # Use df (unfiltered) for waterfall to get complete flow data
             # This ensures New Customers and Switch In from all brands are included
-            st.plotly_chart(visualizations.create_waterfall_chart(data_processor.prepare_waterfall_data(df, selected_focus_brand_clean), selected_focus_brand_clean), use_container_width=True)
+            st.plotly_chart(visualizations.create_waterfall_chart(data_processor.prepare_waterfall_data(df, selected_focus_brand), selected_focus_brand), use_container_width=True)
     st.markdown("""
     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; margin-top: 30px;">
         <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="#0f3d3e"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
@@ -764,11 +603,7 @@ if run_analysis or st.session_state.query_executed:
                 h += f'<tr style="border-bottom: 1px solid #e0e0e0; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor=\'#f0f0f0\';" onmouseout="this.style.backgroundColor=\'{bg_color}\';">'
                 
                 for i, (col, v) in enumerate(row.items()):
-                    # Add badge for filtered brands in Category View
-                    if i == 0 and selected_brands and filter_mode == 'full' and v in selected_brands:
-                        fmt = f"🎯 {v}"
-                    else:
-                        fmt = f"{v:.1f}%" if isinstance(v,(int,float)) and '%' in col else f"{v:,.0f}" if isinstance(v,(int,float)) else str(v)
+                    fmt = f"{v:.1f}%" if isinstance(v,(int,float)) and '%' in col else f"{v:,.0f}" if isinstance(v,(int,float)) else str(v)
                     align = "left" if i == 0 else "center"
                     font_weight = "600" if i == 0 else "normal"
                     h += f'<td style="padding: 10px; text-align: {align}; vertical-align: middle; font-weight: {font_weight};">{fmt}</td>'
