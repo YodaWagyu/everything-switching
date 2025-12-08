@@ -755,19 +755,21 @@ if run_analysis or st.session_state.query_executed:
         
         churn_rate_fmt = f"{kpis['churn_rate']:.1f}%"
         
-        # blocks.so style using st.columns
+        # Consistent KPI card styling
         k1, k2, k3, k4, k5 = st.columns(5)
         
-        card_style = """
+        card_base = """
             background: white; 
             padding: 16px 20px; 
-            border-right: 1px solid #e5e7eb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
             height: 100%;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         """
         
         with k1:
             st.markdown(f"""
-            <div style="{card_style} border-radius: 12px 0 0 12px;">
+            <div style="{card_base}">
                 <div style="font-size: 14px; font-weight: 500; color: #6b7280; margin-bottom: 8px;">Total Movement</div>
                 <div style="font-size: 28px; font-weight: 500; color: #111827; letter-spacing: -0.02em;">{total_movement_fmt}</div>
                 <div style="font-size: 12px; color: #9ca3af; margin-top: 4px;">Customers</div>
@@ -776,7 +778,7 @@ if run_analysis or st.session_state.query_executed:
         
         with k2:
             st.markdown(f"""
-            <div style="{card_style}">
+            <div style="{card_base}">
                 <div style="font-size: 14px; font-weight: 500; color: #6b7280; margin-bottom: 8px;">Net Movement</div>
                 <div style="font-size: 28px; font-weight: 500; color: {net_color}; letter-spacing: -0.02em;">{net_cat_fmt}</div>
                 <div style="font-size: 12px; color: #9ca3af; margin-top: 4px;">Total In - Out</div>
@@ -785,7 +787,7 @@ if run_analysis or st.session_state.query_executed:
         
         with k3:
             st.markdown(f"""
-            <div style="{card_style}">
+            <div style="{card_base}">
                 <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
                     <span style="font-size: 14px; font-weight: 500; color: #6b7280;">Biggest Winner</span>
                     <span style="font-size: 12px; font-weight: 500; color: #16a34a;">{winner_val_fmt}</span>
@@ -797,7 +799,7 @@ if run_analysis or st.session_state.query_executed:
         
         with k4:
             st.markdown(f"""
-            <div style="{card_style}">
+            <div style="{card_base}">
                 <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
                     <span style="font-size: 14px; font-weight: 500; color: #6b7280;">Biggest Loser</span>
                     <span style="font-size: 12px; font-weight: 500; color: #dc2626;">{loser_val_fmt}</span>
@@ -809,12 +811,16 @@ if run_analysis or st.session_state.query_executed:
         
         with k5:
             st.markdown(f"""
-            <div style="{card_style} border-right: none; border-radius: 0 12px 12px 0;">
+            <div style="{card_base}">
                 <div style="font-size: 14px; font-weight: 500; color: #6b7280; margin-bottom: 8px;">Attrition Rate</div>
                 <div style="font-size: 28px; font-weight: 500; color: #dc2626; letter-spacing: -0.02em;">{churn_rate_fmt}</div>
                 <div style="font-size: 12px; color: #9ca3af; margin-top: 4px;">Out / Total</div>
             </div>
             """, unsafe_allow_html=True)
+    
+    # Sankey Title with margin separation
+    st.markdown('<div style="margin-top: 32px;"></div>', unsafe_allow_html=True)
+    st.markdown('<div style="text-align: center; font-size: 16px; font-weight: 600; color: #374151; margin-bottom: 8px;">Customer Flow (Sankey)</div>', unsafe_allow_html=True)
     
     # Data source for Sankey - use filtered data with brand highlighting
     labels, sources, targets, values = data_processor.prepare_sankey_data(df_display)
