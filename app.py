@@ -36,6 +36,24 @@ if not auth.is_authenticated():
     auth.show_login_page()
     st.stop()
 
+# Admin Page Selector (only for admin users)
+admin_page_mode = "analysis"  # Default
+if auth.is_admin():
+    with st.sidebar:
+        st.markdown("""
+        <div style="background: linear-gradient(135deg, #0f3d3e 0%, #1a5f60 100%); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+            <div style="color: white; font-weight: 700; font-size: 14px;">🔐 Admin Mode</div>
+        </div>
+        """, unsafe_allow_html=True)
+        admin_page_mode = st.radio(
+            "Select View:",
+            ["📊 Analysis", "📈 Admin Dashboard"],
+            key="admin_page_mode",
+            horizontal=True
+        )
+        admin_page_mode = "dashboard" if "Dashboard" in admin_page_mode else "analysis"
+        st.markdown("---")
+
 # Main app (only visible after login)
 # Custom Header with ES Logo
 st.markdown("""
@@ -81,6 +99,134 @@ st.markdown("""
 }
 </style>
 """, unsafe_allow_html=True)
+
+# ============ ADMIN DASHBOARD PAGE (Separate from Analysis) ============
+if admin_page_mode == "dashboard":
+    st.markdown("""
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 30px;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="#0f3d3e"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+        <span style="font-size: 28px; font-weight: 800; color: #0f3d3e;">📊 Admin Dashboard - Usage Analytics</span>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    try:
+        # Get analytics data
+        analytics = tracking.get_analytics_summary()
+        
+        # KPI Cards Row
+        kpi_cols = st.columns(4)
+        with kpi_cols[0]:
+            st.metric("📈 Total Sessions", f"{analytics['total_sessions']:,}", f"+{analytics['sessions_today']} today")
+        with kpi_cols[1]:
+            st.metric("🔍 Total Queries", f"{analytics['total_queries']:,}", f"+{analytics['queries_today']} today")
+        with kpi_cols[2]:
+            st.metric("⚡ Avg Query Time", f"{analytics['avg_query_time_ms']:.0f}ms")
+        with kpi_cols[3]:
+            st.metric("🌐 Unique IPs", f"{analytics['unique_ips']:,}")
+        
+        st.markdown("<div style='height: 20px'></div>", unsafe_allow_html=True)
+        
+        # Second row of KPIs
+        kpi_cols2 = st.columns(3)
+        with kpi_cols2[0]:
+            st.metric("🤖 AI Generations", f"{analytics['ai_generations']:,}")
+        with kpi_cols2[1]:
+            st.metric("📥 Total Exports", f"{analytics['total_exports']:,}")
+        with kpi_cols2[2]:
+            role_df = tracking.get_role_distribution()
+            if not role_df.empty:
+                admin_count = role_df[role_df['user_role'] == 'admin']['count'].sum() if 'admin' in role_df['user_role'].values else 0
+                user_count = role_df[role_df['user_role'] == 'user']['count'].sum() if 'user' in role_df['user_role'].values else 0
+                st.metric("👤 Admin/User Sessions", f"{admin_count} / {user_count}")
+        
+        st.markdown("<div style='height: 30px'></div>", unsafe_allow_html=True)
+        
+        # Charts Row
+        chart_cols = st.columns(2)
+        
+        with chart_cols[0]:
+            st.subheader("📈 Daily Usage Trend (14 days)")
+            daily_df = tracking.get_daily_usage(14)
+            if not daily_df.empty and len(daily_df) > 0:
+                fig_daily = go.Figure()
+                fig_daily.add_trace(go.Scatter(
+                    x=daily_df['date'],
+                    y=daily_df['sessions'],
+                    mode='lines+markers',
+                    name='Sessions',
+                    line=dict(color='#0f3d3e', width=3),
+                    marker=dict(size=10)
+                ))
+                fig_daily.add_trace(go.Scatter(
+                    x=daily_df['date'],
+                    y=daily_df['queries'],
+                    mode='lines+markers',
+                    name='Queries',
+                    line=dict(color='#4ECDC4', width=3),
+                    marker=dict(size=10)
+                ))
+                fig_daily.update_layout(
+                    height=350,
+                    margin=dict(l=20, r=20, t=30, b=20),
+                    legend=dict(orientation="h", yanchor="bottom", y=1.02),
+                    xaxis_title="",
+                    yaxis_title="Count"
+                )
+                st.plotly_chart(fig_daily, use_container_width=True)
+            else:
+                st.info("📊 No usage data yet - start using the app to see trends!")
+        
+        with chart_cols[1]:
+            st.subheader("📊 Events by Type")
+            events_type_df = tracking.get_events_by_type()
+            if not events_type_df.empty and len(events_type_df) > 0:
+                fig_events = go.Figure(data=[
+                    go.Bar(
+                        x=events_type_df['event_type'],
+                        y=events_type_df['count'],
+                        marker_color=['#0f3d3e', '#4ECDC4', '#FF6B6B', '#F7DC6F', '#BB8FCE'][:len(events_type_df)]
+                    )
+                ])
+                fig_events.update_layout(
+                    height=350,
+                    margin=dict(l=20, r=20, t=30, b=20),
+                    xaxis_title="Event Type",
+                    yaxis_title="Count"
+                )
+                st.plotly_chart(fig_events, use_container_width=True)
+            else:
+                st.info("📊 No events recorded yet")
+        
+        st.markdown("<div style='height: 30px'></div>", unsafe_allow_html=True)
+        
+        # Recent Sessions Table
+        st.subheader("📋 Recent Sessions")
+        sessions_df = tracking.get_recent_sessions(15)
+        if not sessions_df.empty:
+            display_sessions = sessions_df.copy()
+            display_sessions.columns = ['Session ID', 'Role', 'IP Address', 'Start Time', 'Last Activity', 'Events']
+            st.dataframe(display_sessions, use_container_width=True, hide_index=True)
+        else:
+            st.info("No sessions recorded yet")
+        
+        st.markdown("<div style='height: 20px'></div>", unsafe_allow_html=True)
+        
+        # Recent Activity Log with Details
+        st.subheader("📜 Recent Activity Log (with Filter Details)")
+        events_detail_df = tracking.get_recent_events(30)
+        if not events_detail_df.empty:
+            events_detail_df.columns = ['Time', 'Role', 'IP', 'Event', 'Details']
+            st.dataframe(events_detail_df, use_container_width=True, hide_index=True)
+        else:
+            st.info("No activity recorded yet")
+            
+    except Exception as e:
+        st.error(f"Error loading analytics: {str(e)}")
+    
+    # Footer
+    st.markdown("---")
+    st.markdown('<div style="text-align:center; color:#666">Everything-Switching | Admin Dashboard</div>', unsafe_allow_html=True)
+    st.stop()  # Stop here - don't show analysis page
 
 # Add logout button in sidebar
 with st.sidebar:
