@@ -123,9 +123,12 @@ def generate_insights(
         # Movement type breakdown
         movement_breakdown = df.groupby('move_type')['customers'].sum().to_dict()
         
+        # Detect item column dynamically (Brand or Product)
+        item_col = 'Brand' if 'Brand' in summary_df.columns else 'Product'
+        
         # Top gainers and losers
-        top_gainers = summary_df.nlargest(3, 'Net_Movement')[['Brand', 'Net_Movement', '2024_Total', '2025_Total']]
-        top_losers = summary_df.nsmallest(3, 'Net_Movement')[['Brand', 'Net_Movement', '2024_Total', '2025_Total']]
+        top_gainers = summary_df.nlargest(3, 'Net_Movement')[[item_col, 'Net_Movement', '2024_Total', '2025_Total']]
+        top_losers = summary_df.nsmallest(3, 'Net_Movement')[[item_col, 'Net_Movement', '2024_Total', '2025_Total']]
         
         # Top switching flows
         top_flows = df[df['move_type'] == 'switched'].nlargest(5, 'customers')[
