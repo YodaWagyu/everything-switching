@@ -567,16 +567,40 @@ if run_analysis or st.session_state.query_executed:
         
             # SECTION 2: BRANDS - Label and Dropdown on SAME LINE
             st.markdown('<div style="padding: 8px 20px 0 20px;"></div>', unsafe_allow_html=True)
+            
+            # Reset button at top
+            reset_col_top, spacer_col = st.columns([1, 4])
+            with reset_col_top:
+                if st.button("🔄 Reset All", key="reset_analysis_scope", use_container_width=True):
+                    # Clear brand selection and reset view mode
+                    if 'brand_filter_post_query' in st.session_state:
+                        del st.session_state['brand_filter_post_query']
+                    if 'view_mode_toggle' in st.session_state:
+                        del st.session_state['view_mode_toggle']
+                    if 'top_n_items_slider' in st.session_state:
+                        del st.session_state['top_n_items_slider']
+                    if 'select_all_brands' in st.session_state:
+                        del st.session_state['select_all_brands']
+                    st.rerun()
+            
+            st.markdown('<div style="padding: 4px 20px 0 20px;"></div>', unsafe_allow_html=True)
             brand_label_col, brand_select_col, status_col = st.columns([1, 2.5, 0.8])
         
             with brand_label_col:
                 st.markdown('<div style="font-size:12px;font-weight:700;color:#57606a;text-transform:uppercase;letter-spacing:0.5px;padding-top:8px;">Brands</div>', unsafe_allow_html=True)
         
             with brand_select_col:
+                # Select All checkbox
+                select_all = st.checkbox("Select All", key="select_all_brands")
+                if select_all:
+                    default_brands = all_brands_in_data
+                else:
+                    default_brands = st.session_state.get('brand_filter_post_query', [])
+                
                 selected_brands = st.multiselect(
                     "Brands",
                     options=all_brands_in_data,
-                    default=None,
+                    default=default_brands if select_all else None,
                     key="brand_filter_post_query",
                     label_visibility="collapsed",
                     placeholder="Select brands..."
@@ -595,30 +619,17 @@ if run_analysis or st.session_state.query_executed:
             if not selected_brands:
                 st.stop()
         
-            # SECTION: TOP N SLIDER + RESET
+            # SECTION: TOP N SLIDER
             st.markdown('<div style="padding: 8px 20px 0 20px;"></div>', unsafe_allow_html=True)
-            slider_col, reset_col = st.columns([3, 1])
-            with slider_col:
-                slider_label = "Show Top N Products" if is_product_switch_mode else "Show Top N Brands"
-                top_n_items = st.slider(
-                    slider_label,
-                    min_value=5,
-                    max_value=50,
-                    value=20,
-                    step=5,
-                    key="top_n_items_slider"
-                )
-            with reset_col:
-                st.markdown('<div style="padding-top: 28px;"></div>', unsafe_allow_html=True)
-                if st.button("🔄 Reset", key="reset_analysis_scope", use_container_width=True):
-                    # Clear brand selection and reset view mode
-                    if 'brand_filter_post_query' in st.session_state:
-                        del st.session_state['brand_filter_post_query']
-                    if 'view_mode_toggle' in st.session_state:
-                        del st.session_state['view_mode_toggle']
-                    if 'top_n_items_slider' in st.session_state:
-                        del st.session_state['top_n_items_slider']
-                    st.rerun()
+            slider_label = "Show Top N Products" if is_product_switch_mode else "Show Top N Brands"
+            top_n_items = st.slider(
+                slider_label,
+                min_value=5,
+                max_value=50,
+                value=20,
+                step=5,
+                key="top_n_items_slider"
+            )
         
             # SECTION 3: ADVANCED FILTERS (collapsible)
             with st.expander("Advanced Filters", expanded=False):

@@ -253,8 +253,24 @@ def create_waterfall_chart(waterfall_data: Dict, brand: str) -> go.Figure:
 def create_summary_table_display(summary_df: pd.DataFrame) -> pd.DataFrame:
     """Format summary table - keep % for outflows only"""
     display_df = summary_df.copy()
-    # Detect item column dynamically (Brand or Product)
-    item_col = 'Brand' if 'Brand' in display_df.columns else 'Product'
+    
+    # Detect item column dynamically - find first column that's not a numeric metric
+    # Check for common item column names first, then fallback to first column
+    if 'Brand' in display_df.columns:
+        item_col = 'Brand'
+    elif 'Product' in display_df.columns:
+        item_col = 'Product'
+    else:
+        # Fallback: use first column if it's not a known metric column
+        first_col = display_df.columns[0] if len(display_df.columns) > 0 else 'Brand'
+        known_metrics = {'2024_Total', 'Stayed', 'Stayed_%', 'Switch_Out', 'Switch_Out_%', 
+                        'Gone', 'Gone_%', 'Total_Out', 'Switch_In', 'New_Customer', 
+                        'Total_In', '2025_Total', 'Net_Movement'}
+        if first_col not in known_metrics:
+            item_col = first_col
+        else:
+            item_col = 'Brand'  # Default fallback
+    
     column_order = [item_col, '2024_Total', 'Stayed', 'Stayed_%', 'Switch_Out', 'Switch_Out_%', 
                     'Gone', 'Gone_%', 'Total_Out', 'Switch_In', 'New_Customer', 'Total_In', 
                     '2025_Total', 'Net_Movement']
