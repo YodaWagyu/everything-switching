@@ -45,7 +45,7 @@ def highlight_brands_in_text(text: str, brands: list) -> str:
     if not brands or not text:
         return text
     
-    # Define color palette for brands
+    # Define expanded color palette for brands (more distinct colors)
     brand_colors = [
         '#FF6B6B',  # Red
         '#4ECDC4',  # Teal
@@ -57,33 +57,44 @@ def highlight_brands_in_text(text: str, brands: list) -> str:
         '#85C1E2',  # Light Blue
         '#F8B88B',  # Peach
         '#92DCE5',  # Aqua
+        '#FFB3BA',  # Light Pink
+        '#BAFFC9',  # Light Green
+        '#BAE1FF',  # Light Blue 2
+        '#FFFFBA',  # Light Yellow
+        '#E2BAFF',  # Lavender
+        '#FFD9BA',  # Apricot
+        '#A8E6CF',  # Seafoam
+        '#DCEDC1',  # Tea Green
+        '#FFD3B6',  # Melon
+        '#FFAAA5',  # Salmon
     ]
     
     highlighted_text = text
     
-    # Create brand to color mapping
+    # Create brand to color mapping (consistent colors for same brand)
     brand_color_map = {}
     for i, brand in enumerate(brands):
-        color = brand_colors[i % len(brand_colors)]
-        brand_color_map[brand] = color
+        if brand:
+            color = brand_colors[i % len(brand_colors)]
+            brand_color_map[brand] = color
     
     # Sort brands by length (longest first) to avoid partial matches
-    sorted_brands = sorted(brands, key=len, reverse=True)
+    sorted_brands = sorted([b for b in brands if b], key=len, reverse=True)
     
-    # Highlight each brand
+    # Highlight each brand using simple string replacement approach for better Unicode support
     for brand in sorted_brands:
-        if not brand:
+        if not brand or len(brand) < 2:  # Skip very short brands
             continue
-        color = brand_color_map[brand]
-        # Use case-insensitive replacement
-        # Escape the brand name for regex but be more flexible with matching
+        color = brand_color_map.get(brand, '#FFD700')
+        
+        # Use simpler pattern that works better with Thai/Unicode
+        # Match brand with optional whitespace around it
         escaped_brand = re.escape(brand)
-        # Match brand name surrounded by word boundaries or start/end of line
-        pattern = re.compile(rf'(?<![a-zA-Z0-9])({escaped_brand})(?![a-zA-Z0-9])', re.IGNORECASE)
-        highlighted_text = pattern.sub(
-            rf'<span style="background-color: {color}; color: #000; padding: 2px 6px; border-radius: 3px; font-weight: 600;">\1</span>',
-            highlighted_text
-        )
+        # Pattern: brand name not preceded/followed by alphanumeric (supports Thai)
+        pattern = re.compile(rf'(?<!\w)({escaped_brand})(?!\w)', re.IGNORECASE | re.UNICODE)
+        
+        replacement = rf'<span style="background-color: {color}; color: #000; padding: 2px 6px; border-radius: 4px; font-weight: 600; white-space: nowrap;">\1</span>'
+        highlighted_text = pattern.sub(replacement, highlighted_text)
     
     return highlighted_text
 

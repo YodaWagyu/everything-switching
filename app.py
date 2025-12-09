@@ -1405,33 +1405,40 @@ if run_analysis or st.session_state.query_executed:
     if st.button("✨ Generate Complete Analysis"):
         ai_category = selected_categories[0] if selected_categories else None
         
-        # Extract brands for highlighting
-        # If user filtered by brands, use those; otherwise extract from data
-        brands_for_ai = selected_brands if selected_brands else []
+        # Extract items for highlighting from summary_df (which has correct Brand or Product column)
+        special_categories = {'NEW_TO_CATEGORY', 'LOST_FROM_CATEGORY', 'MIXED', 'OTHERS'}
         
-        # If no brands filtered, extract unique brands from data for highlighting
-        if not brands_for_ai:
-            special_categories = {'NEW_TO_CATEGORY', 'LOST_FROM_CATEGORY', 'MIXED'}
-            all_items = set()
-            all_items.update(df_display['prod_2024'].unique())
-            all_items.update(df_display['prod_2025'].unique())
-            
-            # Extract brands (first word) from products
-            for item in all_items:
-                if item not in special_categories:
-                    # Extract brand (first word)
-                    brand = item.split()[0] if item.split() else item
-                    brands_for_ai.append(brand)
-            
-            # Remove duplicates and limit to top brands by customer count
-            brands_for_ai = list(set(brands_for_ai))
-            # Limit to top 10 brands for highlighting (avoid too many colors)
-            if len(brands_for_ai) > 10:
-                brand_customers = df_display.groupby(df_display['prod_2024'].apply(lambda x: x.split()[0] if x.split() and x not in special_categories else x))['customers'].sum()
-                top_brands = brand_customers.nlargest(10).index.tolist()
-                brands_for_ai = [b for b in brands_for_ai if b in top_brands]
+        # Get items from summary_df (either Brand or Product column)
+        if 'Product' in summary_df.columns:
+            items_for_ai = summary_df['Product'].tolist()
+        elif 'Brand' in summary_df.columns:
+            items_for_ai = summary_df['Brand'].tolist()
+        else:
+            items_for_ai = []
         
-        insights = ai_analyzer.generate_insights(df_display, summary_df, ai_category, brands_for_ai, view_mode, f"{period1_start} to {period1_end}", f"{period2_start} to {period2_end}")
+        # Also add items from df_display for complete highlighting
+        all_items_from_data = set()
+        all_items_from_data.update(df_display['prod_2024'].unique())
+        all_items_from_data.update(df_display['prod_2025'].unique())
+        
+        # Add all non-special items
+        for item in all_items_from_data:
+            if item not in special_categories and item not in items_for_ai:
+                items_for_ai.append(item)
+        
+        # Remove special categories and duplicates
+        items_for_ai = list(set([item for item in items_for_ai if item and item not in special_categories]))
+        
+        # Limit to top items by customer count if too many
+        if len(items_for_ai) > 20:
+            # Sort by 2024_Total from summary_df and take top 20
+            if '2024_Total' in summary_df.columns:
+                item_col = 'Product' if 'Product' in summary_df.columns else 'Brand'
+                if item_col in summary_df.columns:
+                    top_items = summary_df.nlargest(20, '2024_Total')[item_col].tolist()
+                    items_for_ai = [item for item in items_for_ai if item in top_items]
+        
+        insights = ai_analyzer.generate_insights(df_display, summary_df, ai_category, items_for_ai, view_mode, f"{period1_start} to {period1_end}", f"{period2_start} to {period2_end}")
         if insights:
             st.markdown(insights, unsafe_allow_html=True)
 else:
