@@ -782,13 +782,27 @@ if run_analysis or st.session_state.query_executed:
         # Note: We keep df_display as-is (with OTHERS flows) for Waterfall/Matrix visualization
     
     # Use summary_df for display
-    summary_df_display = summary_df
+    summary_df_display = summary_df.copy()
     
     # Apply Top N filter if slider exists
+    top_n_items_list = []  # List of top N brands/products to filter visualizations
     if 'top_n_items_slider' in st.session_state and len(summary_df_display) > 0:
         top_n = st.session_state.top_n_items_slider
         if '2024_Total' in summary_df_display.columns:
             summary_df_display = summary_df_display.nlargest(top_n, '2024_Total')
+            # Get the list of top N items for filtering other visualizations
+            if item_label in summary_df_display.columns:
+                top_n_items_list = summary_df_display[item_label].tolist()
+    
+    # Filter df_display to only include flows involving top N items
+    # This will affect Sankey, Heatmap, and other visualizations
+    if top_n_items_list:
+        special_cats = ['NEW_TO_CATEGORY', 'LOST_FROM_CATEGORY', 'MIXED', 'OTHERS']
+        # Filter to include rows where either prod_2024 or prod_2025 is in top N list (or is special category)
+        df_display = df_display[
+            (df_display['prod_2024'].isin(top_n_items_list + special_cats)) | 
+            (df_display['prod_2025'].isin(top_n_items_list + special_cats))
+        ].copy()
     
     # --- Executive KPIs ---
     kpis = data_processor.calculate_executive_kpis(summary_df, summary_df, item_label=item_label)
