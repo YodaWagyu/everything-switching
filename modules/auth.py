@@ -282,6 +282,12 @@ def show_login_page():
                     if success:
                         st.session_state["authenticated"] = True
                         st.session_state["role"] = role
+                        # Track login event
+                        try:
+                            from modules import tracking
+                            tracking.log_login(role)
+                        except Exception:
+                            pass  # Don't break login if tracking fails
                         st.success("Access Granted")
                         st.rerun()
                     else:
