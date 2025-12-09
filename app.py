@@ -798,10 +798,13 @@ if run_analysis or st.session_state.query_executed:
     # This will affect Sankey, Heatmap, and other visualizations
     if top_n_items_list:
         special_cats = ['NEW_TO_CATEGORY', 'LOST_FROM_CATEGORY', 'MIXED', 'OTHERS']
-        # Filter to include rows where either prod_2024 or prod_2025 is in top N list (or is special category)
+        allowed_items = top_n_items_list + special_cats
+        
+        # Filter to include rows where BOTH prod_2024 AND prod_2025 are in allowed list
+        # This prevents showing flows to/from brands outside top N
         df_display = df_display[
-            (df_display['prod_2024'].isin(top_n_items_list + special_cats)) | 
-            (df_display['prod_2025'].isin(top_n_items_list + special_cats))
+            (df_display['prod_2024'].isin(allowed_items)) & 
+            (df_display['prod_2025'].isin(allowed_items))
         ].copy()
     
     # --- Executive KPIs ---
