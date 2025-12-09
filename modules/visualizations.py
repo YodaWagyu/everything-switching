@@ -57,7 +57,7 @@ def create_sankey_diagram(labels: List[str], sources: List[int], targets: List[i
         clean_label = label.replace('_2025', '')
         
         # Determine base color based on brand
-        if 'New Customers' in clean_label:
+        if 'NEW CUSTOMERS' in clean_label:
             base_color = config.BRAND_COLORS.get('NEW_TO_CATEGORY', '#4CAF50')
         elif 'Gone' in clean_label:
             base_color = config.BRAND_COLORS.get('LOST_FROM_CATEGORY', '#9E9E9E')
@@ -72,7 +72,7 @@ def create_sankey_diagram(labels: List[str], sources: List[int], targets: List[i
             if is_highlighted_label(label, highlighted_brands):
                 # Highlighted brand - keep vibrant color
                 node_colors.append(base_color)
-            elif clean_label in ['New Customers', 'Gone', 'MIXED']:
+            elif clean_label in ['NEW CUSTOMERS', 'Gone', 'MIXED']:
                 # Special categories - keep standard color
                 node_colors.append(base_color)
             else:
@@ -253,7 +253,9 @@ def create_waterfall_chart(waterfall_data: Dict, brand: str) -> go.Figure:
 def create_summary_table_display(summary_df: pd.DataFrame) -> pd.DataFrame:
     """Format summary table - keep % for outflows only"""
     display_df = summary_df.copy()
-    column_order = ['Brand', '2024_Total', 'Stayed', 'Stayed_%', 'Switch_Out', 'Switch_Out_%', 
+    # Detect item column dynamically (Brand or Product)
+    item_col = 'Brand' if 'Brand' in display_df.columns else 'Product'
+    column_order = [item_col, '2024_Total', 'Stayed', 'Stayed_%', 'Switch_Out', 'Switch_Out_%', 
                     'Gone', 'Gone_%', 'Total_Out', 'Switch_In', 'New_Customer', 'Total_In', 
                     '2025_Total', 'Net_Movement']
     return display_df[[col for col in column_order if col in display_df.columns]]

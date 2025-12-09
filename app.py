@@ -595,6 +595,31 @@ if run_analysis or st.session_state.query_executed:
             if not selected_brands:
                 st.stop()
         
+            # SECTION: TOP N SLIDER + RESET
+            st.markdown('<div style="padding: 8px 20px 0 20px;"></div>', unsafe_allow_html=True)
+            slider_col, reset_col = st.columns([3, 1])
+            with slider_col:
+                slider_label = "Show Top N Products" if is_product_switch_mode else "Show Top N Brands"
+                top_n_items = st.slider(
+                    slider_label,
+                    min_value=5,
+                    max_value=50,
+                    value=20,
+                    step=5,
+                    key="top_n_items_slider"
+                )
+            with reset_col:
+                st.markdown('<div style="padding-top: 28px;"></div>', unsafe_allow_html=True)
+                if st.button("🔄 Reset", key="reset_analysis_scope", use_container_width=True):
+                    # Clear brand selection and reset view mode
+                    if 'brand_filter_post_query' in st.session_state:
+                        del st.session_state['brand_filter_post_query']
+                    if 'view_mode_toggle' in st.session_state:
+                        del st.session_state['view_mode_toggle']
+                    if 'top_n_items_slider' in st.session_state:
+                        del st.session_state['top_n_items_slider']
+                    st.rerun()
+        
             # SECTION 3: ADVANCED FILTERS (collapsible)
             with st.expander("Advanced Filters", expanded=False):
                 st.caption("Barcode Filter")
@@ -739,6 +764,12 @@ if run_analysis or st.session_state.query_executed:
     # Use summary_df for display
     summary_df_display = summary_df
     
+    # Apply Top N filter if slider exists
+    if 'top_n_items_slider' in st.session_state and len(summary_df_display) > 0:
+        top_n = st.session_state.top_n_items_slider
+        if '2024_Total' in summary_df_display.columns:
+            summary_df_display = summary_df_display.nlargest(top_n, '2024_Total')
+    
     # --- Executive KPIs ---
     kpis = data_processor.calculate_executive_kpis(summary_df, summary_df, item_label=item_label)
     
@@ -848,7 +879,7 @@ if run_analysis or st.session_state.query_executed:
     st.markdown("""
     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; margin-top: 30px;">
         <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="#0f3d3e"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/></svg>
-        <span style="font-size: 24px; font-weight: 800; color: #0f3d3e;">Section 3: Brand Deep Dive</span>
+        <span style="font-size: 24px; font-weight: 800; color: #0f3d3e;">Section 3: Waterfall Customer Movement</span>
     </div>
 """, unsafe_allow_html=True)
     # Get available items for analysis with safety check
@@ -876,7 +907,7 @@ if run_analysis or st.session_state.query_executed:
 """, unsafe_allow_html=True)
     tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["Summary", "Brand Switching", "Loyalty", "Charts", "Raw", "Export"])
     with tab1:
-        st.markdown("### Brand Movement Summary")
+        st.markdown(f"### {item_label} Movement Summary")
         display_summary = visualizations.create_summary_table_display(summary_df_display)
         
         # Sort by 2024_Total descending as requested
@@ -884,9 +915,12 @@ if run_analysis or st.session_state.query_executed:
             display_summary = display_summary.sort_values(by='2024_Total', ascending=False)
             
         def make_table(df):
+            # Detect item column dynamically (Brand or Product)
+            item_col = df.columns[0] if len(df.columns) > 0 else 'Brand'
+            
             # Define rich gradient colors for each column group
             gradient_colors = {
-                'Brand': 'linear-gradient(135deg, #2c3e50 0%, #34495e 100%)',
+                item_col: 'linear-gradient(135deg, #2c3e50 0%, #34495e 100%)',
                 '2024_Total': 'linear-gradient(135deg, #e67e22 0%, #d35400 100%)',
                 'Stayed': 'linear-gradient(135deg, #f39c12 0%, #e67e22 100%)',
                 'Stayed_%': 'linear-gradient(135deg, #f39c12 0%, #e67e22 100%)',
@@ -904,7 +938,7 @@ if run_analysis or st.session_state.query_executed:
             
             # Define balanced column widths - EQUAL WIDTHS as requested
             col_widths = {
-                'Brand': '7%',
+                item_col: '7%',
                 '2024_Total': '7%', 'Stayed': '7%', 'Stayed_%': '7%',
                 'Switch_Out': '7%', 'Switch_Out_%': '7%',
                 'Gone': '7%', 'Gone_%': '7%', 'Total_Out': '7%',

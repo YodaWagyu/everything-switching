@@ -175,14 +175,14 @@ def prepare_sankey_data(df: pd.DataFrame) -> Tuple[List, List, List]:
     for label in labels_2024:
         if label not in label_mapping:
             # Replace label names for display
-            display_label = label.replace('NEW_TO_CATEGORY', 'New Customers').replace('LOST_FROM_CATEGORY', 'Gone')
+            display_label = label.replace('NEW_TO_CATEGORY', 'NEW CUSTOMERS').replace('LOST_FROM_CATEGORY', 'Gone')
             label_mapping[label] = len(all_labels)
             all_labels.append(display_label)
     
     for label in labels_2025:
         period2_key = f"{label}_2025"
         if period2_key not in label_mapping:
-            display_label = label.replace('NEW_TO_CATEGORY', 'New Customers').replace('LOST_FROM_CATEGORY', 'Gone')
+            display_label = label.replace('NEW_TO_CATEGORY', 'NEW CUSTOMERS').replace('LOST_FROM_CATEGORY', 'Gone')
             label_mapping[period2_key] = len(all_labels)
             all_labels.append(display_label)
     
@@ -201,8 +201,8 @@ def prepare_heatmap_data(df: pd.DataFrame) -> pd.DataFrame:
     """Prepare data for competitive matrix heatmap"""
     # Replace labels for display
     df_display = df.copy()
-    df_display['prod_2024'] = df_display['prod_2024'].replace({'NEW_TO_CATEGORY': 'New Customers', 'LOST_FROM_CATEGORY': 'Gone'})
-    df_display['prod_2025'] = df_display['prod_2025'].replace({'NEW_TO_CATEGORY': 'New Customers', 'LOST_FROM_CATEGORY': 'Gone'})
+    df_display['prod_2024'] = df_display['prod_2024'].replace({'NEW_TO_CATEGORY': 'NEW CUSTOMERS', 'LOST_FROM_CATEGORY': 'Gone'})
+    df_display['prod_2025'] = df_display['prod_2025'].replace({'NEW_TO_CATEGORY': 'NEW CUSTOMERS', 'LOST_FROM_CATEGORY': 'Gone'})
     
     return df_display.pivot_table(index='prod_2024', columns='prod_2025', values='customers', fill_value=0, aggfunc='sum')
 
@@ -218,7 +218,7 @@ def prepare_waterfall_data(df: pd.DataFrame, brand: str) -> Dict:
     gone = df[(df['prod_2024'] == brand) & (df['prod_2025'] == 'LOST_FROM_CATEGORY')]['customers'].sum()
     
     return {
-        'labels': ['2024 Total', 'New Customers', 'Switch In', 'Switch Out', 'Gone', '2025 Total'],
+        'labels': ['2024 Total', 'NEW CUSTOMERS', 'Switch In', 'Switch Out', 'Gone', '2025 Total'],
         'values': [period1_total, new_customers, switch_in, -switch_out, -gone, period2_total],
         'measure': ['absolute', 'relative', 'relative', 'relative', 'relative', 'total']
     }
@@ -228,8 +228,8 @@ def get_top_flows(df: pd.DataFrame, n: int = 10) -> pd.DataFrame:
     """Get top N customer flows"""
     top = df.nlargest(n, 'customers')[['prod_2024', 'prod_2025', 'customers', 'move_type']].copy()
     # Replace labels for display
-    top['prod_2024'] = top['prod_2024'].replace({'NEW_TO_CATEGORY': 'New Customers', 'LOST_FROM_CATEGORY': 'Gone'})
-    top['prod_2025'] = top['prod_2025'].replace({'NEW_TO_CATEGORY': 'New Customers', 'LOST_FROM_CATEGORY': 'Gone'})
+    top['prod_2024'] = top['prod_2024'].replace({'NEW_TO_CATEGORY': 'NEW CUSTOMERS', 'LOST_FROM_CATEGORY': 'Gone'})
+    top['prod_2025'] = top['prod_2025'].replace({'NEW_TO_CATEGORY': 'NEW CUSTOMERS', 'LOST_FROM_CATEGORY': 'Gone'})
     return top
 
 
