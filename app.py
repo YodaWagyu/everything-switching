@@ -516,6 +516,27 @@ if run_analysis or st.session_state.query_executed:
             </div>
             ''', unsafe_allow_html=True)
         
+            # RESET BUTTON - Small, red/orange color at top right
+            reset_spacer, reset_btn_col = st.columns([4, 1])
+            with reset_btn_col:
+                st.markdown("""
+                <style>
+                [data-testid="stButton"] > button[kind="secondary"] {
+                    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%) !important;
+                    color: white !important;
+                    border: none !important;
+                    font-size: 11px !important;
+                    padding: 4px 12px !important;
+                }
+                </style>
+                """, unsafe_allow_html=True)
+                if st.button("🔄 Reset", key="reset_analysis_scope", type="secondary"):
+                    # Clear all analysis scope settings
+                    for key in ['brand_filter_post_query', 'view_mode_toggle', 'top_n_items_slider', 'select_all_brands']:
+                        if key in st.session_state:
+                            del st.session_state[key]
+                    st.rerun()
+        
             # SECTION 1: VIEW LEVEL - Label and Radio on SAME LINE
             st.markdown('<div style="padding: 16px 20px 0 20px;"></div>', unsafe_allow_html=True)
             view_label_col, view_radio_col = st.columns([1, 3])
@@ -567,40 +588,28 @@ if run_analysis or st.session_state.query_executed:
         
             # SECTION 2: BRANDS - Label and Dropdown on SAME LINE
             st.markdown('<div style="padding: 8px 20px 0 20px;"></div>', unsafe_allow_html=True)
-            
-            # Reset button at top
-            reset_col_top, spacer_col = st.columns([1, 4])
-            with reset_col_top:
-                if st.button("🔄 Reset All", key="reset_analysis_scope", use_container_width=True):
-                    # Clear brand selection and reset view mode
-                    if 'brand_filter_post_query' in st.session_state:
-                        del st.session_state['brand_filter_post_query']
-                    if 'view_mode_toggle' in st.session_state:
-                        del st.session_state['view_mode_toggle']
-                    if 'top_n_items_slider' in st.session_state:
-                        del st.session_state['top_n_items_slider']
-                    if 'select_all_brands' in st.session_state:
-                        del st.session_state['select_all_brands']
-                    st.rerun()
-            
-            st.markdown('<div style="padding: 4px 20px 0 20px;"></div>', unsafe_allow_html=True)
             brand_label_col, brand_select_col, status_col = st.columns([1, 2.5, 0.8])
         
             with brand_label_col:
                 st.markdown('<div style="font-size:12px;font-weight:700;color:#57606a;text-transform:uppercase;letter-spacing:0.5px;padding-top:8px;">Brands</div>', unsafe_allow_html=True)
         
             with brand_select_col:
-                # Select All checkbox
+                # Select All checkbox - when checked, update session state and rerun
                 select_all = st.checkbox("Select All", key="select_all_brands")
-                if select_all:
-                    default_brands = all_brands_in_data
-                else:
-                    default_brands = st.session_state.get('brand_filter_post_query', [])
+                
+                # Handle Select All toggle - update session state directly
+                current_selection = st.session_state.get('brand_filter_post_query', [])
+                if select_all and len(current_selection) != len(all_brands_in_data):
+                    # Select all brands
+                    st.session_state['brand_filter_post_query'] = all_brands_in_data
+                    st.rerun()
+                elif not select_all and len(current_selection) == len(all_brands_in_data):
+                    # User unchecked Select All, keep selection as is (don't clear)
+                    pass
                 
                 selected_brands = st.multiselect(
                     "Brands",
                     options=all_brands_in_data,
-                    default=default_brands if select_all else None,
                     key="brand_filter_post_query",
                     label_visibility="collapsed",
                     placeholder="Select brands..."
