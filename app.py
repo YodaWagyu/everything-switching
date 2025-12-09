@@ -516,13 +516,13 @@ if run_analysis or st.session_state.query_executed:
             </div>
             ''', unsafe_allow_html=True)
         
-            # RESET BUTTON - Small, red/orange color at top right
-            reset_spacer, reset_btn_col = st.columns([4, 1])
+            # RESET BUTTON - Small, blue gradient at top left
+            reset_btn_col, reset_spacer = st.columns([1, 4])
             with reset_btn_col:
                 st.markdown("""
                 <style>
-                [data-testid="stButton"] > button[kind="secondary"] {
-                    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%) !important;
+                div[data-testid="stButton"] > button[kind="secondary"] {
+                    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%) !important;
                     color: white !important;
                     border: none !important;
                     font-size: 11px !important;
@@ -530,9 +530,9 @@ if run_analysis or st.session_state.query_executed:
                 }
                 </style>
                 """, unsafe_allow_html=True)
-                if st.button("🔄 Reset", key="reset_analysis_scope", type="secondary"):
+                if st.button("Reset", key="reset_analysis_scope", type="secondary"):
                     # Clear all analysis scope settings
-                    for key in ['brand_filter_post_query', 'view_mode_toggle', 'top_n_items_slider', 'select_all_brands']:
+                    for key in ['brand_filter_post_query', 'view_mode_toggle', 'top_n_items_slider', 'select_all_brands', 'enable_top_n_filter']:
                         if key in st.session_state:
                             del st.session_state[key]
                     st.rerun()
@@ -628,17 +628,25 @@ if run_analysis or st.session_state.query_executed:
             if not selected_brands:
                 st.stop()
         
-            # SECTION: TOP N SLIDER
+            # SECTION: TOP N FILTER (with enable checkbox)
             st.markdown('<div style="padding: 8px 20px 0 20px;"></div>', unsafe_allow_html=True)
-            slider_label = "Show Top N Products" if is_product_switch_mode else "Show Top N Brands"
-            top_n_items = st.slider(
-                slider_label,
-                min_value=5,
-                max_value=50,
-                value=20,
-                step=5,
-                key="top_n_items_slider"
+            filter_item_name = "Product" if is_product_switch_mode else "Brand"
+            enable_top_n = st.checkbox(
+                f"Enable Top N Filter ({filter_item_name}s)", 
+                key="enable_top_n_filter",
+                help="เมื่อเปิดใช้งาน จะแสดงเฉพาะ Top N items ตามยอดขายปี 2024"
             )
+            
+            if enable_top_n:
+                slider_label = "Show Top N Products" if is_product_switch_mode else "Show Top N Brands"
+                top_n_items = st.slider(
+                    slider_label,
+                    min_value=5,
+                    max_value=50,
+                    value=20,
+                    step=5,
+                    key="top_n_items_slider"
+                )
         
             # SECTION 3: ADVANCED FILTERS (collapsible)
             with st.expander("Advanced Filters", expanded=False):
@@ -784,9 +792,10 @@ if run_analysis or st.session_state.query_executed:
     # Use summary_df for display
     summary_df_display = summary_df.copy()
     
-    # Apply Top N filter if slider exists
+    # Apply Top N filter ONLY if checkbox is enabled and slider exists
     top_n_items_list = []  # List of top N brands/products to filter visualizations
-    if 'top_n_items_slider' in st.session_state and len(summary_df_display) > 0:
+    is_top_n_enabled = st.session_state.get('enable_top_n_filter', False)
+    if is_top_n_enabled and 'top_n_items_slider' in st.session_state and len(summary_df_display) > 0:
         top_n = st.session_state.top_n_items_slider
         if '2024_Total' in summary_df_display.columns:
             summary_df_display = summary_df_display.nlargest(top_n, '2024_Total')
@@ -942,7 +951,8 @@ if run_analysis or st.session_state.query_executed:
         <span style="font-size: 24px; font-weight: 800; color: #0f3d3e;">Section 4: Summary Tables & Charts</span>
     </div>
 """, unsafe_allow_html=True)
-    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["Summary", "Brand Switching", "Loyalty", "Charts", "Raw", "Export"])
+    switching_tab_label = f"{item_label} Switching"
+    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["Summary", switching_tab_label, "Loyalty", "Charts", "Raw", "Export"])
     with tab1:
         st.markdown(f"### {item_label} Movement Summary")
         display_summary = visualizations.create_summary_table_display(summary_df_display)
@@ -1024,13 +1034,13 @@ if run_analysis or st.session_state.query_executed:
         st.markdown(make_table(display_summary), unsafe_allow_html=True)
     
     with tab2:
-        st.markdown("""
+        st.markdown(f"""
     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="#0f3d3e"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg>
-        <span style="font-size: 20px; font-weight: 700; color: #0f3d3e;">Brand Switching Details</span>
+        <span style="font-size: 20px; font-weight: 700; color: #0f3d3e;">{item_label} Switching Details</span>
     </div>
 """, unsafe_allow_html=True)
-        st.caption("Top brand-to-brand switching flows (sorted by From Brand A→Z, then Customers High→Low)")
+        st.caption(f"Top {item_label.lower()}-to-{item_label.lower()} switching flows (sorted by From {item_label} A→Z, then Customers High→Low)")
         
         switching_summary = data_processor.get_brand_switching_summary(df_display, top_n=20)
         
@@ -1127,10 +1137,10 @@ if run_analysis or st.session_state.query_executed:
     <table class="switching-table">
         <thead>
             <tr>
-                <th style="width: 30%;">From Brand</th>
-                <th style="width: 30%;">To Brand</th>
+                <th style="width: 30%;">From ''' + item_label + '''</th>
+                <th style="width: 30%;">To ''' + item_label + '''</th>
                 <th style="width: 20%;">Customers</th>
-                <th style="width: 20%;">% of From Brand</th>
+                <th style="width: 20%;">% of From ''' + item_label + '''</th>
             </tr>
         </thead>
         <tbody>''' + table_body + '''
@@ -1140,9 +1150,9 @@ if run_analysis or st.session_state.query_executed:
 '''
             
             st.markdown(html, unsafe_allow_html=True)
-            st.info("💡 **คำอธิบาย:** % of From Brand = จำนวนลูกค้าที่ย้ายจาก Brand นั้น / ลูกค้าทั้งหมดของ Brand ในช่วง Before Period")
+            st.info(f"💡 **คำอธิบาย:** % of From {item_label} = จำนวนลูกค้าที่ย้ายจาก {item_label} นั้น / ลูกค้าทั้งหมดของ {item_label} ในช่วง Before Period")
         else:
-            st.warning("⚠️ ไม่พบข้อมูลการ switch ระหว่าง brand")
+            st.warning(f"⚠️ ไม่พบข้อมูลการ switch ระหว่าง {item_label.lower()}")
     
     # Tab 3: Loyalty (moved from tab6)
     with tab3:
