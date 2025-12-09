@@ -213,6 +213,26 @@ if run_analysis or st.session_state.query_executed:
         st.session_state.results_df = df
         st.session_state.gb_processed = gb_processed
         st.session_state.query_executed = True
+        
+        # Track query with filter details
+        try:
+            if 'tracking_session_id' in st.session_state:
+                query_details = {
+                    'category': selected_category,
+                    'subcategories': selected_subcategories[:3] if selected_subcategories else [],
+                    'brands_count': len(selected_brands) if selected_brands else 0,
+                    'period1': f"{period1_start} to {period1_end}",
+                    'period2': f"{period2_start} to {period2_end}",
+                    'gb_processed': round(gb_processed, 2) if gb_processed else 0
+                }
+                tracking.log_event(
+                    st.session_state.tracking_session_id, 
+                    'query', 
+                    query_details,
+                    duration_ms=None  # Could add timing later
+                )
+        except:
+            pass
         # Don't calculate summary_df yet - wait until after view mode toggle
     
     df = st.session_state.results_df
@@ -1560,6 +1580,15 @@ if auth.is_admin():
             st.dataframe(display_df, use_container_width=True, hide_index=True)
         else:
             st.info("No sessions recorded yet")
+        
+        # Recent Activity Log with Details
+        st.subheader("📜 Recent Activity Log (with Filter Details)")
+        events_detail_df = tracking.get_recent_events(20)
+        if not events_detail_df.empty:
+            events_detail_df.columns = ['Time', 'Role', 'IP', 'Event', 'Details']
+            st.dataframe(events_detail_df, use_container_width=True, hide_index=True)
+        else:
+            st.info("No activity recorded yet")
             
     except Exception as e:
         st.error(f"Error loading analytics: {str(e)}")

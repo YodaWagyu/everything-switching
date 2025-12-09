@@ -346,3 +346,55 @@ def get_role_distribution() -> pd.DataFrame:
         return df
     except Exception:
         return pd.DataFrame(columns=['user_role', 'count'])
+
+
+def get_recent_events(limit: int = 30) -> pd.DataFrame:
+    """Get recent events with details for activity log"""
+    try:
+        conn = sqlite3.connect(str(DB_PATH))
+        
+        query = f'''
+            SELECT 
+                e.timestamp,
+                s.user_role,
+                s.ip_address,
+                e.event_type,
+                e.event_data
+            FROM events e
+            JOIN sessions s ON e.session_id = s.session_id
+            ORDER BY e.timestamp DESC
+            LIMIT {limit}
+        '''
+        
+        df = pd.read_sql_query(query, conn)
+        conn.close()
+        
+        # Parse event_data JSON for display
+        def parse_event_data(data):
+            if data:
+                try:
+                    parsed = json.loads(data)
+                    # Format key details
+                    details = []
+                    if 'category' in parsed:
+                        details.append(f"Category: {parsed['category']}")
+                    if 'brands_count' in parsed:
+                        details.append(f"Brands: {parsed['brands_count']}")
+                    if 'period1' in parsed:
+                        details.append(f"Period: {parsed['period1']}")
+                    if 'view_mode' in parsed:
+                        details.append(f"Mode: {parsed['view_mode']}")
+                    if 'role' in parsed:
+                        details.append(f"Role: {parsed['role']}")
+                    return "; ".join(details) if details else str(parsed)
+                except:
+                    return str(data)[:100]
+            return ""
+        
+        df['details'] = df['event_data'].apply(parse_event_data)
+        df = df.drop(columns=['event_data'])
+        
+        return df
+    except Exception:
+        return pd.DataFrame(columns=['timestamp', 'user_role', 'ip_address', 'event_type', 'details'])
+
