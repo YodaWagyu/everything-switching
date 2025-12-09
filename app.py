@@ -698,7 +698,11 @@ if run_analysis or st.session_state.query_executed:
                 """, unsafe_allow_html=True)
                 if st.button("Reset", key="reset_analysis_scope", type="secondary"):
                     # Clear all analysis scope settings
-                    for key in ['brand_filter_post_query', 'view_mode_toggle', 'top_n_items_slider', 'select_all_brands', 'enable_top_n_filter']:
+                    # Use a trigger flag to force reset on next render
+                    st.session_state['_trigger_brand_reset'] = True
+                    st.session_state['select_all_brands'] = False
+                    # Delete other keys
+                    for key in ['view_mode_toggle', 'top_n_items_slider', 'enable_top_n_filter', 'brand_filter_post_query']:
                         if key in st.session_state:
                             del st.session_state[key]
                     st.rerun()
@@ -773,9 +777,19 @@ if run_analysis or st.session_state.query_executed:
                     # User unchecked Select All, keep selection as is (don't clear)
                     pass
                 
+                # Check if reset was triggered - use empty default
+                default_brands = []
+                if st.session_state.get('_trigger_brand_reset', False):
+                    # Clear the trigger flag
+                    del st.session_state['_trigger_brand_reset']
+                    default_brands = []
+                else:
+                    default_brands = st.session_state.get('brand_filter_post_query', None)
+                
                 selected_brands = st.multiselect(
                     "Brands",
                     options=all_brands_in_data,
+                    default=default_brands,
                     key="brand_filter_post_query",
                     label_visibility="collapsed",
                     placeholder="Select brands..."
