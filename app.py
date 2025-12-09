@@ -697,14 +697,19 @@ if run_analysis or st.session_state.query_executed:
                 </style>
                 """, unsafe_allow_html=True)
                 if st.button("Reset", key="reset_analysis_scope", type="secondary"):
-                    # Clear all analysis scope settings
-                    # Use a trigger flag to force reset on next render
-                    st.session_state['_trigger_brand_reset'] = True
+                    # Clear all analysis scope settings using counter-based approach
+                    # Increment reset counter to force new widget key
+                    current_reset_count = st.session_state.get('_brand_reset_counter', 0)
+                    st.session_state['_brand_reset_counter'] = current_reset_count + 1
                     st.session_state['select_all_brands'] = False
-                    # Delete other keys
-                    for key in ['view_mode_toggle', 'top_n_items_slider', 'enable_top_n_filter', 'brand_filter_post_query']:
+                    # Delete the old brand filter key (new key will be different)
+                    for key in ['view_mode_toggle', 'top_n_items_slider', 'enable_top_n_filter']:
                         if key in st.session_state:
                             del st.session_state[key]
+                    # Also delete any previous brand filter keys
+                    keys_to_delete = [k for k in st.session_state.keys() if k.startswith('brand_filter_')]
+                    for k in keys_to_delete:
+                        del st.session_state[k]
                     st.rerun()
         
             # SECTION 1: VIEW LEVEL - Label and Radio on SAME LINE
@@ -768,29 +773,22 @@ if run_analysis or st.session_state.query_executed:
                 select_all = st.checkbox("Select All", key="select_all_brands")
                 
                 # Handle Select All toggle - update session state directly
-                current_selection = st.session_state.get('brand_filter_post_query', [])
+                reset_counter = st.session_state.get('_brand_reset_counter', 0)
+                brand_key = f"brand_filter_{reset_counter}"
+                
+                current_selection = st.session_state.get(brand_key, [])
                 if select_all and len(current_selection) != len(all_brands_in_data):
                     # Select all brands
-                    st.session_state['brand_filter_post_query'] = all_brands_in_data
+                    st.session_state[brand_key] = all_brands_in_data
                     st.rerun()
                 elif not select_all and len(current_selection) == len(all_brands_in_data):
                     # User unchecked Select All, keep selection as is (don't clear)
                     pass
                 
-                # Check if reset was triggered - use empty default
-                default_brands = []
-                if st.session_state.get('_trigger_brand_reset', False):
-                    # Clear the trigger flag
-                    del st.session_state['_trigger_brand_reset']
-                    default_brands = []
-                else:
-                    default_brands = st.session_state.get('brand_filter_post_query', None)
-                
                 selected_brands = st.multiselect(
                     "Brands",
                     options=all_brands_in_data,
-                    default=default_brands,
-                    key="brand_filter_post_query",
+                    key=brand_key,
                     label_visibility="collapsed",
                     placeholder="Select brands..."
                 )
