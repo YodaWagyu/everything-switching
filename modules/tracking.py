@@ -256,6 +256,254 @@ def get_analytics_summary() -> Dict[str, Any]:
         }
 
 
+def get_date_range() -> Dict[str, Any]:
+    """Get the earliest and latest dates in the database"""
+    try:
+        conn = sqlite3.connect(str(DB_PATH))
+        
+        # Get earliest session date
+        earliest = pd.read_sql_query(
+            "SELECT MIN(date(start_time)) as min_date FROM sessions",
+            conn
+        )['min_date'].iloc[0]
+        
+        # Get latest session date
+        latest = pd.read_sql_query(
+            "SELECT MAX(date(start_time)) as max_date FROM sessions",
+            conn
+        )['max_date'].iloc[0]
+        
+        conn.close()
+        
+        return {
+            'earliest': earliest,
+            'latest': latest
+        }
+    except Exception:
+        return {
+            'earliest': None,
+            'latest': None
+        }
+
+
+def get_analytics_summary_filtered(start_date: str, end_date: str) -> Dict[str, Any]:
+    """Get summary analytics for admin dashboard with date filter"""
+    try:
+        conn = sqlite3.connect(str(DB_PATH))
+        
+        # Total sessions in date range
+        total_sessions = pd.read_sql_query(
+            f"SELECT COUNT(DISTINCT session_id) as count FROM sessions WHERE date(start_time) BETWEEN '{start_date}' AND '{end_date}'",
+            conn
+        )['count'].iloc[0]
+        
+        # Total queries in date range
+        total_queries = pd.read_sql_query(
+            f"SELECT COUNT(*) as count FROM events WHERE event_type = 'query' AND date(timestamp) BETWEEN '{start_date}' AND '{end_date}'",
+            conn
+        )['count'].iloc[0]
+        
+        # Average query time in date range
+        avg_query_time = pd.read_sql_query(
+            f"SELECT AVG(duration_ms) as avg_ms FROM events WHERE event_type = 'query' AND duration_ms IS NOT NULL AND date(timestamp) BETWEEN '{start_date}' AND '{end_date}'",
+            conn
+        )['avg_ms'].iloc[0] or 0
+        
+        # AI generations in date range
+        ai_generations = pd.read_sql_query(
+            f"SELECT COUNT(*) as count FROM events WHERE event_type = 'ai_gen' AND date(timestamp) BETWEEN '{start_date}' AND '{end_date}'",
+            conn
+        )['count'].iloc[0]
+        
+        # Exports in date range
+        total_exports = pd.read_sql_query(
+            f"SELECT COUNT(*) as count FROM events WHERE event_type = 'export' AND date(timestamp) BETWEEN '{start_date}' AND '{end_date}'",
+            conn
+        )['count'].iloc[0]
+        
+        # Unique IPs in date range
+        unique_ips = pd.read_sql_query(
+            f"SELECT COUNT(DISTINCT ip_address) as count FROM sessions WHERE ip_address != 'unknown' AND date(start_time) BETWEEN '{start_date}' AND '{end_date}'",
+            conn
+        )['count'].iloc[0]
+        
+        # PDF generations (counted as export with format pdf)
+        pdf_generations = pd.read_sql_query(
+            f"SELECT COUNT(*) as count FROM events WHERE event_type = 'export' AND event_data LIKE '%pdf%' AND date(timestamp) BETWEEN '{start_date}' AND '{end_date}'",
+            conn
+        )['count'].iloc[0]
+        
+        conn.close()
+        
+        return {
+            'total_sessions': int(total_sessions),
+            'total_queries': int(total_queries),
+            'avg_query_time_ms': round(avg_query_time, 0),
+            'ai_generations': int(ai_generations),
+            'total_exports': int(total_exports),
+            'unique_ips': int(unique_ips),
+            'pdf_generations': int(pdf_generations)
+        }
+    except Exception as e:
+        return {
+            'total_sessions': 0,
+            'total_queries': 0,
+            'avg_query_time_ms': 0,
+            'ai_generations': 0,
+            'total_exports': 0,
+            'unique_ips': 0,
+            'pdf_generations': 0,
+            'error': str(e)
+        }
+
+
+def get_daily_usage_filtered(start_date: str, end_date: str) -> pd.DataFrame:
+    """Get daily usage stats for charting with date filter"""
+    try:
+        conn = sqlite3.connect(str(DB_PATH))
+        
+        query = f'''
+            SELECT 
+                date(timestamp) as date,
+                COUNT(*) as events,
+                COUNT(DISTINCT session_id) as sessions,
+                SUM(CASE WHEN event_type = 'query' THEN 1 ELSE 0 END) as queries
+            FROM events
+            WHERE date(timestamp) BETWEEN '{start_date}' AND '{end_date}'
+            GROUP BY date(timestamp)
+            ORDER BY date
+        '''
+        
+        df = pd.read_sql_query(query, conn)
+        conn.close()
+        
+        return df
+    except Exception:
+        return pd.DataFrame(columns=['date', 'events', 'sessions', 'queries'])
+
+
+def get_recent_sessions_filtered(start_date: str, end_date: str, limit: int = 50) -> pd.DataFrame:
+    """Get recent sessions with activity summary in date range"""
+    try:
+        conn = sqlite3.connect(str(DB_PATH))
+        
+        query = f'''
+            SELECT 
+                s.session_id,
+                s.user_role,
+                s.ip_address,
+                s.start_time,
+                s.last_activity,
+                COUNT(e.id) as event_count
+            FROM sessions s
+            LEFT JOIN events e ON s.session_id = e.session_id
+            WHERE date(s.start_time) BETWEEN '{start_date}' AND '{end_date}'
+            GROUP BY s.session_id
+            ORDER BY s.start_time DESC
+            LIMIT {limit}
+        '''
+        
+        df = pd.read_sql_query(query, conn)
+        conn.close()
+        
+        return df
+    except Exception:
+        return pd.DataFrame()
+
+
+def get_recent_events_filtered(start_date: str, end_date: str, limit: int = 100) -> pd.DataFrame:
+    """Get recent events with details for activity log in date range"""
+    try:
+        conn = sqlite3.connect(str(DB_PATH))
+        
+        query = f'''
+            SELECT 
+                e.timestamp,
+                s.user_role,
+                s.ip_address,
+                e.event_type,
+                e.event_data
+            FROM events e
+            JOIN sessions s ON e.session_id = s.session_id
+            WHERE date(e.timestamp) BETWEEN '{start_date}' AND '{end_date}'
+            ORDER BY e.timestamp DESC
+            LIMIT {limit}
+        '''
+        
+        df = pd.read_sql_query(query, conn)
+        conn.close()
+        
+        # Parse event_data JSON for display
+        def parse_event_data(data):
+            if data:
+                try:
+                    parsed = json.loads(data)
+                    # Format key details
+                    details = []
+                    if 'category' in parsed:
+                        details.append(f"Category: {parsed['category']}")
+                    if 'brands_count' in parsed:
+                        details.append(f"Brands: {parsed['brands_count']}")
+                    if 'period1' in parsed:
+                        details.append(f"Period: {parsed['period1']}")
+                    if 'view_mode' in parsed:
+                        details.append(f"Mode: {parsed['view_mode']}")
+                    if 'role' in parsed:
+                        details.append(f"Role: {parsed['role']}")
+                    return "; ".join(details) if details else str(parsed)
+                except:
+                    return str(data)[:100]
+            return ""
+        
+        df['details'] = df['event_data'].apply(parse_event_data)
+        df = df.drop(columns=['event_data'])
+        
+        return df
+    except Exception:
+        return pd.DataFrame(columns=['timestamp', 'user_role', 'ip_address', 'event_type', 'details'])
+
+
+def get_events_by_type_filtered(start_date: str, end_date: str) -> pd.DataFrame:
+    """Get event counts by type for charting with date filter"""
+    try:
+        conn = sqlite3.connect(str(DB_PATH))
+        
+        query = f'''
+            SELECT event_type, COUNT(*) as count
+            FROM events
+            WHERE date(timestamp) BETWEEN '{start_date}' AND '{end_date}'
+            GROUP BY event_type
+            ORDER BY count DESC
+        '''
+        
+        df = pd.read_sql_query(query, conn)
+        conn.close()
+        
+        return df
+    except Exception:
+        return pd.DataFrame(columns=['event_type', 'count'])
+
+
+def get_role_distribution_filtered(start_date: str, end_date: str) -> pd.DataFrame:
+    """Get session counts by user role with date filter"""
+    try:
+        conn = sqlite3.connect(str(DB_PATH))
+        
+        query = f'''
+            SELECT user_role, COUNT(*) as count
+            FROM sessions
+            WHERE date(start_time) BETWEEN '{start_date}' AND '{end_date}'
+            GROUP BY user_role
+        '''
+        
+        df = pd.read_sql_query(query, conn)
+        conn.close()
+        
+        return df
+    except Exception:
+        return pd.DataFrame(columns=['user_role', 'count'])
+
+
 def get_daily_usage(days: int = 14) -> pd.DataFrame:
     """Get daily usage stats for charting"""
     try:

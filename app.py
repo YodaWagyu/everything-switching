@@ -1640,15 +1640,105 @@ if auth.is_admin():
     """, unsafe_allow_html=True)
     
     try:
-        # Get analytics data
-        analytics = tracking.get_analytics_summary()
+        # Get date range from database
+        date_range = tracking.get_date_range()
+        
+        # Default date values
+        today = datetime.now().date()
+        default_start = today - timedelta(days=7)
+        
+        # Parse database dates
+        if date_range['earliest']:
+            try:
+                earliest_date = datetime.strptime(date_range['earliest'], '%Y-%m-%d').date()
+            except:
+                earliest_date = today - timedelta(days=30)
+        else:
+            earliest_date = today - timedelta(days=30)
+            
+        if date_range['latest']:
+            try:
+                latest_date = datetime.strptime(date_range['latest'], '%Y-%m-%d').date()
+            except:
+                latest_date = today
+        else:
+            latest_date = today
+        
+        # Date filter section
+        st.markdown("""
+        <div style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #dee2e6;">
+            <div style="font-size: 16px; font-weight: 600; color: #495057; margin-bottom: 12px;">📅 Select Date Range</div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Date picker row
+        filter_cols = st.columns([1, 1, 2])
+        
+        with filter_cols[0]:
+            admin_start_date = st.date_input(
+                "From Date",
+                value=default_start,
+                min_value=earliest_date,
+                max_value=today,
+                key="admin_date_start"
+            )
+        
+        with filter_cols[1]:
+            admin_end_date = st.date_input(
+                "To Date",
+                value=today,
+                min_value=earliest_date,
+                max_value=today,
+                key="admin_date_end"
+            )
+        
+        with filter_cols[2]:
+            st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
+            preset_cols = st.columns(4)
+            with preset_cols[0]:
+                if st.button("📆 Today", use_container_width=True, key="preset_today"):
+                    st.session_state.admin_date_start = today
+                    st.session_state.admin_date_end = today
+                    st.rerun()
+            with preset_cols[1]:
+                if st.button("📅 Last 7 Days", use_container_width=True, key="preset_7d"):
+                    st.session_state.admin_date_start = today - timedelta(days=7)
+                    st.session_state.admin_date_end = today
+                    st.rerun()
+            with preset_cols[2]:
+                if st.button("🗓️ Last 30 Days", use_container_width=True, key="preset_30d"):
+                    st.session_state.admin_date_start = today - timedelta(days=30)
+                    st.session_state.admin_date_end = today
+                    st.rerun()
+            with preset_cols[3]:
+                if st.button("📊 All Time", use_container_width=True, key="preset_all"):
+                    st.session_state.admin_date_start = earliest_date
+                    st.session_state.admin_date_end = today
+                    st.rerun()
+        
+        # Convert dates to strings for SQL
+        start_str = admin_start_date.strftime('%Y-%m-%d')
+        end_str = admin_end_date.strftime('%Y-%m-%d')
+        
+        # Show selected date range
+        days_diff = (admin_end_date - admin_start_date).days + 1
+        st.markdown(f"""
+        <div style="background: #e3f2fd; padding: 12px 16px; border-radius: 8px; margin: 16px 0; border-left: 4px solid #2196F3;">
+            <span style="font-size: 14px; color: #1565c0;">
+                📊 Showing data from <strong>{admin_start_date.strftime('%d %b %Y')}</strong> to <strong>{admin_end_date.strftime('%d %b %Y')}</strong> ({days_diff} day{'s' if days_diff != 1 else ''})
+            </span>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Get filtered analytics data
+        analytics = tracking.get_analytics_summary_filtered(start_str, end_str)
         
         # KPI Cards Row
         kpi_cols = st.columns(4)
         with kpi_cols[0]:
-            st.metric("📈 Total Sessions", f"{analytics['total_sessions']:,}", f"+{analytics['sessions_today']} today")
+            st.metric("📈 Total Sessions", f"{analytics['total_sessions']:,}")
         with kpi_cols[1]:
-            st.metric("🔍 Total Queries", f"{analytics['total_queries']:,}", f"+{analytics['queries_today']} today")
+            st.metric("🔍 Total Queries", f"{analytics['total_queries']:,}")
         with kpi_cols[2]:
             st.metric("⚡ Avg Query Time", f"{analytics['avg_query_time_ms']:.0f}ms")
         with kpi_cols[3]:
@@ -1664,7 +1754,7 @@ if auth.is_admin():
             st.metric("📥 Total Exports", f"{analytics['total_exports']:,}")
         with kpi_cols2[2]:
             # User count breakdown
-            role_df = tracking.get_role_distribution()
+            role_df = tracking.get_role_distribution_filtered(start_str, end_str)
             if not role_df.empty:
                 admin_count = role_df[role_df['user_role'] == 'admin']['count'].sum() if 'admin' in role_df['user_role'].values else 0
                 user_count = role_df[role_df['user_role'] == 'user']['count'].sum() if 'user' in role_df['user_role'].values else 0
@@ -1677,7 +1767,7 @@ if auth.is_admin():
         
         with chart_cols[0]:
             st.subheader("📈 Daily Usage Trend")
-            daily_df = tracking.get_daily_usage(14)
+            daily_df = tracking.get_daily_usage_filtered(start_str, end_str)
             if not daily_df.empty and len(daily_df) > 0:
                 fig_daily = go.Figure()
                 fig_daily.add_trace(go.Scatter(
@@ -1705,11 +1795,11 @@ if auth.is_admin():
                 )
                 st.plotly_chart(fig_daily, use_container_width=True)
             else:
-                st.info("No usage data yet")
+                st.info("No usage data in selected date range")
         
         with chart_cols[1]:
             st.subheader("📊 Events by Type")
-            events_df = tracking.get_events_by_type()
+            events_df = tracking.get_events_by_type_filtered(start_str, end_str)
             if not events_df.empty and len(events_df) > 0:
                 fig_events = go.Figure(data=[
                     go.Bar(
@@ -1726,27 +1816,27 @@ if auth.is_admin():
                 )
                 st.plotly_chart(fig_events, use_container_width=True)
             else:
-                st.info("No events recorded yet")
+                st.info("No events in selected date range")
         
         # Recent Sessions Table
         st.subheader("📋 Recent Sessions")
-        sessions_df = tracking.get_recent_sessions(15)
+        sessions_df = tracking.get_recent_sessions_filtered(start_str, end_str, 50)
         if not sessions_df.empty:
             # Format the dataframe for display
             display_df = sessions_df.copy()
             display_df.columns = ['Session ID', 'Role', 'IP Address', 'Start Time', 'Last Activity', 'Events']
-            st.dataframe(display_df, use_container_width=True, hide_index=True)
+            st.dataframe(display_df, use_container_width=True, hide_index=True, height=300)
         else:
-            st.info("No sessions recorded yet")
+            st.info("No sessions in selected date range")
         
         # Recent Activity Log with Details
-        st.subheader("📜 Recent Activity Log (with Filter Details)")
-        events_detail_df = tracking.get_recent_events(20)
+        st.subheader("📜 Recent Activity Log")
+        events_detail_df = tracking.get_recent_events_filtered(start_str, end_str, 100)
         if not events_detail_df.empty:
             events_detail_df.columns = ['Time', 'Role', 'IP', 'Event', 'Details']
-            st.dataframe(events_detail_df, use_container_width=True, hide_index=True)
+            st.dataframe(events_detail_df, use_container_width=True, hide_index=True, height=400)
         else:
-            st.info("No activity recorded yet")
+            st.info("No activity in selected date range")
             
     except Exception as e:
         st.error(f"Error loading analytics: {str(e)}")
