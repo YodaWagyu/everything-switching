@@ -653,7 +653,7 @@ def calculate_cross_category_kpis(df: pd.DataFrame, target_categories: list = No
     }
 
 
-def prepare_cross_category_sankey_data(df: pd.DataFrame) -> Tuple[List, List, List, List]:
+def prepare_cross_category_sankey_data(df: pd.DataFrame) -> Tuple[List, List, List, List, List]:
     """
     Prepare data for Sankey diagram for cross-category switching.
     
@@ -661,21 +661,18 @@ def prepare_cross_category_sankey_data(df: pd.DataFrame) -> Tuple[List, List, Li
         df: DataFrame from build_cross_category_query()
     
     Returns:
-        Tuple of (labels, sources, targets, values) for Sankey diagram
+        Tuple of (labels, sources, targets, values, colors) for Sankey diagram
     """
     if df is None or len(df) == 0:
-        return [], [], [], []
+        return [], [], [], [], []
     
-    # Get unique source and target labels
+    # Get unique source labels
     source_labels = df['source_label'].unique().tolist()
     
-    # Get target labels (including special categories)
-    target_labels_raw = df['target_label'].unique().tolist()
+    # Get target labels
+    target_labels = df['target_label'].unique().tolist()
     
-    # Replace 'NO_PURCHASE' with 'GONE'
-    target_labels = ['GONE' if t == 'NO_PURCHASE' else t for t in target_labels_raw]
-    
-    # Also handle stayed - need to add "_after" suffix to distinguish
+    # Build combined labels list
     all_labels = []
     label_mapping = {}
     
@@ -686,29 +683,40 @@ def prepare_cross_category_sankey_data(df: pd.DataFrame) -> Tuple[List, List, Li
             all_labels.append(label)
     
     # Add target labels (Period 2) with suffix to distinguish
-    for label, raw_label in zip(target_labels, target_labels_raw):
-        period2_key = f"{raw_label}_target"
+    for label in target_labels:
+        period2_key = f"{label}_target"
         if period2_key not in label_mapping:
-            # For stayed categories, show same name
-            display_label = label
-            if raw_label == 'NO_PURCHASE':
-                display_label = 'GONE'
             label_mapping[period2_key] = len(all_labels)
-            all_labels.append(display_label)
+            all_labels.append(label)
     
-    sources, targets, values = [], [], []
+    sources, targets, values, colors = [], [], [], []
     
-    for _, row in df.iterrows():
+    # Aggregate by source_label and target_label
+    flow_agg = df.groupby(['source_label', 'target_label', 'move_type'])['customers'].sum().reset_index()
+    
+    for _, row in flow_agg.iterrows():
         source_label = row['source_label']
-        target_raw = row['target_label']
+        target_label = row['target_label']
         customers = row['customers']
+        move_type = row['move_type']
         
         source_idx = label_mapping.get(source_label)
-        target_idx = label_mapping.get(f"{target_raw}_target")
+        target_idx = label_mapping.get(f"{target_label}_target")
         
         if source_idx is not None and target_idx is not None:
             sources.append(source_idx)
             targets.append(target_idx)
             values.append(customers)
+            
+            # Assign colors based on move_type
+            if move_type == 'stayed':
+                colors.append('rgba(34, 197, 94, 0.6)')  # Green for stayed
+            elif move_type == 'gone':
+                colors.append('rgba(239, 68, 68, 0.6)')  # Red for gone
+            elif move_type == 'switched':
+                colors.append('rgba(99, 102, 241, 0.6)')  # Purple for switched
+            else:
+                colors.append('rgba(156, 163, 175, 0.6)')  # Gray default
     
-    return all_labels, sources, targets, values
+    return all_labels, sources, targets, values, colors
+

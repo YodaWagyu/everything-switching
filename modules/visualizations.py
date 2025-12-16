@@ -10,7 +10,8 @@ import config
 
 
 def create_sankey_diagram(labels: List[str], sources: List[int], targets: List[int], values: List[int], 
-                          highlighted_brands: List[str] = None, min_volume_pct: float = 0.0) -> go.Figure:
+                          highlighted_brands: List[str] = None, min_volume_pct: float = 0.0,
+                          link_colors: List[str] = None) -> go.Figure:
     """
     Create Sankey diagram with highlighted brands shown in vibrant colors
     
@@ -21,6 +22,7 @@ def create_sankey_diagram(labels: List[str], sources: List[int], targets: List[i
         values: List of flow values
         highlighted_brands: List of brands to highlight (None = no highlighting)
         min_volume_pct: Minimum percentage of total flow to display (0-100)
+        link_colors: Optional custom colors for each link (overrides automatic coloring)
     """
     # Calculate total volume for percentage filtering
     total_volume = sum(values)
@@ -81,32 +83,37 @@ def create_sankey_diagram(labels: List[str], sources: List[int], targets: List[i
         else:
             node_colors.append(base_color)
 
-    # Define Link Colors
-    link_colors = []
-    for s, t, v in zip(final_sources, final_targets, final_values):
-        source_label = labels[s]
-        target_label = labels[t]
-        
-        # Check if flow involves highlighted brand
-        if highlighted_brands:
-            source_is_highlighted = is_highlighted_label(source_label, highlighted_brands)
-            target_is_highlighted = is_highlighted_label(target_label, highlighted_brands)
+    # Define Link Colors - use provided colors if available
+    if link_colors is not None and len(link_colors) == len(final_sources):
+        # Use provided custom colors (for cross-category mode)
+        final_link_colors = link_colors
+    else:
+        # Generate colors based on highlighted brands (for brand/product mode)
+        final_link_colors = []
+        for s, t, v in zip(final_sources, final_targets, final_values):
+            source_label = labels[s]
+            target_label = labels[t]
             
-            if source_is_highlighted and target_is_highlighted:
-                # Stayed flow - use blue/teal
-                link_colors.append('rgba(33, 150, 243, 0.5)')
-            elif source_is_highlighted:
-                # Outflow from highlighted brand - RED
-                link_colors.append('rgba(244, 67, 54, 0.5)')
-            elif target_is_highlighted:
-                # Inflow to highlighted brand - GREEN
-                link_colors.append('rgba(76, 175, 80, 0.5)')
+            # Check if flow involves highlighted brand
+            if highlighted_brands:
+                source_is_highlighted = is_highlighted_label(source_label, highlighted_brands)
+                target_is_highlighted = is_highlighted_label(target_label, highlighted_brands)
+                
+                if source_is_highlighted and target_is_highlighted:
+                    # Stayed flow - use blue/teal
+                    final_link_colors.append('rgba(33, 150, 243, 0.5)')
+                elif source_is_highlighted:
+                    # Outflow from highlighted brand - RED
+                    final_link_colors.append('rgba(244, 67, 54, 0.5)')
+                elif target_is_highlighted:
+                    # Inflow to highlighted brand - GREEN
+                    final_link_colors.append('rgba(76, 175, 80, 0.5)')
+                else:
+                    # Other flows - very light grey (almost invisible)
+                    final_link_colors.append('rgba(200, 200, 200, 0.15)')
             else:
-                # Other flows - very light grey (almost invisible)
-                link_colors.append('rgba(200, 200, 200, 0.15)')
-        else:
-            # No highlighting - standard grey
-            link_colors.append('rgba(189, 189, 189, 0.3)')
+                # No highlighting - standard grey
+                final_link_colors.append('rgba(189, 189, 189, 0.3)')
 
     # Calculate source node totals for correct percentage
     source_totals = {}
@@ -139,7 +146,7 @@ def create_sankey_diagram(labels: List[str], sources: List[int], targets: List[i
             source=final_sources, 
             target=final_targets, 
             value=final_values,
-            color=link_colors,
+            color=final_link_colors,
             customdata=link_percentages,
             hovertemplate='From %{source.label}<br>To %{target.label}<br>Flow: %{value:,}<br>%{customdata} of source<extra></extra>'
         ),

@@ -467,6 +467,7 @@ if analysis_mode == "Cross-Category Switch":
             st.session_state.cross_category_executed = True
             st.session_state.cross_category_source = source_categories
             st.session_state.cross_category_target = target_categories
+            st.session_state.cross_category_query = cross_cat_query  # Store for View SQL
             
             # Track query
             try:
@@ -598,15 +599,29 @@ if analysis_mode == "Cross-Category Switch":
         
         st.markdown("<div style='height: 30px;'></div>", unsafe_allow_html=True)
         
+        # View SQL Code Button
+        with st.expander("🔍 View SQL Query", expanded=False):
+            st.code(st.session_state.get('cross_category_query', 'No query available'), language='sql')
+        
         # Sankey Diagram for Cross-Category
         st.markdown("### 📊 Customer Flow (Sankey Diagram)")
-        labels, sources, targets, values = data_processor.prepare_cross_category_sankey_data(df_cross)
+        labels, sources, targets, values, sankey_colors = data_processor.prepare_cross_category_sankey_data(df_cross)
         if labels and sources:
-            st.plotly_chart(visualizations.create_sankey_diagram(labels, sources, targets, values, []), use_container_width=True)
+            st.plotly_chart(visualizations.create_sankey_diagram(labels, sources, targets, values, [], link_colors=sankey_colors), use_container_width=True)
+            st.caption("🟢 Stayed | 🔵 Switched | 🔴 Gone")
         else:
             st.info("No flow data to display")
         
-        # Summary Table
+        # Summary Table with Styled Header
+        st.markdown("""
+        <style>
+        .cross-cat-table th {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
+            color: white !important;
+            font-weight: 600 !important;
+        }
+        </style>
+        """, unsafe_allow_html=True)
         st.markdown("### 📋 Cross-Category Flow Summary")
         summary_df = data_processor.calculate_cross_category_summary(df_cross)
         if not summary_df.empty:

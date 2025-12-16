@@ -501,12 +501,12 @@ customer_flow AS (
     s.source_cat,
     s.source_subcat,
     s.source_brand,
-    COALESCE(t.target_cat, 'NO_PURCHASE') AS target_cat,
-    COALESCE(t.target_subcat, 'NO_PURCHASE') AS target_subcat,
-    COALESCE(t.target_brand, 'NO_PURCHASE') AS target_brand,
+    COALESCE(t.target_cat, 'GONE') AS target_cat,
+    COALESCE(t.target_subcat, '') AS target_subcat,
+    COALESCE(t.target_brand, '') AS target_brand,
     CASE
       WHEN t.CustomerCode IS NULL THEN 'gone'
-      WHEN s.source_cat = t.target_cat AND (s.source_subcat = t.target_subcat OR t.target_subcat IS NULL) THEN 'stayed'
+      WHEN s.source_cat = t.target_cat THEN 'stayed'
       ELSE 'switched'
     END AS move_type
   FROM source_primary s
@@ -530,11 +530,15 @@ flow_summary AS (
 SELECT 
   source_cat,
   source_subcat,
-  CONCAT(source_cat, CASE WHEN source_subcat IS NOT NULL THEN CONCAT('-', source_subcat) ELSE '' END) AS source_label,
+  source_cat AS source_label,
   target_cat,
   target_subcat,
   target_brand,
-  CONCAT(target_cat, CASE WHEN target_subcat IS NOT NULL AND target_subcat != 'NO_PURCHASE' THEN CONCAT('-', target_subcat) ELSE '' END) AS target_label,
+  CASE 
+    WHEN move_type = 'stayed' THEN 'STAYED'
+    WHEN move_type = 'gone' THEN 'GONE'
+    ELSE CONCAT(target_cat, CASE WHEN target_subcat IS NOT NULL AND target_subcat != '' THEN CONCAT('-', target_subcat) ELSE '' END)
+  END AS target_label,
   move_type,
   customers
 FROM flow_summary
@@ -542,3 +546,4 @@ ORDER BY source_cat, source_subcat, move_type, customers DESC;
 """
     
     return query
+
