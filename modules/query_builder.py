@@ -406,6 +406,18 @@ WITH source_period AS (
   GROUP BY 1, 2, 3, 4
 ),
 
+-- Calculate share per customer in source period
+source_with_share AS (
+  SELECT
+    CustomerCode,
+    CategoryName,
+    SubCategoryName,
+    Brand,
+    sales,
+    SAFE_DIVIDE(sales, SUM(sales) OVER(PARTITION BY CustomerCode)) AS share
+  FROM source_period
+),
+
 -- Identify primary category-subcat per customer in First Period
 source_primary AS (
   SELECT
@@ -414,12 +426,12 @@ source_primary AS (
     SubCategoryName AS source_subcat,
     Brand AS source_brand,
     sales,
-    SAFE_DIVIDE(sales, SUM(sales) OVER(PARTITION BY CustomerCode)) AS share
-  FROM source_period
+    share
+  FROM source_with_share
   QUALIFY ROW_NUMBER() OVER(
     PARTITION BY CustomerCode
     ORDER BY 
-      CASE WHEN SAFE_DIVIDE(sales, SUM(sales) OVER(PARTITION BY CustomerCode)) >= PRIMARY_THRESHOLD THEN 1 ELSE 0 END DESC,
+      CASE WHEN share >= PRIMARY_THRESHOLD THEN 1 ELSE 0 END DESC,
       sales DESC
   ) = 1
 ),
@@ -428,7 +440,6 @@ source_primary AS (
 source_customers AS (
   SELECT DISTINCT CustomerCode
   FROM source_primary
-  WHERE share >= PRIMARY_THRESHOLD OR share = (SELECT MAX(share) FROM source_primary sp2 WHERE sp2.CustomerCode = source_primary.CustomerCode)
 ),
 
 -- Step 2: Get all transactions for target categories in After Period (only for source customers)
@@ -453,6 +464,18 @@ target_period AS (
   GROUP BY 1, 2, 3, 4
 ),
 
+-- Calculate share per customer in target period
+target_with_share AS (
+  SELECT
+    CustomerCode,
+    CategoryName,
+    SubCategoryName,
+    Brand,
+    sales,
+    SAFE_DIVIDE(sales, SUM(sales) OVER(PARTITION BY CustomerCode)) AS share
+  FROM target_period
+),
+
 -- Identify primary category-subcat-brand per customer in After Period
 target_primary AS (
   SELECT
@@ -461,12 +484,12 @@ target_primary AS (
     SubCategoryName AS target_subcat,
     Brand AS target_brand,
     sales,
-    SAFE_DIVIDE(sales, SUM(sales) OVER(PARTITION BY CustomerCode)) AS share
-  FROM target_period
+    share
+  FROM target_with_share
   QUALIFY ROW_NUMBER() OVER(
     PARTITION BY CustomerCode
     ORDER BY 
-      CASE WHEN SAFE_DIVIDE(sales, SUM(sales) OVER(PARTITION BY CustomerCode)) >= PRIMARY_THRESHOLD THEN 1 ELSE 0 END DESC,
+      CASE WHEN share >= PRIMARY_THRESHOLD THEN 1 ELSE 0 END DESC,
       sales DESC
   ) = 1
 ),
