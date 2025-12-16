@@ -379,14 +379,36 @@ def build_cross_category_query(
         # If no target specified, everything except source is "switched"
         target_only_list = ""
     
-    # Build target subcategory filter (optional) - only applies if specific subcategories selected
+    # Build target subcategory filter - include BOTH source and target subcategories
+    # Source subcats needed to detect "Stayed", target subcats to detect "Switched"
+    all_target_subcats = []
+    if source_subcategories and len(source_subcategories) > 0:
+        all_target_subcats.extend(source_subcategories)
     if target_subcategories and len(target_subcategories) > 0:
-        escaped_target_subcats = [s.replace("'", "''") for s in target_subcategories]
-        target_subcat_list = ", ".join([f"'{s}'" for s in escaped_target_subcats])
-        # Note: This filter now only applies to the switched detection, not to target_period
-        target_subcat_filter = ""  # Don't filter in target_period, handle in move_type logic
+        for subcat in target_subcategories:
+            if subcat not in all_target_subcats:
+                all_target_subcats.append(subcat)
+    
+    if all_target_subcats and len(all_target_subcats) > 0:
+        escaped_all_subcats = [s.replace("'", "''") for s in all_target_subcats]
+        all_subcat_list = ", ".join([f"'{s}'" for s in escaped_all_subcats])
+        target_subcat_filter = f"AND pm.SubCategoryName IN ({all_subcat_list})"
     else:
         target_subcat_filter = ""
+    
+    # Keep source subcats list for Stayed detection
+    if source_subcategories and len(source_subcategories) > 0:
+        escaped_source_subcats_for_stayed = [s.replace("'", "''") for s in source_subcategories]
+        source_subcat_list_for_stayed = ", ".join([f"'{s}'" for s in escaped_source_subcats_for_stayed])
+    else:
+        source_subcat_list_for_stayed = ""
+    
+    # Keep target subcats list for Switched detection
+    if target_subcategories and len(target_subcategories) > 0:
+        escaped_target_subcats_for_switched = [s.replace("'", "''") for s in target_subcategories]
+        target_subcat_list_for_switched = ", ".join([f"'{s}'" for s in escaped_target_subcats_for_switched])
+    else:
+        target_subcat_list_for_switched = ""
     
     # Build store opening date filter
     if store_filter_type == "Same Store" and store_opening_cutoff:
@@ -522,7 +544,7 @@ customer_flow AS (
     COALESCE(t.target_brand, '') AS target_brand,
     CASE
       WHEN t.CustomerCode IS NULL THEN 'gone'
-      WHEN s.source_cat = t.target_cat THEN 'stayed'
+      WHEN s.source_subcat = t.target_subcat THEN 'stayed'
       ELSE 'switched'
     END AS move_type
   FROM source_primary s
