@@ -546,12 +546,12 @@ flow_summary AS (
 SELECT 
   source_cat,
   source_subcat,
-  source_cat AS source_label,
+  CONCAT(source_cat, CASE WHEN source_subcat IS NOT NULL AND source_subcat != '' THEN CONCAT('-', source_subcat) ELSE '' END) AS source_label,
   target_cat,
   target_subcat,
   target_brand,
   CASE 
-    WHEN move_type = 'stayed' THEN 'STAYED'
+    WHEN move_type = 'stayed' THEN CONCAT('STAYED (', source_cat, CASE WHEN source_subcat IS NOT NULL AND source_subcat != '' THEN CONCAT('-', source_subcat) ELSE '' END, ')')
     WHEN move_type = 'gone' THEN 'GONE'
     ELSE CONCAT(target_cat, CASE WHEN target_subcat IS NOT NULL AND target_subcat != '' THEN CONCAT('-', target_subcat) ELSE '' END)
   END AS target_label,
