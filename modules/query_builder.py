@@ -356,19 +356,32 @@ def build_cross_category_query(
     else:
         source_subcat_filter = ""
     
-    # Build target category filter (optional - if not specified, track all categories)
+    # Build target category filter - MUST include source categories to capture Stayed customers
+    # In target_period, we look at BOTH source and target categories
+    all_target_cats = list(source_categories)  # Start with source categories (for Stayed)
     if target_categories and len(target_categories) > 0:
-        escaped_target_cats = [c.replace("'", "''") for c in target_categories]
-        target_cat_list = ", ".join([f"'{c}'" for c in escaped_target_cats])
-        target_cat_filter = f"pm.CategoryName IN ({target_cat_list})"
-    else:
-        target_cat_filter = "1=1"  # All categories
+        for cat in target_categories:
+            if cat not in all_target_cats:
+                all_target_cats.append(cat)
     
-    # Build target subcategory filter (optional)
+    escaped_all_cats = [c.replace("'", "''") for c in all_target_cats]
+    all_cat_list = ", ".join([f"'{c}'" for c in escaped_all_cats])
+    target_cat_filter = f"pm.CategoryName IN ({all_cat_list})"
+    
+    # Keep track of which are specifically target categories (for switched detection)
+    if target_categories and len(target_categories) > 0:
+        escaped_target_only = [c.replace("'", "''") for c in target_categories]
+        target_only_list = ", ".join([f"'{c}'" for c in escaped_target_only])
+    else:
+        # If no target specified, everything except source is "switched"
+        target_only_list = ""
+    
+    # Build target subcategory filter (optional) - only applies if specific subcategories selected
     if target_subcategories and len(target_subcategories) > 0:
         escaped_target_subcats = [s.replace("'", "''") for s in target_subcategories]
         target_subcat_list = ", ".join([f"'{s}'" for s in escaped_target_subcats])
-        target_subcat_filter = f"AND pm.SubCategoryName IN ({target_subcat_list})"
+        # Note: This filter now only applies to the switched detection, not to target_period
+        target_subcat_filter = ""  # Don't filter in target_period, handle in move_type logic
     else:
         target_subcat_filter = ""
     
