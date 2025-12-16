@@ -36,7 +36,7 @@ def calculate_cost_thb(gb_processed: float) -> float:
     try:
         cost_per_gb = float(st.secrets.get("BIGQUERY_COST_PER_GB_THB", "17.5"))
         return gb_processed * cost_per_gb
-    except:
+    except Exception:
         return gb_processed * 17.5  # Default fallback
 
 
@@ -97,7 +97,7 @@ def parse_barcode_mapping(mapping_text: str) -> dict:
 
 def validate_barcode_mapping(mapping_text: str) -> tuple[bool, str]:
     """
-    Validate barcode mapping format
+    Validate barcode mapping format with security checks
     
     Args:
         mapping_text (str): Text to validate
@@ -111,6 +111,9 @@ def validate_barcode_mapping(mapping_text: str) -> tuple[bool, str]:
     lines = mapping_text.strip().split('\n')
     valid_lines = 0
     
+    # Characters that could be used for SQL injection
+    dangerous_chars = ["'", '"', ";", "--", "/*", "*/", "\\"]
+    
     for i, line in enumerate(lines, 1):
         line = line.strip()
         if not line:
@@ -120,6 +123,28 @@ def validate_barcode_mapping(mapping_text: str) -> tuple[bool, str]:
         
         if len(parts) != 2:
             return False, f"Line {i}: Invalid format. Expected 'barcode,description'"
+        
+        barcode = parts[0].strip()
+        description = parts[1].strip()
+        
+        # Validate barcode format (should be numeric or alphanumeric)
+        if not barcode:
+            return False, f"Line {i}: Barcode cannot be empty"
+        
+        if len(barcode) > 50:
+            return False, f"Line {i}: Barcode too long (max 50 characters)"
+        
+        # Check for potentially dangerous characters
+        for char in dangerous_chars:
+            if char in barcode or char in description:
+                return False, f"Line {i}: Invalid characters detected. Please use only alphanumeric characters."
+        
+        # Validate description
+        if not description:
+            return False, f"Line {i}: Description cannot be empty"
+        
+        if len(description) > 200:
+            return False, f"Line {i}: Description too long (max 200 characters)"
         
         valid_lines += 1
     

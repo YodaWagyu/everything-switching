@@ -82,7 +82,7 @@ def get_distinct_categories() -> list:
     try:
         df, _ = execute_query(query)
         return df['CategoryName'].tolist()
-    except:
+    except Exception:
         return []
 
 
@@ -120,7 +120,7 @@ def get_subcategories(category: str) -> list:
     try:
         df, _ = execute_query(query)
         return df['SubCategoryName'].tolist()
-    except:
+    except Exception:
         return []
 
 
@@ -148,7 +148,7 @@ def get_brands_by_category(category: str) -> list:
     try:
         df, _ = execute_query(query)
         return df['Brand'].tolist()
-    except:
+    except Exception:
         return []
 
 

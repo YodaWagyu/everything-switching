@@ -180,7 +180,6 @@ def get_analytics_summary() -> Dict[str, Any]:
         conn = sqlite3.connect(str(DB_PATH))
         
         today = datetime.now().date().isoformat()
-        week_ago = (datetime.now() - timedelta(days=7)).isoformat()
         
         # Total sessions
         total_sessions = pd.read_sql_query(
@@ -188,10 +187,10 @@ def get_analytics_summary() -> Dict[str, Any]:
             conn
         )['count'].iloc[0]
         
-        # Sessions today
+        # Sessions today - using parameterized query
         sessions_today = pd.read_sql_query(
-            f"SELECT COUNT(DISTINCT session_id) as count FROM sessions WHERE date(start_time) = '{today}'",
-            conn
+            "SELECT COUNT(DISTINCT session_id) as count FROM sessions WHERE date(start_time) = ?",
+            conn, params=(today,)
         )['count'].iloc[0]
         
         # Total queries
@@ -200,10 +199,10 @@ def get_analytics_summary() -> Dict[str, Any]:
             conn
         )['count'].iloc[0]
         
-        # Queries today
+        # Queries today - using parameterized query
         queries_today = pd.read_sql_query(
-            f"SELECT COUNT(*) as count FROM events WHERE event_type = 'query' AND date(timestamp) = '{today}'",
-            conn
+            "SELECT COUNT(*) as count FROM events WHERE event_type = 'query' AND date(timestamp) = ?",
+            conn, params=(today,)
         )['count'].iloc[0]
         
         # Average query time
@@ -291,46 +290,46 @@ def get_analytics_summary_filtered(start_date: str, end_date: str) -> Dict[str, 
     try:
         conn = sqlite3.connect(str(DB_PATH))
         
-        # Total sessions in date range
+        # Total sessions in date range - parameterized
         total_sessions = pd.read_sql_query(
-            f"SELECT COUNT(DISTINCT session_id) as count FROM sessions WHERE date(start_time) BETWEEN '{start_date}' AND '{end_date}'",
-            conn
+            "SELECT COUNT(DISTINCT session_id) as count FROM sessions WHERE date(start_time) BETWEEN ? AND ?",
+            conn, params=(start_date, end_date)
         )['count'].iloc[0]
         
-        # Total queries in date range
+        # Total queries in date range - parameterized
         total_queries = pd.read_sql_query(
-            f"SELECT COUNT(*) as count FROM events WHERE event_type = 'query' AND date(timestamp) BETWEEN '{start_date}' AND '{end_date}'",
-            conn
+            "SELECT COUNT(*) as count FROM events WHERE event_type = 'query' AND date(timestamp) BETWEEN ? AND ?",
+            conn, params=(start_date, end_date)
         )['count'].iloc[0]
         
-        # Average query time in date range
+        # Average query time in date range - parameterized
         avg_query_time = pd.read_sql_query(
-            f"SELECT AVG(duration_ms) as avg_ms FROM events WHERE event_type = 'query' AND duration_ms IS NOT NULL AND date(timestamp) BETWEEN '{start_date}' AND '{end_date}'",
-            conn
+            "SELECT AVG(duration_ms) as avg_ms FROM events WHERE event_type = 'query' AND duration_ms IS NOT NULL AND date(timestamp) BETWEEN ? AND ?",
+            conn, params=(start_date, end_date)
         )['avg_ms'].iloc[0] or 0
         
-        # AI generations in date range
+        # AI generations in date range - parameterized
         ai_generations = pd.read_sql_query(
-            f"SELECT COUNT(*) as count FROM events WHERE event_type = 'ai_gen' AND date(timestamp) BETWEEN '{start_date}' AND '{end_date}'",
-            conn
+            "SELECT COUNT(*) as count FROM events WHERE event_type = 'ai_gen' AND date(timestamp) BETWEEN ? AND ?",
+            conn, params=(start_date, end_date)
         )['count'].iloc[0]
         
-        # Exports in date range
+        # Exports in date range - parameterized
         total_exports = pd.read_sql_query(
-            f"SELECT COUNT(*) as count FROM events WHERE event_type = 'export' AND date(timestamp) BETWEEN '{start_date}' AND '{end_date}'",
-            conn
+            "SELECT COUNT(*) as count FROM events WHERE event_type = 'export' AND date(timestamp) BETWEEN ? AND ?",
+            conn, params=(start_date, end_date)
         )['count'].iloc[0]
         
-        # Unique IPs in date range
+        # Unique IPs in date range - parameterized
         unique_ips = pd.read_sql_query(
-            f"SELECT COUNT(DISTINCT ip_address) as count FROM sessions WHERE ip_address != 'unknown' AND date(start_time) BETWEEN '{start_date}' AND '{end_date}'",
-            conn
+            "SELECT COUNT(DISTINCT ip_address) as count FROM sessions WHERE ip_address != 'unknown' AND date(start_time) BETWEEN ? AND ?",
+            conn, params=(start_date, end_date)
         )['count'].iloc[0]
         
-        # PDF generations (counted as export with format pdf)
+        # PDF generations - parameterized
         pdf_generations = pd.read_sql_query(
-            f"SELECT COUNT(*) as count FROM events WHERE event_type = 'export' AND event_data LIKE '%pdf%' AND date(timestamp) BETWEEN '{start_date}' AND '{end_date}'",
-            conn
+            "SELECT COUNT(*) as count FROM events WHERE event_type = 'export' AND event_data LIKE '%pdf%' AND date(timestamp) BETWEEN ? AND ?",
+            conn, params=(start_date, end_date)
         )['count'].iloc[0]
         
         conn.close()
@@ -362,19 +361,19 @@ def get_daily_usage_filtered(start_date: str, end_date: str) -> pd.DataFrame:
     try:
         conn = sqlite3.connect(str(DB_PATH))
         
-        query = f'''
+        query = '''
             SELECT 
                 date(timestamp) as date,
                 COUNT(*) as events,
                 COUNT(DISTINCT session_id) as sessions,
                 SUM(CASE WHEN event_type = 'query' THEN 1 ELSE 0 END) as queries
             FROM events
-            WHERE date(timestamp) BETWEEN '{start_date}' AND '{end_date}'
+            WHERE date(timestamp) BETWEEN ? AND ?
             GROUP BY date(timestamp)
             ORDER BY date
         '''
         
-        df = pd.read_sql_query(query, conn)
+        df = pd.read_sql_query(query, conn, params=(start_date, end_date))
         conn.close()
         
         return df
@@ -387,7 +386,7 @@ def get_recent_sessions_filtered(start_date: str, end_date: str, limit: int = 50
     try:
         conn = sqlite3.connect(str(DB_PATH))
         
-        query = f'''
+        query = '''
             SELECT 
                 s.session_id,
                 s.user_role,
@@ -397,13 +396,13 @@ def get_recent_sessions_filtered(start_date: str, end_date: str, limit: int = 50
                 COUNT(e.id) as event_count
             FROM sessions s
             LEFT JOIN events e ON s.session_id = e.session_id
-            WHERE date(s.start_time) BETWEEN '{start_date}' AND '{end_date}'
+            WHERE date(s.start_time) BETWEEN ? AND ?
             GROUP BY s.session_id
             ORDER BY s.start_time DESC
-            LIMIT {limit}
+            LIMIT ?
         '''
         
-        df = pd.read_sql_query(query, conn)
+        df = pd.read_sql_query(query, conn, params=(start_date, end_date, limit))
         conn.close()
         
         return df
@@ -416,7 +415,7 @@ def get_recent_events_filtered(start_date: str, end_date: str, limit: int = 100)
     try:
         conn = sqlite3.connect(str(DB_PATH))
         
-        query = f'''
+        query = '''
             SELECT 
                 e.timestamp,
                 s.user_role,
@@ -425,12 +424,12 @@ def get_recent_events_filtered(start_date: str, end_date: str, limit: int = 100)
                 e.event_data
             FROM events e
             JOIN sessions s ON e.session_id = s.session_id
-            WHERE date(e.timestamp) BETWEEN '{start_date}' AND '{end_date}'
+            WHERE date(e.timestamp) BETWEEN ? AND ?
             ORDER BY e.timestamp DESC
-            LIMIT {limit}
+            LIMIT ?
         '''
         
-        df = pd.read_sql_query(query, conn)
+        df = pd.read_sql_query(query, conn, params=(start_date, end_date, limit))
         conn.close()
         
         # Parse event_data JSON for display
@@ -451,7 +450,7 @@ def get_recent_events_filtered(start_date: str, end_date: str, limit: int = 100)
                     if 'role' in parsed:
                         details.append(f"Role: {parsed['role']}")
                     return "; ".join(details) if details else str(parsed)
-                except:
+                except (json.JSONDecodeError, KeyError):
                     return str(data)[:100]
             return ""
         
@@ -468,15 +467,15 @@ def get_events_by_type_filtered(start_date: str, end_date: str) -> pd.DataFrame:
     try:
         conn = sqlite3.connect(str(DB_PATH))
         
-        query = f'''
+        query = '''
             SELECT event_type, COUNT(*) as count
             FROM events
-            WHERE date(timestamp) BETWEEN '{start_date}' AND '{end_date}'
+            WHERE date(timestamp) BETWEEN ? AND ?
             GROUP BY event_type
             ORDER BY count DESC
         '''
         
-        df = pd.read_sql_query(query, conn)
+        df = pd.read_sql_query(query, conn, params=(start_date, end_date))
         conn.close()
         
         return df
@@ -489,14 +488,14 @@ def get_role_distribution_filtered(start_date: str, end_date: str) -> pd.DataFra
     try:
         conn = sqlite3.connect(str(DB_PATH))
         
-        query = f'''
+        query = '''
             SELECT user_role, COUNT(*) as count
             FROM sessions
-            WHERE date(start_time) BETWEEN '{start_date}' AND '{end_date}'
+            WHERE date(start_time) BETWEEN ? AND ?
             GROUP BY user_role
         '''
         
-        df = pd.read_sql_query(query, conn)
+        df = pd.read_sql_query(query, conn, params=(start_date, end_date))
         conn.close()
         
         return df
@@ -635,7 +634,7 @@ def get_recent_events(limit: int = 30) -> pd.DataFrame:
                     if 'role' in parsed:
                         details.append(f"Role: {parsed['role']}")
                     return "; ".join(details) if details else str(parsed)
-                except:
+                except (json.JSONDecodeError, KeyError):
                     return str(data)[:100]
             return ""
         

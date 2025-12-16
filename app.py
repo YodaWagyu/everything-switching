@@ -244,6 +244,9 @@ if 'query_executed' not in st.session_state:
 if 'cross_category_executed' not in st.session_state:
     st.session_state.cross_category_executed = False
 
+if 'previous_analysis_mode' not in st.session_state:
+    st.session_state.previous_analysis_mode = None
+
 # =====================================================
 # ANALYSIS MODE SELECTOR
 # =====================================================
@@ -261,6 +264,20 @@ analysis_mode = st.sidebar.radio(
     label_visibility="collapsed",
     horizontal=True
 )
+
+# Clear session state when mode changes to prevent stale data (WARN-02 fix)
+if st.session_state.previous_analysis_mode != analysis_mode:
+    if st.session_state.previous_analysis_mode is not None:
+        # Mode changed - clear relevant session state
+        keys_to_clear = [
+            'query_executed', 'cross_category_executed',
+            'results_df', 'cross_category_df',
+            'gb_processed', 'cross_category_gb_processed'
+        ]
+        for key in keys_to_clear:
+            if key in st.session_state:
+                del st.session_state[key]
+    st.session_state.previous_analysis_mode = analysis_mode
 
 st.sidebar.markdown("---")
 
@@ -493,8 +510,8 @@ if analysis_mode == "Cross-Category Switch":
                         query_details,
                         duration_ms=None
                     )
-            except:
-                pass
+            except Exception:
+                pass  # Tracking errors should not break the app
         
         # Get stored results
         df_cross = st.session_state.get('cross_category_df')
@@ -950,8 +967,8 @@ if run_analysis or st.session_state.query_executed:
                     query_details,
                     duration_ms=None  # Could add timing later
                 )
-        except:
-            pass
+        except Exception:
+            pass  # Tracking errors should not break the app
         # Don't calculate summary_df yet - wait until after view mode toggle
     
     df = st.session_state.results_df
@@ -2120,7 +2137,7 @@ if run_analysis or st.session_state.query_executed:
             if kpis and kpis.get('winner_name') != "None":
                  try:
                      default_brand_index = unique_items.index(kpis['winner_name'])
-                 except:
+                 except (ValueError, KeyError):
                      pass
                      
             target_brand = st.selectbox("Select Focus Brand", unique_items, index=default_brand_index, key="net_gain_loss_brand")
@@ -2193,8 +2210,8 @@ if run_analysis or st.session_state.query_executed:
         try:
             if 'tracking_session_id' in st.session_state:
                 tracking.log_ai_generation(st.session_state.tracking_session_id, view_mode, ai_category or "")
-        except:
-            pass
+        except Exception:
+            pass  # Tracking errors should not break the app
         
         insights = ai_analyzer.generate_insights(df_display, summary_df, ai_category, items_for_ai, view_mode, f"{period1_start} to {period1_end}", f"{period2_start} to {period2_end}")
         if insights:

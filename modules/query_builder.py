@@ -175,30 +175,30 @@ def build_switching_query(
     if brand_filter_period1:
         # Asymmetric filtering: Period 1 filtered, Period 2 unfiltered
         date_filter = f"""AND (
-      (a.Date BETWEEN start_2024 AND end_2024 AND {brand_filter_period1})
+      (a.Date BETWEEN period1_start_date AND period1_end_date AND {brand_filter_period1})
       OR
-      (a.Date BETWEEN start_2025 AND end_2025)
+      (a.Date BETWEEN period2_start_date AND period2_end_date)
     )"""
     else:
         # No brand filter: symmetric behavior
         date_filter = f"""AND (
-      a.Date BETWEEN start_2024 AND end_2024 OR
-      a.Date BETWEEN start_2025 AND end_2025
+      a.Date BETWEEN period1_start_date AND period1_end_date OR
+      a.Date BETWEEN period2_start_date AND period2_end_date
     )"""
     
     query = f"""
-DECLARE start_2024 DATE DEFAULT '{period1_start}';
-DECLARE end_2024   DATE DEFAULT '{period1_end}';
-DECLARE start_2025 DATE DEFAULT '{period2_start}';
-DECLARE end_2025   DATE DEFAULT '{period2_end}';
+DECLARE period1_start_date DATE DEFAULT '{period1_start}';
+DECLARE period1_end_date   DATE DEFAULT '{period1_end}';
+DECLARE period2_start_date DATE DEFAULT '{period2_start}';
+DECLARE period2_end_date   DATE DEFAULT '{period2_end}';
 DECLARE PRIMARY_THRESHOLD FLOAT64 DEFAULT {primary_threshold};
 
 WITH base AS (
   SELECT
     a.Date,
     CASE
-      WHEN a.Date BETWEEN start_2024 AND end_2024 THEN 2024
-      WHEN a.Date BETWEEN start_2025 AND end_2025 THEN 2025
+      WHEN a.Date BETWEEN period1_start_date AND period1_end_date THEN 2024
+      WHEN a.Date BETWEEN period2_start_date AND period2_end_date THEN 2025
     END AS Year,
     a.CustomerCode,
     a.DocNo,
@@ -417,10 +417,10 @@ def build_cross_category_query(
         store_filter = ""
     
     query = f"""
-DECLARE start_2024 DATE DEFAULT '{period1_start}';
-DECLARE end_2024   DATE DEFAULT '{period1_end}';
-DECLARE start_2025 DATE DEFAULT '{period2_start}';
-DECLARE end_2025   DATE DEFAULT '{period2_end}';
+DECLARE period1_start_date DATE DEFAULT '{period1_start}';
+DECLARE period1_end_date   DATE DEFAULT '{period1_end}';
+DECLARE period2_start_date DATE DEFAULT '{period2_start}';
+DECLARE period2_end_date   DATE DEFAULT '{period2_end}';
 DECLARE PRIMARY_THRESHOLD FLOAT64 DEFAULT {primary_threshold};
 
 -- Step 1: Get all transactions for source categories in First Period
@@ -436,7 +436,7 @@ WITH source_period AS (
     ON a.Barcode = pm.Barcode
   JOIN `{config.BIGQUERY_PROJECT}.{config.BIGQUERY_DATASET}.{config.BIGQUERY_TABLE_BRANCH}` br
     ON a.BranchCode = br.BranchCode
-  WHERE a.Date BETWEEN start_2024 AND end_2024
+  WHERE a.Date BETWEEN period1_start_date AND period1_end_date
     AND {source_cat_filter}
     {source_subcat_filter}
     {store_filter}
@@ -493,7 +493,7 @@ target_period AS (
     ON a.Barcode = pm.Barcode
   JOIN `{config.BIGQUERY_PROJECT}.{config.BIGQUERY_DATASET}.{config.BIGQUERY_TABLE_BRANCH}` br
     ON a.BranchCode = br.BranchCode
-  WHERE a.Date BETWEEN start_2025 AND end_2025
+  WHERE a.Date BETWEEN period2_start_date AND period2_end_date
     AND {target_cat_filter}
     {target_subcat_filter}
     {store_filter}
