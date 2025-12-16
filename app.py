@@ -605,9 +605,9 @@ if analysis_mode == "Cross-Category Switch":
         
         # Sankey Diagram for Cross-Category
         st.markdown("### 📊 Customer Flow (Sankey Diagram)")
-        labels, sources, targets, values, sankey_colors = data_processor.prepare_cross_category_sankey_data(df_cross)
+        labels, sources, targets, values, sankey_link_colors, sankey_node_colors = data_processor.prepare_cross_category_sankey_data(df_cross)
         if labels and sources:
-            st.plotly_chart(visualizations.create_sankey_diagram(labels, sources, targets, values, [], link_colors=sankey_colors), use_container_width=True)
+            st.plotly_chart(visualizations.create_sankey_diagram(labels, sources, targets, values, [], link_colors=sankey_link_colors, node_colors_override=sankey_node_colors), use_container_width=True)
             st.caption("🟢 Stayed | 🔵 Switched | 🔴 Gone")
         else:
             st.info("No flow data to display")
@@ -625,7 +625,7 @@ if analysis_mode == "Cross-Category Switch":
         st.markdown("### 📋 Cross-Category Flow Summary")
         summary_df = data_processor.calculate_cross_category_summary(df_cross)
         if not summary_df.empty:
-            # Display as styled table
+            # Display as styled table with comma formatting
             st.dataframe(
                 summary_df,
                 use_container_width=True,
@@ -633,8 +633,9 @@ if analysis_mode == "Cross-Category Switch":
                 column_config={
                     "Source": st.column_config.TextColumn("Source", width="medium"),
                     "Target": st.column_config.TextColumn("Target", width="medium"),
-                    "Customers": st.column_config.NumberColumn("Customers", format="%d"),
+                    "Customers": st.column_config.NumberColumn("Customers", format="%,d"),
                     "Pct": st.column_config.NumberColumn("Percentage", format="%.1f%%"),
+                    "move_type": st.column_config.TextColumn("Move Type", width="small"),
                 }
             )
         
@@ -675,7 +676,7 @@ if analysis_mode == "Cross-Category Switch":
                         hide_index=True,
                         column_config={
                             "Brand": st.column_config.TextColumn("Brand", width="medium"),
-                            "Customers": st.column_config.NumberColumn("Customers", format="%d"),
+                            "Customers": st.column_config.NumberColumn("Customers", format="%,d"),
                             "Pct": st.column_config.NumberColumn("% of Flow", format="%.1f%%"),
                         }
                     )

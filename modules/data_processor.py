@@ -653,7 +653,7 @@ def calculate_cross_category_kpis(df: pd.DataFrame, target_categories: list = No
     }
 
 
-def prepare_cross_category_sankey_data(df: pd.DataFrame) -> Tuple[List, List, List, List, List]:
+def prepare_cross_category_sankey_data(df: pd.DataFrame) -> Tuple[List, List, List, List, List, List]:
     """
     Prepare data for Sankey diagram for cross-category switching.
     
@@ -661,10 +661,10 @@ def prepare_cross_category_sankey_data(df: pd.DataFrame) -> Tuple[List, List, Li
         df: DataFrame from build_cross_category_query()
     
     Returns:
-        Tuple of (labels, sources, targets, values, colors) for Sankey diagram
+        Tuple of (labels, sources, targets, values, link_colors, node_colors) for Sankey diagram
     """
     if df is None or len(df) == 0:
-        return [], [], [], [], []
+        return [], [], [], [], [], []
     
     # Get unique source labels
     source_labels = df['source_label'].unique().tolist()
@@ -689,7 +689,33 @@ def prepare_cross_category_sankey_data(df: pd.DataFrame) -> Tuple[List, List, Li
             label_mapping[period2_key] = len(all_labels)
             all_labels.append(label)
     
-    sources, targets, values, colors = [], [], [], []
+    # Generate distinct node colors for each label
+    node_color_palette = [
+        '#3B82F6',  # Blue
+        '#10B981',  # Emerald
+        '#F59E0B',  # Amber
+        '#8B5CF6',  # Purple
+        '#EC4899',  # Pink
+        '#06B6D4',  # Cyan
+        '#F97316',  # Orange
+        '#14B8A6',  # Teal
+        '#6366F1',  # Indigo
+        '#84CC16',  # Lime
+    ]
+    
+    node_colors = []
+    color_idx = 0
+    for label in all_labels:
+        if label == 'STAYED':
+            node_colors.append('#22C55E')  # Green
+        elif label == 'GONE':
+            node_colors.append('#EF4444')  # Red
+        else:
+            # Assign from palette, cycling if needed
+            node_colors.append(node_color_palette[color_idx % len(node_color_palette)])
+            color_idx += 1
+    
+    sources, targets, values, link_colors = [], [], [], []
     
     # Aggregate by source_label and target_label
     flow_agg = df.groupby(['source_label', 'target_label', 'move_type'])['customers'].sum().reset_index()
@@ -708,15 +734,16 @@ def prepare_cross_category_sankey_data(df: pd.DataFrame) -> Tuple[List, List, Li
             targets.append(target_idx)
             values.append(customers)
             
-            # Assign colors based on move_type
+            # Assign link colors based on move_type
             if move_type == 'stayed':
-                colors.append('rgba(34, 197, 94, 0.6)')  # Green for stayed
+                link_colors.append('rgba(34, 197, 94, 0.6)')  # Green for stayed
             elif move_type == 'gone':
-                colors.append('rgba(239, 68, 68, 0.6)')  # Red for gone
+                link_colors.append('rgba(239, 68, 68, 0.6)')  # Red for gone
             elif move_type == 'switched':
-                colors.append('rgba(99, 102, 241, 0.6)')  # Purple for switched
+                link_colors.append('rgba(99, 102, 241, 0.6)')  # Purple for switched
             else:
-                colors.append('rgba(156, 163, 175, 0.6)')  # Gray default
+                link_colors.append('rgba(156, 163, 175, 0.6)')  # Gray default
     
-    return all_labels, sources, targets, values, colors
+    return all_labels, sources, targets, values, link_colors, node_colors
+
 

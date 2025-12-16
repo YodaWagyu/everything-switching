@@ -11,7 +11,7 @@ import config
 
 def create_sankey_diagram(labels: List[str], sources: List[int], targets: List[int], values: List[int], 
                           highlighted_brands: List[str] = None, min_volume_pct: float = 0.0,
-                          link_colors: List[str] = None) -> go.Figure:
+                          link_colors: List[str] = None, node_colors_override: List[str] = None) -> go.Figure:
     """
     Create Sankey diagram with highlighted brands shown in vibrant colors
     
@@ -23,6 +23,7 @@ def create_sankey_diagram(labels: List[str], sources: List[int], targets: List[i
         highlighted_brands: List of brands to highlight (None = no highlighting)
         min_volume_pct: Minimum percentage of total flow to display (0-100)
         link_colors: Optional custom colors for each link (overrides automatic coloring)
+        node_colors_override: Optional custom colors for nodes (overrides automatic coloring)
     """
     # Calculate total volume for percentage filtering
     total_volume = sum(values)
@@ -53,35 +54,39 @@ def create_sankey_diagram(labels: List[str], sources: List[int], targets: List[i
                 return True
         return False
     
-    # Define Node Colors
-    node_colors = []
-    for label in labels:
-        clean_label = label.replace('_2025', '')
-        
-        # Determine base color based on brand
-        if 'NEW CUSTOMERS' in clean_label:
-            base_color = config.BRAND_COLORS.get('NEW_TO_CATEGORY', '#4CAF50')
-        elif 'Gone' in clean_label:
-            base_color = config.BRAND_COLORS.get('LOST_FROM_CATEGORY', '#9E9E9E')
-        elif 'MIXED' in clean_label:
-            base_color = config.BRAND_COLORS.get('MIXED', '#FFC107')
-        else:
-            brand_name = clean_label.split()[0]  # First word assumption
-            base_color = config.BRAND_COLORS.get(brand_name, '#2196F3')
+    # Define Node Colors - use override if provided
+    if node_colors_override is not None and len(node_colors_override) == len(labels):
+        node_colors = node_colors_override
+    else:
+        # Generate colors based on brand/category logic
+        node_colors = []
+        for label in labels:
+            clean_label = label.replace('_2025', '')
             
-        # Apply Highlight Logic to Nodes
-        if highlighted_brands:
-            if is_highlighted_label(label, highlighted_brands):
-                # Highlighted brand - keep vibrant color
-                node_colors.append(base_color)
-            elif clean_label in ['NEW CUSTOMERS', 'Gone', 'MIXED']:
-                # Special categories - keep standard color
-                node_colors.append(base_color)
+            # Determine base color based on brand
+            if 'NEW CUSTOMERS' in clean_label:
+                base_color = config.BRAND_COLORS.get('NEW_TO_CATEGORY', '#4CAF50')
+            elif 'Gone' in clean_label:
+                base_color = config.BRAND_COLORS.get('LOST_FROM_CATEGORY', '#9E9E9E')
+            elif 'MIXED' in clean_label:
+                base_color = config.BRAND_COLORS.get('MIXED', '#FFC107')
             else:
-                # Other brands - light grey
-                node_colors.append('#e0e0e0')
-        else:
-            node_colors.append(base_color)
+                brand_name = clean_label.split()[0]  # First word assumption
+                base_color = config.BRAND_COLORS.get(brand_name, '#2196F3')
+                
+            # Apply Highlight Logic to Nodes
+            if highlighted_brands:
+                if is_highlighted_label(label, highlighted_brands):
+                    # Highlighted brand - keep vibrant color
+                    node_colors.append(base_color)
+                elif clean_label in ['NEW CUSTOMERS', 'Gone', 'MIXED']:
+                    # Special categories - keep standard color
+                    node_colors.append(base_color)
+                else:
+                    # Other brands - light grey
+                    node_colors.append('#e0e0e0')
+            else:
+                node_colors.append(base_color)
 
     # Define Link Colors - use provided colors if available
     if link_colors is not None and len(link_colors) == len(final_sources):
