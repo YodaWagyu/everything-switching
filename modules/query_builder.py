@@ -305,3 +305,217 @@ ORDER BY move_type, prod_2024, prod_2025;
 """
     
     return query
+
+
+def build_cross_category_query(
+    period1_start: str,
+    period1_end: str,
+    period2_start: str,
+    period2_end: str,
+    source_categories: list,
+    source_subcategories: list = None,
+    target_categories: list = None,
+    target_subcategories: list = None,
+    primary_threshold: float = 0.60,
+    store_filter_type: str = "All Store",
+    store_opening_cutoff: str = None
+) -> str:
+    """
+    Build query for cross-category switching analysis.
+    
+    Tracks customers from Source Category/SubCategory in First Period
+    to Target Category/SubCategory in After Period.
+    
+    Args:
+        period1_start (str): Start date for period 1 (YYYY-MM-DD)
+        period1_end (str): End date for period 1 (YYYY-MM-DD)
+        period2_start (str): Start date for period 2 (YYYY-MM-DD)
+        period2_end (str): End date for period 2 (YYYY-MM-DD)
+        source_categories (list): List of source category names
+        source_subcategories (list): List of source subcategory names (optional)
+        target_categories (list): List of target category names
+        target_subcategories (list): List of target subcategory names (optional)
+        primary_threshold (float): Threshold for primary category (0.0 to 1.0)
+        store_filter_type (str): "All Store" or "Same Store"
+        store_opening_cutoff (str): Date cutoff for Same Store (YYYY-MM-DD)
+    
+    Returns:
+        str: Complete SQL query
+    """
+    
+    # Build source category filter
+    escaped_source_cats = [c.replace("'", "''") for c in source_categories]
+    source_cat_list = ", ".join([f"'{c}'" for c in escaped_source_cats])
+    source_cat_filter = f"pm.CategoryName IN ({source_cat_list})"
+    
+    # Build source subcategory filter (optional)
+    if source_subcategories and len(source_subcategories) > 0:
+        escaped_source_subcats = [s.replace("'", "''") for s in source_subcategories]
+        source_subcat_list = ", ".join([f"'{s}'" for s in escaped_source_subcats])
+        source_subcat_filter = f"AND pm.SubCategoryName IN ({source_subcat_list})"
+    else:
+        source_subcat_filter = ""
+    
+    # Build target category filter (optional - if not specified, track all categories)
+    if target_categories and len(target_categories) > 0:
+        escaped_target_cats = [c.replace("'", "''") for c in target_categories]
+        target_cat_list = ", ".join([f"'{c}'" for c in escaped_target_cats])
+        target_cat_filter = f"pm.CategoryName IN ({target_cat_list})"
+    else:
+        target_cat_filter = "1=1"  # All categories
+    
+    # Build target subcategory filter (optional)
+    if target_subcategories and len(target_subcategories) > 0:
+        escaped_target_subcats = [s.replace("'", "''") for s in target_subcategories]
+        target_subcat_list = ", ".join([f"'{s}'" for s in escaped_target_subcats])
+        target_subcat_filter = f"AND pm.SubCategoryName IN ({target_subcat_list})"
+    else:
+        target_subcat_filter = ""
+    
+    # Build store opening date filter
+    if store_filter_type == "Same Store" and store_opening_cutoff:
+        store_filter = f"AND br.openingdate <= '{store_opening_cutoff}'"
+    else:
+        store_filter = ""
+    
+    query = f"""
+DECLARE start_2024 DATE DEFAULT '{period1_start}';
+DECLARE end_2024   DATE DEFAULT '{period1_end}';
+DECLARE start_2025 DATE DEFAULT '{period2_start}';
+DECLARE end_2025   DATE DEFAULT '{period2_end}';
+DECLARE PRIMARY_THRESHOLD FLOAT64 DEFAULT {primary_threshold};
+
+-- Step 1: Get all transactions for source categories in First Period
+WITH source_period AS (
+  SELECT
+    a.CustomerCode,
+    pm.CategoryName,
+    pm.SubCategoryName,
+    pm.Brand,
+    SUM(COALESCE(a.TotalSales, 0)) AS sales
+  FROM `{config.BIGQUERY_PROJECT}.{config.BIGQUERY_DATASET}.{config.BIGQUERY_TABLE_SALES}` a
+  JOIN `{config.BIGQUERY_PROJECT}.{config.BIGQUERY_DATASET}.{config.BIGQUERY_TABLE_PRODUCT_MASTER}` pm
+    ON a.Barcode = pm.Barcode
+  JOIN `{config.BIGQUERY_PROJECT}.{config.BIGQUERY_DATASET}.{config.BIGQUERY_TABLE_BRANCH}` br
+    ON a.BranchCode = br.BranchCode
+  WHERE a.Date BETWEEN start_2024 AND end_2024
+    AND {source_cat_filter}
+    {source_subcat_filter}
+    {store_filter}
+    AND a.CustomerCode != '0'
+  GROUP BY 1, 2, 3, 4
+),
+
+-- Identify primary category-subcat per customer in First Period
+source_primary AS (
+  SELECT
+    CustomerCode,
+    CategoryName AS source_cat,
+    SubCategoryName AS source_subcat,
+    Brand AS source_brand,
+    sales,
+    SAFE_DIVIDE(sales, SUM(sales) OVER(PARTITION BY CustomerCode)) AS share
+  FROM source_period
+  QUALIFY ROW_NUMBER() OVER(
+    PARTITION BY CustomerCode
+    ORDER BY 
+      CASE WHEN SAFE_DIVIDE(sales, SUM(sales) OVER(PARTITION BY CustomerCode)) >= PRIMARY_THRESHOLD THEN 1 ELSE 0 END DESC,
+      sales DESC
+  ) = 1
+),
+
+-- Get list of source customers (who bought from source categories in First Period)
+source_customers AS (
+  SELECT DISTINCT CustomerCode
+  FROM source_primary
+  WHERE share >= PRIMARY_THRESHOLD OR share = (SELECT MAX(share) FROM source_primary sp2 WHERE sp2.CustomerCode = source_primary.CustomerCode)
+),
+
+-- Step 2: Get all transactions for target categories in After Period (only for source customers)
+target_period AS (
+  SELECT
+    a.CustomerCode,
+    pm.CategoryName,
+    pm.SubCategoryName,
+    pm.Brand,
+    SUM(COALESCE(a.TotalSales, 0)) AS sales
+  FROM `{config.BIGQUERY_PROJECT}.{config.BIGQUERY_DATASET}.{config.BIGQUERY_TABLE_SALES}` a
+  JOIN `{config.BIGQUERY_PROJECT}.{config.BIGQUERY_DATASET}.{config.BIGQUERY_TABLE_PRODUCT_MASTER}` pm
+    ON a.Barcode = pm.Barcode
+  JOIN `{config.BIGQUERY_PROJECT}.{config.BIGQUERY_DATASET}.{config.BIGQUERY_TABLE_BRANCH}` br
+    ON a.BranchCode = br.BranchCode
+  WHERE a.Date BETWEEN start_2025 AND end_2025
+    AND {target_cat_filter}
+    {target_subcat_filter}
+    {store_filter}
+    AND a.CustomerCode IN (SELECT CustomerCode FROM source_customers)
+    AND a.CustomerCode != '0'
+  GROUP BY 1, 2, 3, 4
+),
+
+-- Identify primary category-subcat-brand per customer in After Period
+target_primary AS (
+  SELECT
+    CustomerCode,
+    CategoryName AS target_cat,
+    SubCategoryName AS target_subcat,
+    Brand AS target_brand,
+    sales,
+    SAFE_DIVIDE(sales, SUM(sales) OVER(PARTITION BY CustomerCode)) AS share
+  FROM target_period
+  QUALIFY ROW_NUMBER() OVER(
+    PARTITION BY CustomerCode
+    ORDER BY 
+      CASE WHEN SAFE_DIVIDE(sales, SUM(sales) OVER(PARTITION BY CustomerCode)) >= PRIMARY_THRESHOLD THEN 1 ELSE 0 END DESC,
+      sales DESC
+  ) = 1
+),
+
+-- Step 3: Join source and target to create customer flow
+customer_flow AS (
+  SELECT
+    s.CustomerCode,
+    s.source_cat,
+    s.source_subcat,
+    s.source_brand,
+    COALESCE(t.target_cat, 'NO_PURCHASE') AS target_cat,
+    COALESCE(t.target_subcat, 'NO_PURCHASE') AS target_subcat,
+    COALESCE(t.target_brand, 'NO_PURCHASE') AS target_brand,
+    CASE
+      WHEN t.CustomerCode IS NULL THEN 'gone'
+      WHEN s.source_cat = t.target_cat AND (s.source_subcat = t.target_subcat OR t.target_subcat IS NULL) THEN 'stayed'
+      ELSE 'switched'
+    END AS move_type
+  FROM source_primary s
+  LEFT JOIN target_primary t ON s.CustomerCode = t.CustomerCode
+),
+
+-- Step 4: Aggregate results
+flow_summary AS (
+  SELECT
+    source_cat,
+    source_subcat,
+    target_cat,
+    target_subcat,
+    target_brand,
+    move_type,
+    COUNT(DISTINCT CustomerCode) AS customers
+  FROM customer_flow
+  GROUP BY 1, 2, 3, 4, 5, 6
+)
+
+SELECT 
+  source_cat,
+  source_subcat,
+  CONCAT(source_cat, CASE WHEN source_subcat IS NOT NULL THEN CONCAT('-', source_subcat) ELSE '' END) AS source_label,
+  target_cat,
+  target_subcat,
+  target_brand,
+  CONCAT(target_cat, CASE WHEN target_subcat IS NOT NULL AND target_subcat != 'NO_PURCHASE' THEN CONCAT('-', target_subcat) ELSE '' END) AS target_label,
+  move_type,
+  customers
+FROM flow_summary
+ORDER BY source_cat, source_subcat, move_type, customers DESC;
+"""
+    
+    return query

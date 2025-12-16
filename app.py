@@ -236,12 +236,34 @@ with st.sidebar:
 if 'query_executed' not in st.session_state:
     st.session_state.query_executed = False
 
+if 'cross_category_executed' not in st.session_state:
+    st.session_state.cross_category_executed = False
 
-
-# Analysis Mode removed - view toggle is now in post-query UI
-
+# =====================================================
+# ANALYSIS MODE SELECTOR
+# =====================================================
 st.sidebar.markdown("""
-    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px; margin-top: 20px;">
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px; margin-top: 10px;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/></svg>
+        <span style="font-size: 18px; font-weight: 700; color: white;">Analysis Mode</span>
+    </div>
+""", unsafe_allow_html=True)
+
+analysis_mode = st.sidebar.radio(
+    "Select Mode",
+    ["Brand/Product Switch", "Cross-Category Switch"],
+    key="analysis_mode_selector",
+    label_visibility="collapsed",
+    horizontal=True
+)
+
+st.sidebar.markdown("---")
+
+# =====================================================
+# DATE RANGE FILTERS (Common for both modes)
+# =====================================================
+st.sidebar.markdown("""
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px; margin-top: 10px;">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-2.01.89-2.01 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg>
         <span style="font-size: 18px; font-weight: 700; color: white;">Before Period</span>
     </div>
@@ -279,53 +301,401 @@ with st.sidebar.expander("🏪 Store Settings", expanded=True):
         ).strftime("%Y-%m-%d")
 
 st.sidebar.markdown("---")
-with st.sidebar.expander("🔍 Product Filters", expanded=True):
-    available_categories = bigquery_client.get_categories()
-    selected_categories = st.multiselect("Category", available_categories, default=[available_categories[0]] if available_categories else [])
 
-    selected_subcategories = []
-    if selected_categories:
-        all_subcategories = []
-        for cat in selected_categories:
-            subcats = bigquery_client.get_subcategories(cat)
-            all_subcategories.extend(subcats)
-        all_subcategories = list(set(all_subcategories))
-        selected_subcategories = st.multiselect("SubCategory", all_subcategories)
+# =====================================================
+# CONDITIONAL FILTER PANELS BASED ON ANALYSIS MODE
+# =====================================================
 
-    brands_text = st.text_input("Brands", placeholder="เช่น NIVEA, VASELINE, CITRA", help="Enter brand names separated by commas")
-    selected_brands = [b.strip() for b in brands_text.split(',') if b.strip()] if brands_text else []
+available_categories = bigquery_client.get_categories()
 
-    product_name_contains = st.text_input("Product Contains", placeholder="เช่น โลชั่น, ครีม, นม", help="ใส่คำค้นหาได้หลายคำคั่นด้วยคอมม่า (OR condition)")
-
-    product_name_not_contains = st.text_input("Product NOT Contains", placeholder="เช่น PM_, PROMO", help="กรองสินค้าที่มีคำนี้ออก (AND NOT condition)")
-
-
-st.sidebar.markdown("---")
-with st.sidebar.expander("⚙️ Advanced Settings", expanded=False):
-    primary_threshold = st.slider("Primary %", float(config.MIN_PRIMARY_THRESHOLD*100), float(config.MAX_PRIMARY_THRESHOLD*100), float(config.DEFAULT_PRIMARY_THRESHOLD*100), step=5.0) / 100.0
-
-# Custom Barcode Mapping - Between Advanced Settings and Run Analysis
-with st.sidebar.expander("🏷️ Custom Barcode Mode", expanded=False):
-    st.caption("Map barcodes to custom types (bypasses brand filter)")
-    barcode_mapping_text = st.text_area(
-        "Paste barcode mapping", 
-        "", 
-        height=100, 
-        placeholder="8850002016620\tMEN\n8850002024458\tBasic\n\n(Copy from Excel: Barcode | Type)",
-        help="Paste from Excel (tab-separated) or use comma",
-        key="barcode_mapping_text_area",
-        label_visibility="collapsed"
-    )
+if analysis_mode == "Cross-Category Switch":
+    # =====================================================
+    # CROSS-CATEGORY SWITCH FILTERS
+    # =====================================================
+    st.sidebar.markdown("""
+        <div style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); padding: 10px 15px; border-radius: 8px; margin-bottom: 15px;">
+            <div style="color: white; font-weight: 700; font-size: 14px;">🔀 Cross-Category Mode</div>
+            <div style="color: rgba(255,255,255,0.8); font-size: 12px;">Track customers moving between categories</div>
+        </div>
+    """, unsafe_allow_html=True)
     
-    if barcode_mapping_text and barcode_mapping_text.strip():
-        # Count valid mappings
-        lines = [l.strip() for l in barcode_mapping_text.strip().split('\n') if l.strip()]
-        valid_count = sum(1 for l in lines if '\t' in l or ',' in l or '  ' in l)
-        st.caption(f"✓ {valid_count} barcodes mapped")
+    # Source Category/SubCategory
+    with st.sidebar.expander("🎯 Source (First Period)", expanded=True):
+        source_categories = st.multiselect(
+            "Category", 
+            available_categories, 
+            key="source_categories",
+            help="ลูกค้าที่ซื้อจาก Category เหล่านี้ใน First Period"
+        )
+        
+        source_subcategories = []
+        if source_categories:
+            all_source_subcats = []
+            for cat in source_categories:
+                subcats = bigquery_client.get_subcategories(cat)
+                all_source_subcats.extend(subcats)
+            all_source_subcats = list(set(all_source_subcats))
+            source_subcategories = st.multiselect(
+                "SubCategory (Optional)", 
+                all_source_subcats,
+                key="source_subcategories",
+                help="ถ้าไม่เลือก = ทุก SubCategory ใน Category ที่เลือก"
+            )
+    
+    # Target Category/SubCategory
+    with st.sidebar.expander("🎯 Target (After Period)", expanded=True):
+        target_categories = st.multiselect(
+            "Category", 
+            available_categories, 
+            key="target_categories",
+            help="Category ที่ต้องการดูว่าลูกค้าย้ายไปหรือเปล่า"
+        )
+        
+        target_subcategories = []
+        if target_categories:
+            all_target_subcats = []
+            for cat in target_categories:
+                subcats = bigquery_client.get_subcategories(cat)
+                all_target_subcats.extend(subcats)
+            all_target_subcats = list(set(all_target_subcats))
+            target_subcategories = st.multiselect(
+                "SubCategory (Optional)", 
+                all_target_subcats,
+                key="target_subcategories",
+                help="ถ้าไม่เลือก = ทุก SubCategory ใน Category ที่เลือก"
+            )
+    
+    # Advanced Settings for Cross-Category
+    with st.sidebar.expander("⚙️ Advanced Settings", expanded=False):
+        primary_threshold = st.slider("Primary %", float(config.MIN_PRIMARY_THRESHOLD*100), float(config.MAX_PRIMARY_THRESHOLD*100), float(config.DEFAULT_PRIMARY_THRESHOLD*100), step=5.0) / 100.0
+    
+    # Set these to None for Cross-Category mode
+    selected_categories = source_categories
+    selected_subcategories = source_subcategories
+    selected_brands = []
+    product_name_contains = None
+    product_name_not_contains = None
+    barcode_mapping_text = ""
+
+else:
+    # =====================================================
+    # BRAND/PRODUCT SWITCH FILTERS (Original)
+    # =====================================================
+    with st.sidebar.expander("🔍 Product Filters", expanded=True):
+        selected_categories = st.multiselect("Category", available_categories, default=[available_categories[0]] if available_categories else [])
+
+        selected_subcategories = []
+        if selected_categories:
+            all_subcategories = []
+            for cat in selected_categories:
+                subcats = bigquery_client.get_subcategories(cat)
+                all_subcategories.extend(subcats)
+            all_subcategories = list(set(all_subcategories))
+            selected_subcategories = st.multiselect("SubCategory", all_subcategories)
+
+        brands_text = st.text_input("Brands", placeholder="เช่น NIVEA, VASELINE, CITRA", help="Enter brand names separated by commas")
+        selected_brands = [b.strip() for b in brands_text.split(',') if b.strip()] if brands_text else []
+
+        product_name_contains = st.text_input("Product Contains", placeholder="เช่น โลชั่น, ครีม, นม", help="ใส่คำค้นหาได้หลายคำคั่นด้วยคอมม่า (OR condition)")
+
+        product_name_not_contains = st.text_input("Product NOT Contains", placeholder="เช่น PM_, PROMO", help="กรองสินค้าที่มีคำนี้ออก (AND NOT condition)")
+
+    with st.sidebar.expander("⚙️ Advanced Settings", expanded=False):
+        primary_threshold = st.slider("Primary %", float(config.MIN_PRIMARY_THRESHOLD*100), float(config.MAX_PRIMARY_THRESHOLD*100), float(config.DEFAULT_PRIMARY_THRESHOLD*100), step=5.0) / 100.0
+
+    # Custom Barcode Mapping - Between Advanced Settings and Run Analysis
+    with st.sidebar.expander("🏷️ Custom Barcode Mode", expanded=False):
+        st.caption("Map barcodes to custom types (bypasses brand filter)")
+        barcode_mapping_text = st.text_area(
+            "Paste barcode mapping", 
+            "", 
+            height=100, 
+            placeholder="8850002016620\tMEN\n8850002024458\tBasic\n\n(Copy from Excel: Barcode | Type)",
+            help="Paste from Excel (tab-separated) or use comma",
+            key="barcode_mapping_text_area",
+            label_visibility="collapsed"
+        )
+        
+        if barcode_mapping_text and barcode_mapping_text.strip():
+            # Count valid mappings
+            lines = [l.strip() for l in barcode_mapping_text.strip().split('\n') if l.strip()]
+            valid_count = sum(1 for l in lines if '\t' in l or ',' in l or '  ' in l)
+            st.caption(f"✓ {valid_count} barcodes mapped")
+    
+    # Initialize cross-category variables to None
+    source_categories = []
+    source_subcategories = []
+    target_categories = []
+    target_subcategories = []
 
 st.sidebar.markdown("---")
 run_analysis = st.sidebar.button("🚀 Run Analysis", type="primary", use_container_width=True)
 
+# =====================================================
+# CROSS-CATEGORY SWITCH MODE
+# =====================================================
+if analysis_mode == "Cross-Category Switch":
+    if run_analysis or st.session_state.cross_category_executed:
+        if run_analysis:
+            # Validate required fields
+            if not source_categories:
+                st.error("⚠️ Please select at least one Source Category to run the analysis.")
+                st.stop()
+            if not target_categories:
+                st.error("⚠️ Please select at least one Target Category to run the analysis.")
+                st.stop()
+            
+            # Build and execute Cross-Category query
+            cross_cat_query = query_builder.build_cross_category_query(
+                period1_start.strftime("%Y-%m-%d"),
+                period1_end.strftime("%Y-%m-%d"),
+                period2_start.strftime("%Y-%m-%d"),
+                period2_end.strftime("%Y-%m-%d"),
+                source_categories,
+                source_subcategories if source_subcategories else None,
+                target_categories,
+                target_subcategories if target_subcategories else None,
+                primary_threshold,
+                store_filter_type,
+                store_opening_cutoff
+            )
+            
+            utils.show_debug_query(cross_cat_query)
+            df_cross, gb_processed = bigquery_client.execute_query(cross_cat_query)
+            st.session_state.cross_category_df = df_cross
+            st.session_state.cross_category_gb_processed = gb_processed
+            st.session_state.cross_category_executed = True
+            st.session_state.cross_category_source = source_categories
+            st.session_state.cross_category_target = target_categories
+            
+            # Track query
+            try:
+                if 'tracking_session_id' in st.session_state:
+                    query_details = {
+                        'mode': 'cross_category',
+                        'source_categories': source_categories,
+                        'target_categories': target_categories,
+                        'period1': f"{period1_start} to {period1_end}",
+                        'period2': f"{period2_start} to {period2_end}",
+                        'gb_processed': round(gb_processed, 2) if gb_processed else 0
+                    }
+                    tracking.log_event(
+                        st.session_state.tracking_session_id, 
+                        'query', 
+                        query_details,
+                        duration_ms=None
+                    )
+            except:
+                pass
+        
+        # Get stored results
+        df_cross = st.session_state.get('cross_category_df')
+        gb_processed = st.session_state.get('cross_category_gb_processed', 0)
+        
+        if df_cross is None or len(df_cross) == 0:
+            st.warning("⚠️ No data found for the selected categories.")
+            st.stop()
+        
+        # Admin-only: Cost Display
+        if auth.is_admin() and gb_processed > 0:
+            st.markdown("---")
+            utils.display_cost_info(gb_processed)
+        
+        # =====================================================
+        # CROSS-CATEGORY RESULTS DISPLAY
+        # =====================================================
+        
+        # Header
+        st.markdown("""
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; margin-top: 20px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="#6366f1"><path d="M12 2l-5.5 9h11L12 2zm0 3.84L13.93 9h-3.87L12 5.84zM17.5 13c-2.49 0-4.5 2.01-4.5 4.5s2.01 4.5 4.5 4.5 4.5-2.01 4.5-4.5-2.01-4.5-4.5-4.5zm0 7c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5zM3 21.5h8v-8H3v8zm2-6h4v4H5v-4z"/></svg>
+            <span style="font-size: 28px; font-weight: 800; color: #6366f1;">Cross-Category Switching Analysis</span>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Show source and target summary
+        source_display = ", ".join(st.session_state.get('cross_category_source', source_categories))
+        target_display = ", ".join(st.session_state.get('cross_category_target', target_categories))
+        
+        st.markdown(f"""
+        <div style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
+            <div style="display: flex; gap: 40px; flex-wrap: wrap;">
+                <div>
+                    <div style="font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 600;">Source Category</div>
+                    <div style="font-size: 18px; color: #0f172a; font-weight: 700;">{source_display}</div>
+                </div>
+                <div style="display: flex; align-items: center;">
+                    <span style="font-size: 24px; color: #6366f1;">→</span>
+                </div>
+                <div>
+                    <div style="font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 600;">Target Category</div>
+                    <div style="font-size: 18px; color: #0f172a; font-weight: 700;">{target_display}</div>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Calculate KPIs
+        cross_kpis = data_processor.calculate_cross_category_kpis(df_cross, target_categories)
+        
+        # KPI Cards
+        if cross_kpis:
+            k1, k2, k3, k4, k5 = st.columns(5)
+            
+            card_base = """
+                background: white; 
+                padding: 16px 20px; 
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
+                height: 100%;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            """
+            
+            with k1:
+                st.markdown(f"""
+                <div style="{card_base}">
+                    <div style="font-size: 14px; font-weight: 500; color: #6b7280; margin-bottom: 8px;">Source Customers</div>
+                    <div style="font-size: 28px; font-weight: 500; color: #111827;">{cross_kpis['total_source_customers']:,}</div>
+                    <div style="font-size: 12px; color: #9ca3af; margin-top: 4px;">First Period</div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            with k2:
+                st.markdown(f"""
+                <div style="{card_base}">
+                    <div style="font-size: 14px; font-weight: 500; color: #6b7280; margin-bottom: 8px;">Stayed</div>
+                    <div style="font-size: 28px; font-weight: 500; color: #16a34a;">{cross_kpis['stayed_pct']:.1f}%</div>
+                    <div style="font-size: 12px; color: #9ca3af; margin-top: 4px;">{cross_kpis['stayed']:,} customers</div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            with k3:
+                st.markdown(f"""
+                <div style="{card_base}">
+                    <div style="font-size: 14px; font-weight: 500; color: #6b7280; margin-bottom: 8px;">Switched to Target</div>
+                    <div style="font-size: 28px; font-weight: 500; color: #6366f1;">{cross_kpis['target_switched_pct']:.1f}%</div>
+                    <div style="font-size: 12px; color: #9ca3af; margin-top: 4px;">{cross_kpis['target_switched']:,} customers</div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            with k4:
+                st.markdown(f"""
+                <div style="{card_base}">
+                    <div style="font-size: 14px; font-weight: 500; color: #6b7280; margin-bottom: 8px;">Gone (No Purchase)</div>
+                    <div style="font-size: 28px; font-weight: 500; color: #dc2626;">{cross_kpis['gone_pct']:.1f}%</div>
+                    <div style="font-size: 12px; color: #9ca3af; margin-top: 4px;">{cross_kpis['gone']:,} customers</div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            with k5:
+                st.markdown(f"""
+                <div style="{card_base}">
+                    <div style="font-size: 14px; font-weight: 500; color: #6b7280; margin-bottom: 8px;">Top Target</div>
+                    <div style="font-size: 20px; font-weight: 500; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{cross_kpis['top_target']}">{cross_kpis['top_target']}</div>
+                    <div style="font-size: 12px; color: #6366f1; margin-top: 4px;">{cross_kpis['top_target_pct']:.1f}%</div>
+                </div>
+                """, unsafe_allow_html=True)
+        
+        st.markdown("<div style='height: 30px;'></div>", unsafe_allow_html=True)
+        
+        # Sankey Diagram for Cross-Category
+        st.markdown("### 📊 Customer Flow (Sankey Diagram)")
+        labels, sources, targets, values = data_processor.prepare_cross_category_sankey_data(df_cross)
+        if labels and sources:
+            st.plotly_chart(visualizations.create_sankey_diagram(labels, sources, targets, values, []), use_container_width=True)
+        else:
+            st.info("No flow data to display")
+        
+        # Summary Table
+        st.markdown("### 📋 Cross-Category Flow Summary")
+        summary_df = data_processor.calculate_cross_category_summary(df_cross)
+        if not summary_df.empty:
+            # Display as styled table
+            st.dataframe(
+                summary_df,
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "Source": st.column_config.TextColumn("Source", width="medium"),
+                    "Target": st.column_config.TextColumn("Target", width="medium"),
+                    "Customers": st.column_config.NumberColumn("Customers", format="%d"),
+                    "Pct": st.column_config.NumberColumn("Percentage", format="%.1f%%"),
+                }
+            )
+        
+        # Drill-down to Brand Level
+        st.markdown("### 🔍 Drill-Down to Brand Level")
+        
+        # Get switched flows for drill-down selection
+        switched_df = df_cross[df_cross['move_type'] == 'switched']
+        if not switched_df.empty:
+            # Get unique source-target combinations
+            flow_options = switched_df.groupby(['source_label', 'target_label'])['customers'].sum().reset_index()
+            flow_options = flow_options.sort_values('customers', ascending=False)
+            flow_options['display'] = flow_options.apply(
+                lambda x: f"{x['source_label']} → {x['target_label']} ({x['customers']:,} customers)", 
+                axis=1
+            )
+            
+            selected_flow = st.selectbox(
+                "Select a flow to drill-down:",
+                options=flow_options['display'].tolist(),
+                key="cross_cat_drilldown"
+            )
+            
+            if selected_flow:
+                # Parse selected flow
+                selected_row = flow_options[flow_options['display'] == selected_flow].iloc[0]
+                source_label = selected_row['source_label']
+                target_label = selected_row['target_label']
+                
+                # Get brand breakdown
+                brand_df = data_processor.prepare_cross_category_brand_drilldown(df_cross, source_label, target_label)
+                
+                if not brand_df.empty:
+                    st.markdown(f"**Brands in {target_label}:**")
+                    st.dataframe(
+                        brand_df,
+                        use_container_width=True,
+                        hide_index=True,
+                        column_config={
+                            "Brand": st.column_config.TextColumn("Brand", width="medium"),
+                            "Customers": st.column_config.NumberColumn("Customers", format="%d"),
+                            "Pct": st.column_config.NumberColumn("% of Flow", format="%.1f%%"),
+                        }
+                    )
+                else:
+                    st.info("No brand data available for this flow.")
+        else:
+            st.info("No switching flows found between source and target categories.")
+        
+        # Export
+        st.markdown("### 📥 Export Data")
+        col_exp1, col_exp2 = st.columns(2)
+        with col_exp1:
+            csv = df_cross.to_csv(index=False).encode('utf-8')
+            st.download_button(
+                label="📥 Download Raw Data (CSV)",
+                data=csv,
+                file_name=f"cross_category_{source_display.replace(', ', '_')}_to_{target_display.replace(', ', '_')}.csv",
+                mime="text/csv"
+            )
+        with col_exp2:
+            if not summary_df.empty:
+                summary_csv = summary_df.to_csv(index=False).encode('utf-8')
+                st.download_button(
+                    label="📥 Download Summary (CSV)",
+                    data=summary_csv,
+                    file_name=f"cross_category_summary_{source_display.replace(', ', '_')}_to_{target_display.replace(', ', '_')}.csv",
+                    mime="text/csv"
+                )
+        
+        # Stop here - don't show Brand/Product Switch UI
+        st.stop()
+
+# =====================================================
+# BRAND/PRODUCT SWITCH MODE (Original)
+# =====================================================
 if run_analysis or st.session_state.query_executed:
     if run_analysis:
         selected_category = selected_categories[0] if selected_categories else None

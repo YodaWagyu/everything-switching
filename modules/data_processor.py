@@ -489,3 +489,226 @@ def calculate_cohort_metrics_by_brand(df: pd.DataFrame) -> Dict:
         'churned': [m['Churned'] for m in brand_metrics],
         'totals': [m['Total'] for m in brand_metrics]
     }
+
+
+# =====================================================
+# CROSS-CATEGORY SWITCHING ANALYSIS FUNCTIONS
+# =====================================================
+
+def calculate_cross_category_summary(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Calculate summary of cross-category movement.
+    
+    Args:
+        df: DataFrame from build_cross_category_query() with columns:
+            source_cat, source_subcat, source_label,
+            target_cat, target_subcat, target_brand, target_label,
+            move_type, customers
+    
+    Returns:
+        DataFrame with summary by source and target categories
+    """
+    if df is None or len(df) == 0:
+        return pd.DataFrame()
+    
+    # Get unique source labels
+    source_labels = df['source_label'].unique()
+    
+    summary_data = []
+    
+    for source in source_labels:
+        source_df = df[df['source_label'] == source]
+        total_customers = source_df['customers'].sum()
+        
+        # Calculate stayed, gone, and switched to target
+        stayed = source_df[source_df['move_type'] == 'stayed']['customers'].sum()
+        gone = source_df[source_df['move_type'] == 'gone']['customers'].sum()
+        switched = source_df[source_df['move_type'] == 'switched']['customers'].sum()
+        
+        # Add source summary row
+        summary_data.append({
+            'Source': source,
+            'Target': 'STAYED (Same Category)',
+            'Customers': stayed,
+            'Pct': round(stayed / total_customers * 100, 1) if total_customers > 0 else 0,
+            'move_type': 'stayed'
+        })
+        
+        summary_data.append({
+            'Source': source,
+            'Target': 'GONE (No Purchase)',
+            'Customers': gone,
+            'Pct': round(gone / total_customers * 100, 1) if total_customers > 0 else 0,
+            'move_type': 'gone'
+        })
+        
+        # Group switched by target category-subcat
+        switched_df = source_df[source_df['move_type'] == 'switched']
+        target_groups = switched_df.groupby('target_label')['customers'].sum().reset_index()
+        target_groups = target_groups.sort_values('customers', ascending=False)
+        
+        for _, row in target_groups.iterrows():
+            summary_data.append({
+                'Source': source,
+                'Target': row['target_label'],
+                'Customers': row['customers'],
+                'Pct': round(row['customers'] / total_customers * 100, 1) if total_customers > 0 else 0,
+                'move_type': 'switched'
+            })
+    
+    return pd.DataFrame(summary_data)
+
+
+def prepare_cross_category_brand_drilldown(df: pd.DataFrame, source_label: str, target_label: str) -> pd.DataFrame:
+    """
+    Prepare drill-down data from Category-SubCategory to Brand level.
+    
+    Args:
+        df: DataFrame from build_cross_category_query()
+        source_label: e.g., "DEODORANT" or "DEODORANT-MEN"
+        target_label: e.g., "COLOGNE-MEN"
+    
+    Returns:
+        DataFrame with brand-level breakdown within the target
+    """
+    if df is None or len(df) == 0:
+        return pd.DataFrame()
+    
+    # Filter to specific source-target flow
+    flow_df = df[
+        (df['source_label'] == source_label) & 
+        (df['target_label'] == target_label) &
+        (df['move_type'] == 'switched')
+    ]
+    
+    if len(flow_df) == 0:
+        return pd.DataFrame()
+    
+    # Aggregate by target brand
+    brand_breakdown = flow_df.groupby('target_brand')['customers'].sum().reset_index()
+    brand_breakdown = brand_breakdown.sort_values('customers', ascending=False)
+    
+    # Calculate percentage of this flow
+    total_flow = brand_breakdown['customers'].sum()
+    brand_breakdown['Pct'] = brand_breakdown['customers'].apply(
+        lambda x: round(x / total_flow * 100, 1) if total_flow > 0 else 0
+    )
+    
+    brand_breakdown.columns = ['Brand', 'Customers', 'Pct']
+    
+    return brand_breakdown
+
+
+def calculate_cross_category_kpis(df: pd.DataFrame, target_categories: list = None) -> Dict:
+    """
+    Calculate KPIs for cross-category switching analysis.
+    
+    Args:
+        df: DataFrame from build_cross_category_query()
+        target_categories: List of target category names to highlight
+    
+    Returns:
+        Dictionary with KPI metrics
+    """
+    if df is None or len(df) == 0:
+        return {}
+    
+    total_source_customers = df['customers'].sum()
+    
+    stayed = df[df['move_type'] == 'stayed']['customers'].sum()
+    gone = df[df['move_type'] == 'gone']['customers'].sum()
+    switched = df[df['move_type'] == 'switched']['customers'].sum()
+    
+    # Calculate how many switched to target categories specifically
+    if target_categories and len(target_categories) > 0:
+        target_switched = df[
+            (df['move_type'] == 'switched') & 
+            (df['target_cat'].isin(target_categories))
+        ]['customers'].sum()
+    else:
+        target_switched = switched
+    
+    # Top target category
+    if switched > 0:
+        switched_df = df[df['move_type'] == 'switched']
+        top_target_row = switched_df.groupby('target_label')['customers'].sum().idxmax()
+        top_target_customers = switched_df.groupby('target_label')['customers'].sum().max()
+    else:
+        top_target_row = "N/A"
+        top_target_customers = 0
+    
+    return {
+        'total_source_customers': total_source_customers,
+        'stayed': stayed,
+        'stayed_pct': round(stayed / total_source_customers * 100, 1) if total_source_customers > 0 else 0,
+        'gone': gone,
+        'gone_pct': round(gone / total_source_customers * 100, 1) if total_source_customers > 0 else 0,
+        'switched': switched,
+        'switched_pct': round(switched / total_source_customers * 100, 1) if total_source_customers > 0 else 0,
+        'target_switched': target_switched,
+        'target_switched_pct': round(target_switched / total_source_customers * 100, 1) if total_source_customers > 0 else 0,
+        'top_target': top_target_row,
+        'top_target_customers': top_target_customers,
+        'top_target_pct': round(top_target_customers / total_source_customers * 100, 1) if total_source_customers > 0 else 0
+    }
+
+
+def prepare_cross_category_sankey_data(df: pd.DataFrame) -> Tuple[List, List, List, List]:
+    """
+    Prepare data for Sankey diagram for cross-category switching.
+    
+    Args:
+        df: DataFrame from build_cross_category_query()
+    
+    Returns:
+        Tuple of (labels, sources, targets, values) for Sankey diagram
+    """
+    if df is None or len(df) == 0:
+        return [], [], [], []
+    
+    # Get unique source and target labels
+    source_labels = df['source_label'].unique().tolist()
+    
+    # Get target labels (including special categories)
+    target_labels_raw = df['target_label'].unique().tolist()
+    
+    # Replace 'NO_PURCHASE' with 'GONE'
+    target_labels = ['GONE' if t == 'NO_PURCHASE' else t for t in target_labels_raw]
+    
+    # Also handle stayed - need to add "_after" suffix to distinguish
+    all_labels = []
+    label_mapping = {}
+    
+    # Add source labels (Period 1)
+    for label in source_labels:
+        if label not in label_mapping:
+            label_mapping[label] = len(all_labels)
+            all_labels.append(label)
+    
+    # Add target labels (Period 2) with suffix to distinguish
+    for label, raw_label in zip(target_labels, target_labels_raw):
+        period2_key = f"{raw_label}_target"
+        if period2_key not in label_mapping:
+            # For stayed categories, show same name
+            display_label = label
+            if raw_label == 'NO_PURCHASE':
+                display_label = 'GONE'
+            label_mapping[period2_key] = len(all_labels)
+            all_labels.append(display_label)
+    
+    sources, targets, values = [], [], []
+    
+    for _, row in df.iterrows():
+        source_label = row['source_label']
+        target_raw = row['target_label']
+        customers = row['customers']
+        
+        source_idx = label_mapping.get(source_label)
+        target_idx = label_mapping.get(f"{target_raw}_target")
+        
+        if source_idx is not None and target_idx is not None:
+            sources.append(source_idx)
+            targets.append(target_idx)
+            values.append(customers)
+    
+    return all_labels, sources, targets, values
