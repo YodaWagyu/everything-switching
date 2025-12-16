@@ -880,7 +880,7 @@ if analysis_mode == "Cross-Category Switch":
             st.download_button(
                 label="📥 Download Raw Data (CSV)",
                 data=csv,
-                file_name=f"cross_category_{source_display.replace(', ', '_')}_to_{target_display.replace(', ', '_')}.csv",
+                file_name=f"cross_category_{source_cat_display.replace(', ', '_')}_to_{target_cat_display.replace(', ', '_')}.csv",
                 mime="text/csv"
             )
         with col_exp2:
@@ -889,7 +889,7 @@ if analysis_mode == "Cross-Category Switch":
                 st.download_button(
                     label="📥 Download Summary (CSV)",
                     data=summary_csv,
-                    file_name=f"cross_category_summary_{source_display.replace(', ', '_')}_to_{target_display.replace(', ', '_')}.csv",
+                    file_name=f"cross_category_summary_{source_cat_display.replace(', ', '_')}_to_{target_cat_display.replace(', ', '_')}.csv",
                     mime="text/csv"
                 )
         
