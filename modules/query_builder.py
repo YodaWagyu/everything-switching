@@ -1,6 +1,9 @@
 """
 Query Builder Module
 Builds dynamic SQL queries based on user selections
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Original by Kritin Kayaras
+© 2025 All Rights Reserved
 """
 
 from typing import Optional, Dict, Any

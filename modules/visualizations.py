@@ -1,6 +1,9 @@
 """
 Visualizations Module
 Creates interactive Plotly visualizations for switching analysis
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Original by Kritin Kayaras
+© 2025 All Rights Reserved
 """
 
 import plotly.graph_objects as go

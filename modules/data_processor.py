@@ -1,6 +1,9 @@
 """
 Data Processor Module
 Processes query results and prepares data for visualizations
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Original by Kritin Kayaras
+© 2025 All Rights Reserved
 """
 
 import pandas as pd

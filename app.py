@@ -1,4 +1,9 @@
-"""Everything-Switching Analysis Application"""
+"""
+Everything-Switching Analysis Application
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Original by Kritin Kayaras
+© 2025 All Rights Reserved
+"""
 import streamlit as st
 from datetime import datetime, timedelta
 from modules import bigquery_client, data_processor, visualizations, utils, query_builder, ai_analyzer, auth, tracking
@@ -2180,5 +2185,15 @@ if run_analysis or st.session_state.query_executed:
 else:
     st.info("👈 Configure and click **Run Analysis**")
 
+# Footer with Author Credit
 st.markdown("---")
-st.markdown('<div style="text-align:center; color:#666">Everything-Switching | BigQuery & OpenAI</div>', unsafe_allow_html=True)
+st.markdown('''
+<div style="text-align: center; padding: 20px 0; color: #64748b;">
+    <div style="font-size: 14px; margin-bottom: 4px;">
+        <strong>Everything-Switching Analysis</strong> | Powered by BigQuery & OpenAI
+    </div>
+    <div style="font-size: 12px; color: #94a3b8;">
+        Original by <strong>Kritin Kayaras</strong> • © 2025 All Rights Reserved
+    </div>
+</div>
+''', unsafe_allow_html=True)
