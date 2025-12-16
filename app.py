@@ -612,32 +612,129 @@ if analysis_mode == "Cross-Category Switch":
         else:
             st.info("No flow data to display")
         
-        # Summary Table with Styled Header
-        st.markdown("""
-        <style>
-        .cross-cat-table th {
-            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
-            color: white !important;
-            font-weight: 600 !important;
-        }
-        </style>
-        """, unsafe_allow_html=True)
+        # Summary Table with Styled Header (HTML like Brand Switch)
         st.markdown("### 📋 Cross-Category Flow Summary")
         summary_df = data_processor.calculate_cross_category_summary(df_cross)
         if not summary_df.empty:
-            # Display as styled table with comma formatting
-            st.dataframe(
-                summary_df,
-                use_container_width=True,
-                hide_index=True,
-                column_config={
-                    "Source": st.column_config.TextColumn("Source", width="medium"),
-                    "Target": st.column_config.TextColumn("Target", width="medium"),
-                    "Customers": st.column_config.NumberColumn("Customers", format="%,d"),
-                    "Pct": st.column_config.NumberColumn("Percentage", format="%.1f%%"),
-                    "move_type": st.column_config.TextColumn("Move Type", width="small"),
-                }
-            )
+            # Build HTML table rows
+            rows = []
+            for _, row in summary_df.iterrows():
+                move_type = row.get('move_type', '')
+                move_class = 'stayed-type' if move_type == 'stayed' else ('gone-type' if move_type == 'gone' else 'switched-type')
+                rows.append(
+                    '<tr>'
+                    f'<td class="source-col">{row["Source"]}</td>'
+                    f'<td class="target-col">{row["Target"]}</td>'
+                    f'<td class="customers-col">{row["Customers"]:,.0f}</td>'
+                    f'<td class="pct-col">{row["Pct"]:.1f}%</td>'
+                    f'<td class="{move_class}">{move_type}</td>'
+                    '</tr>'
+                )
+            
+            table_body = ''.join(rows)
+            
+            html = '''
+<style>
+    .cross-cat-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    .cross-cat-table thead th {
+        color: white;
+        padding: 14px;
+        text-align: center;
+        font-weight: 600;
+        position: sticky;
+        top: 0;
+        border-right: 1px solid rgba(255,255,255,0.15);
+        text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    }
+    .cross-cat-table thead th:nth-child(1) {
+        background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+    }
+    .cross-cat-table thead th:nth-child(2) {
+        background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    }
+    .cross-cat-table thead th:nth-child(3) {
+        background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+    }
+    .cross-cat-table thead th:nth-child(4) {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    }
+    .cross-cat-table thead th:nth-child(5) {
+        background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+    }
+    .cross-cat-table tbody tr {
+        border-bottom: 1px solid #e0e0e0;
+        transition: all 0.2s;
+    }
+    .cross-cat-table tbody tr:hover {
+        background-color: #f0f0f0;
+    }
+    .cross-cat-table tbody td {
+        padding: 12px;
+        text-align: center;
+        vertical-align: middle;
+    }
+    .cross-cat-table tbody tr:nth-child(even) {
+        background-color: #fafafa;
+    }
+    .source-col {
+        background-color: #eef2ff !important;
+        font-weight: 600;
+        color: #4f46e5;
+    }
+    .target-col {
+        background-color: #f5f3ff !important;
+        font-weight: 600;
+        color: #7c3aed;
+    }
+    .customers-col {
+        font-weight: 600;
+        color: #0284c7;
+    }
+    .pct-col {
+        color: #d97706;
+        font-weight: 500;
+    }
+    .stayed-type {
+        background-color: #dcfce7 !important;
+        color: #16a34a;
+        font-weight: 600;
+    }
+    .gone-type {
+        background-color: #fee2e2 !important;
+        color: #dc2626;
+        font-weight: 600;
+    }
+    .switched-type {
+        background-color: #e0e7ff !important;
+        color: #4f46e5;
+        font-weight: 600;
+    }
+</style>
+<div style="max-height: 400px; overflow-y: auto;">
+<table class="cross-cat-table">
+    <thead>
+        <tr>
+            <th>Source</th>
+            <th>Target</th>
+            <th>Customers</th>
+            <th>Percentage</th>
+            <th>Move Type</th>
+        </tr>
+    </thead>
+    <tbody>
+''' + table_body + '''
+    </tbody>
+</table>
+</div>
+'''
+            st.markdown(html, unsafe_allow_html=True)
         
         # Drill-down to Brand Level
         st.markdown("### 🔍 Drill-Down to Brand Level")
@@ -670,16 +767,87 @@ if analysis_mode == "Cross-Category Switch":
                 
                 if not brand_df.empty:
                     st.markdown(f"**Brands in {target_label}:**")
-                    st.dataframe(
-                        brand_df,
-                        use_container_width=True,
-                        hide_index=True,
-                        column_config={
-                            "Brand": st.column_config.TextColumn("Brand", width="medium"),
-                            "Customers": st.column_config.NumberColumn("Customers", format="%,d"),
-                            "Pct": st.column_config.NumberColumn("% of Flow", format="%.1f%%"),
-                        }
-                    )
+                    
+                    # Build HTML table for brand drill-down
+                    brand_rows = []
+                    for _, brow in brand_df.iterrows():
+                        brand_rows.append(
+                            '<tr>'
+                            f'<td class="brand-name">{brow["Brand"]}</td>'
+                            f'<td class="brand-customers">{brow["Customers"]:,.0f}</td>'
+                            f'<td class="brand-pct">{brow["Pct"]:.1f}%</td>'
+                            '</tr>'
+                        )
+                    
+                    brand_table_body = ''.join(brand_rows)
+                    
+                    brand_html = '''
+<style>
+    .brand-drill-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        border-radius: 6px;
+        overflow: hidden;
+    }
+    .brand-drill-table thead th {
+        color: white;
+        padding: 12px;
+        text-align: center;
+        font-weight: 600;
+    }
+    .brand-drill-table thead th:nth-child(1) {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    }
+    .brand-drill-table thead th:nth-child(2) {
+        background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+    }
+    .brand-drill-table thead th:nth-child(3) {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    }
+    .brand-drill-table tbody tr {
+        border-bottom: 1px solid #e0e0e0;
+    }
+    .brand-drill-table tbody tr:hover {
+        background-color: #f0f0f0;
+    }
+    .brand-drill-table tbody td {
+        padding: 10px;
+        text-align: center;
+    }
+    .brand-drill-table tbody tr:nth-child(even) {
+        background-color: #fafafa;
+    }
+    .brand-name {
+        font-weight: 600;
+        color: #059669;
+    }
+    .brand-customers {
+        font-weight: 600;
+        color: #0284c7;
+    }
+    .brand-pct {
+        color: #d97706;
+        font-weight: 500;
+    }
+</style>
+<div style="max-height: 350px; overflow-y: auto;">
+<table class="brand-drill-table">
+    <thead>
+        <tr>
+            <th>Brand</th>
+            <th>Customers</th>
+            <th>% of Flow</th>
+        </tr>
+    </thead>
+    <tbody>
+''' + brand_table_body + '''
+    </tbody>
+</table>
+</div>
+'''
+                    st.markdown(brand_html, unsafe_allow_html=True)
                 else:
                     st.info("No brand data available for this flow.")
         else:
