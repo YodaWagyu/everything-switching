@@ -597,11 +597,8 @@ if analysis_mode == "Cross-Category Switch":
                 </div>
                 """, unsafe_allow_html=True)
         
-        st.markdown("<div style='height: 30px;'></div>", unsafe_allow_html=True)
         
-        # View SQL Code Button
-        with st.expander("🔍 View SQL Query", expanded=False):
-            st.code(st.session_state.get('cross_category_query', 'No query available'), language='sql')
+        st.markdown("<div style='height: 30px;'></div>", unsafe_allow_html=True)
         
         # Sankey Diagram for Cross-Category
         st.markdown("### 📊 Customer Flow (Sankey Diagram)")
