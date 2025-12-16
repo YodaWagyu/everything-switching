@@ -534,13 +534,17 @@ if analysis_mode == "Cross-Category Switch":
         target_cat_display = ", ".join(target_cats)
         target_subcat_display = ", ".join(target_subcats) if target_subcats else ""
         
+        # Build subcategory HTML separately
+        source_subcat_html = f'<div style="font-size: 13px; color: #6366f1; margin-top: 4px;">↳ {source_subcat_display}</div>' if source_subcat_display else ''
+        target_subcat_html = f'<div style="font-size: 13px; color: #8b5cf6; margin-top: 4px;">↳ {target_subcat_display}</div>' if target_subcat_display else ''
+        
         st.markdown(f"""
         <div style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
             <div style="display: flex; gap: 40px; flex-wrap: wrap; align-items: flex-start;">
                 <div>
                     <div style="font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 600;">Source Category</div>
                     <div style="font-size: 18px; color: #0f172a; font-weight: 700;">{source_cat_display}</div>
-                    {f'<div style="font-size: 13px; color: #6366f1; margin-top: 4px;">↳ {source_subcat_display}</div>' if source_subcat_display else ''}
+                    {source_subcat_html}
                 </div>
                 <div style="display: flex; align-items: center; padding-top: 15px;">
                     <span style="font-size: 24px; color: #6366f1;">→</span>
@@ -548,7 +552,7 @@ if analysis_mode == "Cross-Category Switch":
                 <div>
                     <div style="font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 600;">Target Category</div>
                     <div style="font-size: 18px; color: #0f172a; font-weight: 700;">{target_cat_display}</div>
-                    {f'<div style="font-size: 13px; color: #8b5cf6; margin-top: 4px;">↳ {target_subcat_display}</div>' if target_subcat_display else ''}
+                    {target_subcat_html}
                 </div>
             </div>
         </div>
