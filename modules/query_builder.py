@@ -351,8 +351,12 @@ def build_cross_category_query(
     source_cat_list = ", ".join([f"'{c}'" for c in escaped_source_cats])
     source_cat_filter = f"pm.CategoryName IN ({source_cat_list})"
     
+    # Determine display granularity
+    source_has_subcats = source_subcategories and len(source_subcategories) > 0
+    target_has_subcats = target_subcategories and len(target_subcategories) > 0
+    
     # Build source subcategory filter (optional)
-    if source_subcategories and len(source_subcategories) > 0:
+    if source_has_subcats:
         escaped_source_subcats = [s.replace("'", "''") for s in source_subcategories]
         source_subcat_list = ", ".join([f"'{s}'" for s in escaped_source_subcats])
         source_subcat_filter = f"AND pm.SubCategoryName IN ({source_subcat_list})"
@@ -382,9 +386,9 @@ def build_cross_category_query(
     # Build target subcategory filter - include BOTH source and target subcategories
     # Source subcats needed to detect "Stayed", target subcats to detect "Switched"
     all_target_subcats = []
-    if source_subcategories and len(source_subcategories) > 0:
+    if source_has_subcats:
         all_target_subcats.extend(source_subcategories)
-    if target_subcategories and len(target_subcategories) > 0:
+    if target_has_subcats:
         for subcat in target_subcategories:
             if subcat not in all_target_subcats:
                 all_target_subcats.append(subcat)
@@ -397,14 +401,14 @@ def build_cross_category_query(
         target_subcat_filter = ""
     
     # Keep source subcats list for Stayed detection
-    if source_subcategories and len(source_subcategories) > 0:
+    if source_has_subcats:
         escaped_source_subcats_for_stayed = [s.replace("'", "''") for s in source_subcategories]
         source_subcat_list_for_stayed = ", ".join([f"'{s}'" for s in escaped_source_subcats_for_stayed])
     else:
         source_subcat_list_for_stayed = ""
     
     # Keep target subcats list for Switched detection
-    if target_subcategories and len(target_subcategories) > 0:
+    if target_has_subcats:
         escaped_target_subcats_for_switched = [s.replace("'", "''") for s in target_subcategories]
         target_subcat_list_for_switched = ", ".join([f"'{s}'" for s in escaped_target_subcats_for_switched])
     else:
@@ -415,6 +419,11 @@ def build_cross_category_query(
         store_filter = f"AND br.openingdate <= '{store_opening_cutoff}'"
     else:
         store_filter = ""
+    
+    # Dynamic SubCategory expressions based on user selection
+    # If user didn't select subcategories, use empty string to aggregate at category level
+    source_subcat_expr = "pm.SubCategoryName" if source_has_subcats else "''"
+    target_subcat_expr = "pm.SubCategoryName" if target_has_subcats else "''"
     
     query = f"""
 DECLARE period1_start_date DATE DEFAULT '{period1_start}';
@@ -428,7 +437,7 @@ WITH source_period AS (
   SELECT
     a.CustomerCode,
     pm.CategoryName,
-    pm.SubCategoryName,
+    {source_subcat_expr} AS SubCategoryName,
     pm.Brand,
     SUM(COALESCE(a.TotalSales, 0)) AS sales
   FROM `{config.BIGQUERY_PROJECT}.{config.BIGQUERY_DATASET}.{config.BIGQUERY_TABLE_SALES}` a
@@ -485,7 +494,7 @@ target_period AS (
   SELECT
     a.CustomerCode,
     pm.CategoryName,
-    pm.SubCategoryName,
+    {target_subcat_expr} AS SubCategoryName,
     pm.Brand,
     SUM(COALESCE(a.TotalSales, 0)) AS sales
   FROM `{config.BIGQUERY_PROJECT}.{config.BIGQUERY_DATASET}.{config.BIGQUERY_TABLE_SALES}` a
