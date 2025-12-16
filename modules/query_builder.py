@@ -553,7 +553,10 @@ customer_flow AS (
     COALESCE(t.target_brand, '') AS target_brand,
     CASE
       WHEN t.CustomerCode IS NULL THEN 'gone'
-      WHEN s.source_subcat = t.target_subcat THEN 'stayed'
+      -- When subcategories are selected (not empty), compare by subcat
+      -- When no subcategories (empty string), compare by category
+      WHEN s.source_subcat != '' AND s.source_subcat = t.target_subcat THEN 'stayed'
+      WHEN s.source_subcat = '' AND s.source_cat = t.target_cat THEN 'stayed'
       ELSE 'switched'
     END AS move_type
   FROM source_primary s
