@@ -270,13 +270,15 @@ if st.session_state.previous_analysis_mode != analysis_mode:
     if st.session_state.previous_analysis_mode is not None:
         # Mode changed - clear relevant session state
         keys_to_clear = [
-            'query_executed', 'cross_category_executed',
             'results_df', 'cross_category_df',
             'gb_processed', 'cross_category_gb_processed'
         ]
         for key in keys_to_clear:
             if key in st.session_state:
                 del st.session_state[key]
+        # Reset execution flags to False (don't delete, re-initialize)
+        st.session_state.query_executed = False
+        st.session_state.cross_category_executed = False
     st.session_state.previous_analysis_mode = analysis_mode
 
 st.sidebar.markdown("---")
