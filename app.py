@@ -553,36 +553,25 @@ if analysis_mode == "Cross-Category Switch":
         target_cat_display = ", ".join(target_cats)
         target_subcat_display = ", ".join(target_subcats) if target_subcats else ""
         
-        # Build subcategory HTML separately
-        source_subcat_html = ""
-        if source_subcat_display:
-            source_subcat_html = '<div style="font-size: 13px; color: #6366f1; margin-top: 4px;">↳ ' + source_subcat_display + '</div>'
-        
-        target_subcat_html = ""
-        if target_subcat_display:
-            target_subcat_html = '<div style="font-size: 13px; color: #8b5cf6; margin-top: 4px;">↳ ' + target_subcat_display + '</div>'
-        
-        # Build the complete HTML string
-        summary_html = f'''
-        <div style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
-            <div style="display: flex; gap: 40px; flex-wrap: wrap; align-items: flex-start;">
-                <div>
-                    <div style="font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 600;">Source Category</div>
-                    <div style="font-size: 18px; color: #0f172a; font-weight: 700;">{source_cat_display}</div>
-                    {source_subcat_html}
-                </div>
-                <div style="display: flex; align-items: center; padding-top: 15px;">
-                    <span style="font-size: 24px; color: #6366f1;">→</span>
-                </div>
-                <div>
-                    <div style="font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 600;">Target Category</div>
-                    <div style="font-size: 18px; color: #0f172a; font-weight: 700;">{target_cat_display}</div>
-                    {target_subcat_html}
-                </div>
-            </div>
-        </div>
-        '''
-        st.markdown(summary_html, unsafe_allow_html=True)
+        # Display source and target summary using Streamlit columns (more reliable than HTML)
+        with st.container():
+            col_src, col_arrow, col_tgt = st.columns([2, 1, 2])
+            
+            with col_src:
+                st.markdown("**SOURCE CATEGORY**")
+                st.markdown(f"### {source_cat_display}")
+                if source_subcat_display:
+                    st.caption(f"↳ {source_subcat_display}")
+            
+            with col_arrow:
+                st.markdown("")
+                st.markdown("# →")
+            
+            with col_tgt:
+                st.markdown("**TARGET CATEGORY**")
+                st.markdown(f"### {target_cat_display}")
+                if target_subcat_display:
+                    st.caption(f"↳ {target_subcat_display}")
         
         # Calculate KPIs
         cross_kpis = data_processor.calculate_cross_category_kpis(df_cross, target_categories)
