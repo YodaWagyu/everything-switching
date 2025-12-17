@@ -1687,7 +1687,11 @@ if run_analysis or st.session_state.query_executed:
         <span style="font-size: 24px; font-weight: 800; color: #0f3d3e;">Section 2: Competitive Matrix</span>
     </div>
 """, unsafe_allow_html=True)
-    st.plotly_chart(visualizations.create_competitive_heatmap(data_processor.prepare_heatmap_data(df_display)), use_container_width=True)
+    
+    # Toggle for percentage view
+    show_percentage = st.toggle("Show as Percentage (%)", value=False, key="heatmap_pct_toggle", help="Toggle to show percentages instead of raw customer counts")
+    
+    st.plotly_chart(visualizations.create_competitive_heatmap(data_processor.prepare_heatmap_data(df_display), show_percentage=show_percentage), use_container_width=True)
     st.markdown("""
     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; margin-top: 30px;">
         <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="#0f3d3e"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/></svg>

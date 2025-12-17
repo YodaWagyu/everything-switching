@@ -171,16 +171,38 @@ def create_sankey_diagram(labels: List[str], sources: List[int], targets: List[i
     return fig
 
 
-def create_competitive_heatmap(heatmap_df: pd.DataFrame) -> go.Figure:
-    """Create heatmap"""
+def create_competitive_heatmap(heatmap_df: pd.DataFrame, show_percentage: bool = False) -> go.Figure:
+    """Create heatmap with option to show raw numbers or percentages
+    
+    Args:
+        heatmap_df: DataFrame with source as index, target as columns
+        show_percentage: If True, show row-wise percentages. If False, show raw numbers.
+    """
+    
+    if show_percentage:
+        # Calculate row-wise percentages (each row sums to 100%)
+        row_totals = heatmap_df.sum(axis=1)
+        row_totals = row_totals.replace(0, 1)  # Avoid division by zero
+        display_df = heatmap_df.div(row_totals, axis=0) * 100
+        text_labels = display_df.round(1).astype(str) + '%'
+        text_template = '%{text}'
+        hover_template = 'From: %{y}<br>To: %{x}<br>Share: %{z:.1f}%<extra></extra>'
+    else:
+        # Show raw numbers
+        display_df = heatmap_df
+        text_labels = heatmap_df.values
+        text_template = '%{text:,}'
+        hover_template = 'From: %{y}<br>To: %{x}<br>Customers: %{z:,}<extra></extra>'
+    
     fig = go.Figure(data=go.Heatmap(
-        z=heatmap_df.values, 
+        z=display_df.values, 
         x=heatmap_df.columns, 
         y=heatmap_df.index,
         colorscale='Blues', 
-        text=heatmap_df.values, 
-        texttemplate='%{text:,}',
-        textfont={"size": 12}  # ไม่กำหนดสี ให้ plotly เลือกเอง
+        text=text_labels, 
+        texttemplate=text_template,
+        textfont={"size": 12},
+        hovertemplate=hover_template
     ))
     fig.update_layout(
         title='',
