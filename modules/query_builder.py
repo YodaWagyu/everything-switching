@@ -252,7 +252,8 @@ primary_identification AS (
     CASE
       WHEN share_item >= PRIMARY_THRESHOLD THEN Brand
       ELSE 'MIXED'
-    END AS primary_brand
+    END AS primary_brand,
+    sales_item AS primary_sales  -- Add sales for this primary item
   FROM cust_item_stats
   QUALIFY ROW_NUMBER() OVER(
     PARTITION BY Year, CustomerCode
@@ -271,10 +272,12 @@ customer_flow AS (
     MAX(CASE WHEN Year = 2024 THEN primary_item END) AS item_2024,
     MAX(CASE WHEN Year = 2024 THEN primary_barcode END) AS barcode_2024,
     MAX(CASE WHEN Year = 2024 THEN primary_brand END) AS brand_2024,
+    MAX(CASE WHEN Year = 2024 THEN primary_sales END) AS sales_2024,
     -- Period 2 (2025)
     MAX(CASE WHEN Year = 2025 THEN primary_item END) AS item_2025,
     MAX(CASE WHEN Year = 2025 THEN primary_barcode END) AS barcode_2025,
-    MAX(CASE WHEN Year = 2025 THEN primary_brand END) AS brand_2025
+    MAX(CASE WHEN Year = 2025 THEN primary_brand END) AS brand_2025,
+    MAX(CASE WHEN Year = 2025 THEN primary_sales END) AS sales_2025
   FROM primary_identification
   GROUP BY CustomerCode
 ),
@@ -292,6 +295,10 @@ classify AS (
     COALESCE(brand_2025, 'LOST_FROM_CATEGORY') AS brand_2025,
     -- Counts and move type
     COUNT(*) AS customers,
+    -- Sales aggregates
+    COALESCE(SUM(sales_2024), 0) AS sales_2024,
+    COALESCE(SUM(sales_2025), 0) AS sales_2025,
+    COALESCE(SUM(sales_2024), 0) + COALESCE(SUM(sales_2025), 0) AS total_sales,
     CASE
       WHEN item_2024 IS NULL AND item_2025 IS NOT NULL THEN 'new_to_category'
       WHEN item_2024 IS NOT NULL AND item_2025 IS NULL THEN 'lost_from_category'
@@ -300,7 +307,7 @@ classify AS (
       ELSE 'unknown'
     END AS move_type
   FROM customer_flow
-  GROUP BY 1, 2, 3, 4, 5, 6, 8
+  GROUP BY 1, 2, 3, 4, 5, 6, 11
 )
 
 SELECT * FROM classify

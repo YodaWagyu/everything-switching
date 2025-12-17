@@ -1722,7 +1722,7 @@ if run_analysis or st.session_state.query_executed:
     </div>
 """, unsafe_allow_html=True)
     switching_tab_label = f"{item_label} Switching"
-    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["Summary", switching_tab_label, "Loyalty", "Charts", "Raw", "Export"])
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs(["Summary", switching_tab_label, "Loyalty", "Charts", "📊 Sales Analysis", "Raw", "Export"])
     with tab1:
         st.markdown(f"### {item_label} Movement Summary")
         display_summary = visualizations.create_summary_table_display(summary_df_display)
@@ -2150,15 +2150,97 @@ if run_analysis or st.session_state.query_executed:
         else:
             st.info("No brands available for competitive analysis.")
     
-    # Tab 5: Raw (moved from tab4)
+    # Tab 5: Sales Analysis (NEW)
     with tab5:
+        st.markdown("### 📊 Sales Analysis (Testing)")
+        st.caption("Compare customer movement with sales value to understand revenue impact.")
+        
+        # Check if sales columns exist in data
+        has_sales = 'sales_2024' in df_display.columns and 'sales_2025' in df_display.columns
+        
+        if has_sales:
+            # Sales summary by move type
+            st.markdown("#### Sales by Movement Type")
+            
+            sales_summary = df_display.groupby('move_type').agg({
+                'customers': 'sum',
+                'sales_2024': 'sum',
+                'sales_2025': 'sum',
+                'total_sales': 'sum'
+            }).reset_index()
+            
+            # Add calculated columns
+            sales_summary['avg_sales_per_customer_2024'] = sales_summary['sales_2024'] / sales_summary['customers']
+            sales_summary['avg_sales_per_customer_2025'] = sales_summary['sales_2025'] / sales_summary['customers']
+            sales_summary['sales_change'] = sales_summary['sales_2025'] - sales_summary['sales_2024']
+            sales_summary['sales_change_pct'] = (sales_summary['sales_2025'] / sales_summary['sales_2024'] - 1) * 100
+            
+            # Format for display
+            display_sales = sales_summary.copy()
+            display_sales['sales_2024'] = display_sales['sales_2024'].apply(lambda x: f"฿{x:,.0f}")
+            display_sales['sales_2025'] = display_sales['sales_2025'].apply(lambda x: f"฿{x:,.0f}")
+            display_sales['total_sales'] = display_sales['total_sales'].apply(lambda x: f"฿{x:,.0f}")
+            display_sales['avg_sales_per_customer_2024'] = display_sales['avg_sales_per_customer_2024'].apply(lambda x: f"฿{x:,.0f}")
+            display_sales['avg_sales_per_customer_2025'] = display_sales['avg_sales_per_customer_2025'].apply(lambda x: f"฿{x:,.0f}")
+            display_sales['sales_change'] = sales_summary['sales_change'].apply(lambda x: f"+฿{x:,.0f}" if x >= 0 else f"-฿{abs(x):,.0f}")
+            display_sales['sales_change_pct'] = sales_summary['sales_change_pct'].apply(lambda x: f"+{x:.1f}%" if x >= 0 else f"{x:.1f}%")
+            display_sales['customers'] = display_sales['customers'].apply(lambda x: f"{x:,}")
+            
+            display_sales.columns = ['Move Type', 'Customers', 'Sales 2024', 'Sales 2025', 'Total Sales', 'Avg/Customer 2024', 'Avg/Customer 2025', 'Sales Change', 'Change %']
+            st.dataframe(display_sales, use_container_width=True, hide_index=True)
+            
+            st.markdown("---")
+            st.markdown("#### Sales Flow Matrix (Brand to Brand)")
+            
+            # Aggregate by brand flow
+            brand_sales = df_display.groupby(['brand_2024', 'brand_2025']).agg({
+                'customers': 'sum',
+                'sales_2024': 'sum',
+                'sales_2025': 'sum'
+            }).reset_index()
+            
+            # Filter out special categories for cleaner view
+            special_cats = ['NEW_TO_CATEGORY', 'LOST_FROM_CATEGORY', 'MIXED']
+            brand_sales_filtered = brand_sales[
+                (~brand_sales['brand_2024'].isin(special_cats)) & 
+                (~brand_sales['brand_2025'].isin(special_cats))
+            ].copy()
+            
+            if len(brand_sales_filtered) > 0:
+                brand_sales_filtered['sales_delta'] = brand_sales_filtered['sales_2025'] - brand_sales_filtered['sales_2024']
+                brand_sales_filtered = brand_sales_filtered.sort_values('sales_delta', ascending=False).head(20)
+                
+                # Format display
+                brand_sales_filtered['sales_2024'] = brand_sales_filtered['sales_2024'].apply(lambda x: f"฿{x:,.0f}")
+                brand_sales_filtered['sales_2025'] = brand_sales_filtered['sales_2025'].apply(lambda x: f"฿{x:,.0f}")
+                brand_sales_filtered['sales_delta'] = brand_sales_filtered['sales_delta'].apply(lambda x: f"+฿{x:,.0f}" if x >= 0 else f"-฿{abs(x):,.0f}")
+                brand_sales_filtered.columns = ['From Brand', 'To Brand', 'Customers', 'Sales Before', 'Sales After', 'Sales Delta']
+                
+                st.dataframe(brand_sales_filtered, use_container_width=True, hide_index=True)
+            else:
+                st.info("No brand-to-brand flows available.")
+                
+            st.markdown("---")
+            st.markdown("#### Raw Data with Sales")
+            sales_cols = ['prod_2024', 'prod_2025', 'brand_2024', 'brand_2025', 'customers', 'sales_2024', 'sales_2025', 'total_sales', 'move_type']
+            available_cols = [c for c in sales_cols if c in df_display.columns]
+            st.dataframe(df_display[available_cols].head(100), use_container_width=True, height=300)
+        else:
+            st.warning("⚠️ Sales data not available in current query results.")
+            st.info("กรุณา Run Query ใหม่เพื่อดึงข้อมูล Sales")
+            st.caption("Expected columns: sales_2024, sales_2025, total_sales")
+            st.markdown("**Available columns:**")
+            st.write(df_display.columns.tolist())
+    
+    # Tab 6: Raw
+    with tab6:
         st.markdown("### Raw Data")
         st.dataframe(df_display, use_container_width=True, height=400)
         st.markdown("### Top 10 Flows")
         st.dataframe(data_processor.get_top_flows(df_display, n=10), use_container_width=True)
     
-    # Tab 6: Export (moved from tab5)
-    with tab6:
+    # Tab 7: Export
+    with tab7:
         st.markdown("### Export")
         c1, c2 = st.columns(2)
         with c1:
