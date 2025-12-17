@@ -383,21 +383,35 @@ def build_cross_category_query(
         # If no target specified, everything except source is "switched"
         target_only_list = ""
     
-    # Build target subcategory filter - include BOTH source and target subcategories
-    # Source subcats needed to detect "Stayed", target subcats to detect "Switched"
-    all_target_subcats = []
-    if source_has_subcats:
-        all_target_subcats.extend(source_subcategories)
-    if target_has_subcats:
+    # Build target subcategory filter
+    # IMPORTANT: Only filter by subcategory if BOTH source AND target have subcategories
+    # If source has no subcats, we need ALL transactions from source category (for Stayed detection)
+    # If target has subcats, we still filter target by those subcats
+    if source_has_subcats and target_has_subcats:
+        # Both have subcats - filter by both
+        all_target_subcats = list(source_subcategories)
         for subcat in target_subcategories:
             if subcat not in all_target_subcats:
                 all_target_subcats.append(subcat)
-    
-    if all_target_subcats and len(all_target_subcats) > 0:
         escaped_all_subcats = [s.replace("'", "''") for s in all_target_subcats]
         all_subcat_list = ", ".join([f"'{s}'" for s in escaped_all_subcats])
         target_subcat_filter = f"AND pm.SubCategoryName IN ({all_subcat_list})"
+    elif source_has_subcats:
+        # Only source has subcats
+        escaped_subcats = [s.replace("'", "''") for s in source_subcategories]
+        subcat_list = ", ".join([f"'{s}'" for s in escaped_subcats])
+        target_subcat_filter = f"AND pm.SubCategoryName IN ({subcat_list})"
+    elif target_has_subcats:
+        # Only target has subcats - DON'T filter source categories by subcat
+        # Filter target categories by their subcats, but allow ALL source category transactions
+        escaped_source_cats = [c.replace("'", "''") for c in source_categories]
+        source_cats_list = ", ".join([f"'{c}'" for c in escaped_source_cats])
+        escaped_target_subcats = [s.replace("'", "''") for s in target_subcategories]
+        target_subcats_list = ", ".join([f"'{s}'" for s in escaped_target_subcats])
+        # Complex filter: (source category) OR (target category with specific subcats)
+        target_subcat_filter = f"AND (pm.CategoryName IN ({source_cats_list}) OR pm.SubCategoryName IN ({target_subcats_list}))"
     else:
+        # Neither has subcats
         target_subcat_filter = ""
     
     # Keep source subcats list for Stayed detection
