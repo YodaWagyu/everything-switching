@@ -1679,35 +1679,61 @@ if run_analysis or st.session_state.query_executed:
             
             # Calculate winner/loser sales from summary_df if available
             winner_sales_fmt = ""
+            winner_insight = ""
             loser_sales_fmt = ""
+            loser_insight = ""
+            
             if '2025_Total' in summary_df.columns and 'total_sales' in df_display.columns:
-                # Get winner/loser brand names
+                # Get winner/loser brand names (using safe get)
                 winner_name = kpis.get('winner_name', 'N/A')
                 loser_name = kpis.get('loser_name', 'N/A')
                 
-                # Calculate winner brand sales
+                # --- WINNER METRICS ---
                 if winner_name and winner_name != 'N/A':
                     winner_rows = df_display[
                         (df_display['prod_2024'] == winner_name) | (df_display['prod_2025'] == winner_name)
                     ]
                     if len(winner_rows) > 0:
-                        winner_total_sales = winner_rows['total_sales'].sum()
+                        w_sales_24 = winner_rows['sales_2024'].sum()
+                        w_sales_25 = winner_rows['sales_2025'].sum()
+                        winner_total_sales = w_sales_24 + w_sales_25
                         winner_sales_fmt = f"฿{winner_total_sales:,.0f}"
+                        
+                        # Winner Insight: Check sales growth
+                        if w_sales_25 > w_sales_24:
+                            growth = ((w_sales_25 - w_sales_24) / w_sales_24 * 100) if w_sales_24 > 0 else 100
+                            winner_insight = f"<span style='color: #16a34a; font-weight:600;'>Sales +{growth:.0f}%</span>"
+                        else:
+                            winner_insight = f"<span style='color: #dc2626;'>But Sales Drop</span>"
                 
-                # Calculate loser brand sales
+                # --- LOSER METRICS ---
                 if loser_name and loser_name != 'N/A':
                     loser_rows = df_display[
                         (df_display['prod_2024'] == loser_name) | (df_display['prod_2025'] == loser_name)
                     ]
                     if len(loser_rows) > 0:
-                        loser_total_sales = loser_rows['total_sales'].sum()
+                        l_sales_24 = loser_rows['sales_2024'].sum()
+                        l_sales_25 = loser_rows['sales_2025'].sum()
+                        loser_total_sales = l_sales_24 + l_sales_25
                         loser_sales_fmt = f"฿{loser_total_sales:,.0f}"
+                        
+                        # Loser Insight: Critical check!
+                        if l_sales_25 > l_sales_24:
+                            # Lost customers but grew sales (Good!)
+                            growth = ((l_sales_25 - l_sales_24) / l_sales_24 * 100) if l_sales_24 > 0 else 100
+                            loser_insight = f"<span style='color: #16a34a; font-weight:600;'>But Sales +{growth:.0f}%!</span>"
+                        elif l_sales_24 > 0:
+                            drop = ((l_sales_24 - l_sales_25) / l_sales_24 * 100)
+                            loser_insight = f"<span style='color: #dc2626;'>Sales also -{drop:.0f}%</span>"
+
         else:
             total_sales_fmt = ""
             sales_change_fmt = ""
             sales_change_color = "#6b7280"
             winner_sales_fmt = ""
             loser_sales_fmt = ""
+            winner_insight = ""
+            loser_insight = ""
         
         # Consistent KPI card styling
         k1, k2, k3, k4, k5 = st.columns(5)
@@ -1747,7 +1773,8 @@ if run_analysis or st.session_state.query_executed:
                     <span style="font-size: 12px; font-weight: 500; color: #16a34a;">{winner_val_fmt}</span>
                 </div>
                 <div style="font-size: 24px; font-weight: 500; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{kpis['winner_name']}">{kpis['winner_name']}</div>
-                <div style="font-size: 12px; color: #16a34a; margin-top: 4px;">↑ {winner_val_fmt} customers{' / ' + winner_sales_fmt if has_sales_data and winner_sales_fmt else ''}</div>
+                <div style="font-size: 12px; color: #16a34a; margin-top: 4px;">↑ {winner_val_fmt} Cust {' (' + winner_insight + ')' if winner_insight else ''}</div>
+                <div style="font-size: 11px; color: #6b7280;">Total Sales: {winner_sales_fmt if has_sales_data else '-'}</div>
             </div>
             """, unsafe_allow_html=True)
         
@@ -1759,7 +1786,8 @@ if run_analysis or st.session_state.query_executed:
                     <span style="font-size: 12px; font-weight: 500; color: #dc2626;">{loser_val_fmt}</span>
                 </div>
                 <div style="font-size: 24px; font-weight: 500; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{kpis['loser_name']}">{kpis['loser_name']}</div>
-                <div style="font-size: 12px; color: #dc2626; margin-top: 4px;">{loser_val_fmt} customers{' / ' + loser_sales_fmt if has_sales_data and loser_sales_fmt else ''}</div>
+                <div style="font-size: 12px; color: #dc2626; margin-top: 4px;">{loser_val_fmt} Cust {' (' + loser_insight + ')' if loser_insight else ''}</div>
+                <div style="font-size: 11px; color: #6b7280;">Total Sales: {loser_sales_fmt if has_sales_data else '-'}</div>
             </div>
             """, unsafe_allow_html=True)
         
@@ -1833,8 +1861,14 @@ if run_analysis or st.session_state.query_executed:
         st.markdown("---")
         st.markdown("### 📊 Brand Switching x Sales Detail")
         
-        # Group by brand_2024 -> brand_2025
-        brand_switching = df_display.groupby(['brand_2024', 'brand_2025', 'move_type']).agg({
+        
+        # Determine columns to group by (prod_2024 or brand_2024)
+        group_cols = ['prod_2024', 'prod_2025', 'move_type']
+        if 'brand_2024' in df_display.columns and 'brand_2025' in df_display.columns:
+            group_cols = ['brand_2024', 'brand_2025', 'move_type']
+            
+        # Group by brand/product -> brand/product
+        brand_switching = df_display.groupby(group_cols).agg({
             'customers': 'sum',
             'sales_2024': 'sum',
             'sales_2025': 'sum',
@@ -1850,12 +1884,19 @@ if run_analysis or st.session_state.query_executed:
         brand_switching['Sales 2025'] = brand_switching['sales_2025'].apply(lambda x: f"฿{x:,.0f}")
         brand_switching['Total Sales'] = brand_switching['total_sales'].apply(lambda x: f"฿{x:,.0f}")
         
+        # Rename columns for display based on what we grouped by
+        rename_dict = {
+            'move_type': 'Movement',
+            'prod_2024': 'From Brand (2024)',
+            'prod_2025': 'To Brand (2025)',
+            'brand_2024': 'From Brand (2024)',
+            'brand_2025': 'To Brand (2025)'
+        }
+        
+        display_cols = group_cols + ['Customers', 'Sales 2024', 'Sales 2025', 'Total Sales']
+        
         st.dataframe(
-            brand_switching[['brand_2024', 'brand_2025', 'move_type', 'Customers', 'Sales 2024', 'Sales 2025', 'Total Sales']].rename(columns={
-                'brand_2024': 'From Brand (2024)',
-                'brand_2025': 'To Brand (2025)',
-                'move_type': 'Movement'
-            }).head(50),
+            brand_switching[display_cols].rename(columns=rename_dict).head(50),
             use_container_width=True,
             hide_index=True,
             height=500
