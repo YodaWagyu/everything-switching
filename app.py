@@ -1614,6 +1614,10 @@ if run_analysis or st.session_state.query_executed:
     </div>
     """, unsafe_allow_html=True)
     
+    # Warning: Sales mode active but no sales data
+    if is_sales_mode and ('sales_2024' not in df_display.columns or 'sales_2025' not in df_display.columns):
+        st.warning("⚠️ กรุณา **Run Analysis** ใหม่เพื่อดึงข้อมูล Sales! (ข้อมูลเดิมไม่มี Sales columns)")
+    
     if kpis:
         # Calculate formatted values
         total_movement_fmt = utils.format_number(kpis['total_movement'])
