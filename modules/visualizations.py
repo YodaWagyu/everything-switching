@@ -14,7 +14,8 @@ import config
 
 def create_sankey_diagram(labels: List[str], sources: List[int], targets: List[int], values: List[int], 
                           highlighted_brands: List[str] = None, min_volume_pct: float = 0.0,
-                          link_colors: List[str] = None, node_colors_override: List[str] = None) -> go.Figure:
+                          link_colors: List[str] = None, node_colors_override: List[str] = None,
+                          sales_values: List[float] = None) -> go.Figure:
     """
     Create Sankey diagram with highlighted brands shown in vibrant colors
     
@@ -22,11 +23,12 @@ def create_sankey_diagram(labels: List[str], sources: List[int], targets: List[i
         labels: List of node labels
         sources: List of source indices
         targets: List of target indices
-        values: List of flow values
+        values: List of flow values (customers)
         highlighted_brands: List of brands to highlight (None = no highlighting)
         min_volume_pct: Minimum percentage of total flow to display (0-100)
         link_colors: Optional custom colors for each link (overrides automatic coloring)
         node_colors_override: Optional custom colors for nodes (overrides automatic coloring)
+        sales_values: Optional list of sales amounts for each flow
     """
     # Calculate total volume for percentage filtering
     total_volume = sum(values)
@@ -35,17 +37,23 @@ def create_sankey_diagram(labels: List[str], sources: List[int], targets: List[i
     filtered_sources = []
     filtered_targets = []
     filtered_values = []
+    filtered_sales = []
     
-    for s, t, v in zip(sources, targets, values):
+    # Handle sales_values
+    sales_list = sales_values if sales_values else [0] * len(values)
+    
+    for s, t, v, sv in zip(sources, targets, values, sales_list):
         if total_volume > 0 and (v / total_volume * 100) >= min_volume_pct:
             filtered_sources.append(s)
             filtered_targets.append(t)
             filtered_values.append(v)
+            filtered_sales.append(sv)
     
     # Update lists
     final_sources = filtered_sources
     final_targets = filtered_targets
     final_values = filtered_values
+    final_sales = filtered_sales
     
     # Helper function to check if label involves highlighted brand
     def is_highlighted_label(label, highlighted_brands):
@@ -130,15 +138,23 @@ def create_sankey_diagram(labels: List[str], sources: List[int], targets: List[i
             source_totals[s] = 0
         source_totals[s] += v
     
-    # Calculate percentages based on source node total (not overall total)
-    link_percentages = []
-    for s, v in zip(final_sources, final_values):
+    # Calculate percentages and prepare custom data for tooltips
+    link_customdata = []
+    for i, (s, v) in enumerate(zip(final_sources, final_values)):
         source_total = source_totals.get(s, 0)
         if source_total > 0:
             pct = (v / source_total) * 100
-            link_percentages.append(f"{pct:.1f}%")
+            pct_text = f"{pct:.1f}%"
         else:
-            link_percentages.append("0%")
+            pct_text = "0%"
+        
+        # Add sales info if available
+        sales_val = final_sales[i] if i < len(final_sales) else 0
+        if sales_val > 0:
+            sales_text = f"฿{sales_val:,.0f}"
+            link_customdata.append(f"{pct_text} of source<br>Sales: {sales_text}")
+        else:
+            link_customdata.append(f"{pct_text} of source")
 
     fig = go.Figure(data=[go.Sankey(
         node=dict(
@@ -155,8 +171,8 @@ def create_sankey_diagram(labels: List[str], sources: List[int], targets: List[i
             target=final_targets, 
             value=final_values,
             color=final_link_colors,
-            customdata=link_percentages,
-            hovertemplate='From %{source.label}<br>To %{target.label}<br>Flow: %{value:,}<br>%{customdata} of source<extra></extra>'
+            customdata=link_customdata,
+            hovertemplate='From %{source.label}<br>To %{target.label}<br>Flow: %{value:,}<br>%{customdata}<extra></extra>'
         ),
         textfont=dict(family="Inter", size=12, color="#1a1a1a")
     )])

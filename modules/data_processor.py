@@ -167,8 +167,12 @@ def calculate_brand_summary(df: pd.DataFrame, item_label: str = 'Brand') -> pd.D
     return pd.DataFrame(summary_data)
 
 
-def prepare_sankey_data(df: pd.DataFrame) -> Tuple[List, List, List]:
-    """Prepare data for Sankey diagram"""
+def prepare_sankey_data(df: pd.DataFrame) -> Tuple[List, List, List, List, List]:
+    """Prepare data for Sankey diagram with optional sales data
+    
+    Returns:
+        Tuple of (labels, sources, targets, customer_values, sales_values)
+    """
     labels_2024 = df['prod_2024'].unique().tolist()
     labels_2025 = df['prod_2025'].unique().tolist()
     
@@ -189,15 +193,22 @@ def prepare_sankey_data(df: pd.DataFrame) -> Tuple[List, List, List]:
             label_mapping[period2_key] = len(all_labels)
             all_labels.append(display_label)
     
-    sources, targets, values = [], [], []
+    sources, targets, values, sales_values = [], [], [], []
+    has_sales = 'total_sales' in df.columns
+    
     for _, row in df.iterrows():
         source_idx = label_mapping[row['prod_2024']]
         target_idx = label_mapping[f"{row['prod_2025']}_2025"]
         sources.append(source_idx)
         targets.append(target_idx)
         values.append(row['customers'])
+        # Add sales if available
+        if has_sales:
+            sales_values.append(row.get('total_sales', 0))
+        else:
+            sales_values.append(0)
     
-    return all_labels, sources, targets, values
+    return all_labels, sources, targets, values, sales_values
 
 
 def prepare_heatmap_data(df: pd.DataFrame) -> pd.DataFrame:

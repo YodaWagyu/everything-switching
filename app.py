@@ -947,8 +947,6 @@ if run_analysis or st.session_state.query_executed:
         # If brands selected in sidebar, filter at query level (saves data)
         # If no brands, get all and user can filter client-side later
         
-        # Debug: Show sales mode status
-        st.info(f"🔧 Debug: is_sales_mode = {is_sales_mode}, analysis_mode = {analysis_mode}")
         
         query_all_brands = query_builder.build_switching_query(
             period1_start.strftime("%Y-%m-%d"), 
@@ -970,9 +968,6 @@ if run_analysis or st.session_state.query_executed:
         utils.show_debug_query(query_all_brands)
         df, gb_processed = bigquery_client.execute_query(query_all_brands)
         
-        # DEBUG: Show actual columns from query
-        st.warning(f"DEBUG: is_sales_mode={is_sales_mode}")
-        st.warning(f"DEBUG: Columns from query: {list(df.columns)}")
         
         # Sales mode: Just show success message (Sales display comes after brand selection)
         if is_sales_mode:
@@ -1672,7 +1667,6 @@ if run_analysis or st.session_state.query_executed:
         
         # Sales KPIs for Sales Analysis Mode
         has_sales_data = is_sales_mode and 'sales_2024' in df_display.columns and 'sales_2025' in df_display.columns
-        st.warning(f"DEBUG KPI: has_sales_data={has_sales_data}, is_sales_mode={is_sales_mode}, df_display_cols={list(df_display.columns)}")
         if has_sales_data:
             total_sales_2024 = df_display['sales_2024'].sum()
             total_sales_2025 = df_display['sales_2025'].sum()
@@ -1682,10 +1676,38 @@ if run_analysis or st.session_state.query_executed:
             sales_change_sign = "+" if sales_change >= 0 else ""
             sales_change_fmt = f"{sales_change_sign}฿{abs(sales_change):,.0f}"
             sales_change_color = "#16a34a" if sales_change >= 0 else "#dc2626"
+            
+            # Calculate winner/loser sales from summary_df if available
+            winner_sales_fmt = ""
+            loser_sales_fmt = ""
+            if '2025_Total' in summary_df.columns and 'total_sales' in df_display.columns:
+                # Get winner/loser brand names
+                winner_name = kpis.get('winner_name', 'N/A')
+                loser_name = kpis.get('loser_name', 'N/A')
+                
+                # Calculate winner brand sales
+                if winner_name and winner_name != 'N/A':
+                    winner_rows = df_display[
+                        (df_display['prod_2024'] == winner_name) | (df_display['prod_2025'] == winner_name)
+                    ]
+                    if len(winner_rows) > 0:
+                        winner_total_sales = winner_rows['total_sales'].sum()
+                        winner_sales_fmt = f"฿{winner_total_sales:,.0f}"
+                
+                # Calculate loser brand sales
+                if loser_name and loser_name != 'N/A':
+                    loser_rows = df_display[
+                        (df_display['prod_2024'] == loser_name) | (df_display['prod_2025'] == loser_name)
+                    ]
+                    if len(loser_rows) > 0:
+                        loser_total_sales = loser_rows['total_sales'].sum()
+                        loser_sales_fmt = f"฿{loser_total_sales:,.0f}"
         else:
             total_sales_fmt = ""
             sales_change_fmt = ""
             sales_change_color = "#6b7280"
+            winner_sales_fmt = ""
+            loser_sales_fmt = ""
         
         # Consistent KPI card styling
         k1, k2, k3, k4, k5 = st.columns(5)
@@ -1725,7 +1747,7 @@ if run_analysis or st.session_state.query_executed:
                     <span style="font-size: 12px; font-weight: 500; color: #16a34a;">{winner_val_fmt}</span>
                 </div>
                 <div style="font-size: 24px; font-weight: 500; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{kpis['winner_name']}">{kpis['winner_name']}</div>
-                <div style="font-size: 12px; color: #16a34a; margin-top: 4px;">↑ {winner_val_fmt}</div>
+                <div style="font-size: 12px; color: #16a34a; margin-top: 4px;">↑ {winner_val_fmt} customers{' / ' + winner_sales_fmt if has_sales_data and winner_sales_fmt else ''}</div>
             </div>
             """, unsafe_allow_html=True)
         
@@ -1737,7 +1759,7 @@ if run_analysis or st.session_state.query_executed:
                     <span style="font-size: 12px; font-weight: 500; color: #dc2626;">{loser_val_fmt}</span>
                 </div>
                 <div style="font-size: 24px; font-weight: 500; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{kpis['loser_name']}">{kpis['loser_name']}</div>
-                <div style="font-size: 12px; color: #dc2626; margin-top: 4px;">{loser_val_fmt}</div>
+                <div style="font-size: 12px; color: #dc2626; margin-top: 4px;">{loser_val_fmt} customers{' / ' + loser_sales_fmt if has_sales_data and loser_sales_fmt else ''}</div>
             </div>
             """, unsafe_allow_html=True)
         
@@ -1765,15 +1787,32 @@ if run_analysis or st.session_state.query_executed:
             'total_sales': 'sum'
         }).reset_index()
         
+        
+        # Calculate customers for 2024 and 2025 based on movement type
+        def get_cust_2024(row):
+            if row['move_type'] == 'new_to_category':
+                return 0
+            return row['customers']
+            
+        def get_cust_2025(row):
+            if row['move_type'] == 'lost_from_category':
+                return 0
+            return row['customers']
+            
+        sales_by_movement['customers_2024'] = sales_by_movement.apply(get_cust_2024, axis=1)
+        sales_by_movement['customers_2025'] = sales_by_movement.apply(get_cust_2025, axis=1)
+        
         # Format for display
         sales_by_movement['sales_2024_fmt'] = sales_by_movement['sales_2024'].apply(lambda x: f"฿{x:,.0f}")
         sales_by_movement['sales_2025_fmt'] = sales_by_movement['sales_2025'].apply(lambda x: f"฿{x:,.0f}")
         sales_by_movement['total_sales_fmt'] = sales_by_movement['total_sales'].apply(lambda x: f"฿{x:,.0f}")
         sales_by_movement['customers_fmt'] = sales_by_movement['customers'].apply(lambda x: f"{x:,}")
+        sales_by_movement['customers_2024_fmt'] = sales_by_movement['customers_2024'].apply(lambda x: f"{x:,}")
+        sales_by_movement['customers_2025_fmt'] = sales_by_movement['customers_2025'].apply(lambda x: f"{x:,}")
         
         # Display table
-        display_df = sales_by_movement[['move_type', 'customers_fmt', 'sales_2024_fmt', 'sales_2025_fmt', 'total_sales_fmt']].copy()
-        display_df.columns = ['Movement Type', 'Customers', 'Sales 2024', 'Sales 2025', 'Total Sales']
+        display_df = sales_by_movement[['move_type', 'customers_2024_fmt', 'customers_2025_fmt', 'customers_fmt', 'sales_2024_fmt', 'sales_2025_fmt', 'total_sales_fmt']].copy()
+        display_df.columns = ['Movement Type', 'Cust 2024', 'Cust 2025', 'Total Cust', 'Sales 2024', 'Sales 2025', 'Total Sales']
         st.dataframe(display_df, use_container_width=True, hide_index=True)
         
         # Summary totals
@@ -1787,13 +1826,47 @@ if run_analysis or st.session_state.query_executed:
         col2.metric("Total Sales 2024", f"฿{total_sales_2024:,.0f}")
         col3.metric("Total Sales 2025", f"฿{total_sales_2025:,.0f}")
         col4.metric("Grand Total Sales", f"฿{grand_total:,.0f}")
+        
+        # =====================================================
+        # BRAND-LEVEL SWITCHING x SALES
+        # =====================================================
+        st.markdown("---")
+        st.markdown("### 📊 Brand Switching x Sales Detail")
+        
+        # Group by brand_2024 -> brand_2025
+        brand_switching = df_display.groupby(['brand_2024', 'brand_2025', 'move_type']).agg({
+            'customers': 'sum',
+            'sales_2024': 'sum',
+            'sales_2025': 'sum',
+            'total_sales': 'sum'
+        }).reset_index()
+        
+        # Sort by total_sales descending
+        brand_switching = brand_switching.sort_values('total_sales', ascending=False)
+        
+        # Format for display
+        brand_switching['Customers'] = brand_switching['customers'].apply(lambda x: f"{x:,}")
+        brand_switching['Sales 2024'] = brand_switching['sales_2024'].apply(lambda x: f"฿{x:,.0f}")
+        brand_switching['Sales 2025'] = brand_switching['sales_2025'].apply(lambda x: f"฿{x:,.0f}")
+        brand_switching['Total Sales'] = brand_switching['total_sales'].apply(lambda x: f"฿{x:,.0f}")
+        
+        st.dataframe(
+            brand_switching[['brand_2024', 'brand_2025', 'move_type', 'Customers', 'Sales 2024', 'Sales 2025', 'Total Sales']].rename(columns={
+                'brand_2024': 'From Brand (2024)',
+                'brand_2025': 'To Brand (2025)',
+                'move_type': 'Movement'
+            }).head(50),
+            use_container_width=True,
+            hide_index=True,
+            height=500
+        )
     # Sankey Title with margin separation
     st.markdown('<div style="margin-top: 32px;"></div>', unsafe_allow_html=True)
     st.markdown('<div style="text-align: center; font-size: 16px; font-weight: 600; color: #374151; margin-bottom: 8px;">Customer Flow (Sankey)</div>', unsafe_allow_html=True)
     
     # Data source for Sankey - use filtered data with brand highlighting
-    labels, sources, targets, values = data_processor.prepare_sankey_data(df_display)
-    st.plotly_chart(visualizations.create_sankey_diagram(labels, sources, targets, values, selected_brands), use_container_width=True)
+    labels, sources, targets, values, sales_values = data_processor.prepare_sankey_data(df_display)
+    st.plotly_chart(visualizations.create_sankey_diagram(labels, sources, targets, values, selected_brands, sales_values=sales_values), use_container_width=True)
     st.markdown("""
     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; margin-top: 30px;">
         <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="#0f3d3e"><path d="M13.5.67s.74 2.65.74 4.8c0 2.06-1.35 3.73-3.41 3.73-2.07 0-3.63-1.67-3.63-3.73l.03-.36C5.21 7.51 4 10.62 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8C20 8.61 17.41 3.8 13.5.67zM11.71 19c-1.78 0-3.22-1.4-3.22-3.14 0-1.62 1.05-2.76 2.81-3.12 1.77-.36 3.6-1.21 4.62-2.58.39 1.29.59 2.65.59 4.04 0 2.65-2.15 4.8-4.8 4.8z"/></svg>
