@@ -974,6 +974,21 @@ if run_analysis or st.session_state.query_executed:
         st.warning(f"DEBUG: is_sales_mode={is_sales_mode}")
         st.warning(f"DEBUG: Columns from query: {list(df.columns)}")
         
+        # =====================================================
+        # RAW SALES DATA - แสดงทันทีหลัง query
+        # =====================================================
+        if is_sales_mode:
+            st.markdown("## 💰 RAW SALES DATA (จาก Query โดยตรง)")
+            st.success(f"Query returned {len(df)} rows with columns: {list(df.columns)}")
+            st.dataframe(df.head(50), use_container_width=True, height=400)
+            
+            # Show sales totals
+            if 'sales_2024' in df.columns and 'sales_2025' in df.columns:
+                st.metric("Total Sales 2024", f"฿{df['sales_2024'].sum():,.0f}")
+                st.metric("Total Sales 2025", f"฿{df['sales_2025'].sum():,.0f}")
+            else:
+                st.error("❌ sales_2024 หรือ sales_2025 ไม่มีใน df!")
+        
         st.session_state.results_df = df
         st.session_state.gb_processed = gb_processed
         st.session_state.query_executed = True
