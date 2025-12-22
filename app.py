@@ -1632,6 +1632,22 @@ if run_analysis or st.session_state.query_executed:
         
         churn_rate_fmt = f"{kpis['churn_rate']:.1f}%"
         
+        # Sales KPIs for Sales Analysis Mode
+        has_sales_data = is_sales_mode and 'sales_2024' in df_display.columns and 'sales_2025' in df_display.columns
+        if has_sales_data:
+            total_sales_2024 = df_display['sales_2024'].sum()
+            total_sales_2025 = df_display['sales_2025'].sum()
+            total_sales = total_sales_2024 + total_sales_2025
+            total_sales_fmt = f"฿{total_sales:,.0f}"
+            sales_change = total_sales_2025 - total_sales_2024
+            sales_change_sign = "+" if sales_change >= 0 else ""
+            sales_change_fmt = f"{sales_change_sign}฿{abs(sales_change):,.0f}"
+            sales_change_color = "#16a34a" if sales_change >= 0 else "#dc2626"
+        else:
+            total_sales_fmt = ""
+            sales_change_fmt = ""
+            sales_change_color = "#6b7280"
+        
         # Consistent KPI card styling
         k1, k2, k3, k4, k5 = st.columns(5)
         
@@ -1649,7 +1665,7 @@ if run_analysis or st.session_state.query_executed:
             <div style="{card_base}">
                 <div style="font-size: 14px; font-weight: 500; color: #6b7280; margin-bottom: 8px;">Total Movement</div>
                 <div style="font-size: 28px; font-weight: 500; color: #111827; letter-spacing: -0.02em;">{total_movement_fmt}</div>
-                <div style="font-size: 12px; color: #9ca3af; margin-top: 4px;">Customers</div>
+                <div style="font-size: 12px; color: #9ca3af; margin-top: 4px;">Customers{' / ' + total_sales_fmt if has_sales_data else ''}</div>
             </div>
             """, unsafe_allow_html=True)
         
@@ -1658,7 +1674,7 @@ if run_analysis or st.session_state.query_executed:
             <div style="{card_base}">
                 <div style="font-size: 14px; font-weight: 500; color: #6b7280; margin-bottom: 8px;">Net Movement</div>
                 <div style="font-size: 28px; font-weight: 500; color: {net_color}; letter-spacing: -0.02em;">{net_cat_fmt}</div>
-                <div style="font-size: 12px; color: #9ca3af; margin-top: 4px;">Total In - Out</div>
+                <div style="font-size: 12px; color: {sales_change_color if has_sales_data else '#9ca3af'}; margin-top: 4px;">{'Sales: ' + sales_change_fmt if has_sales_data else 'Total In - Out'}</div>
             </div>
             """, unsafe_allow_html=True)
         
