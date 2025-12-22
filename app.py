@@ -984,8 +984,79 @@ if run_analysis or st.session_state.query_executed:
             
             # Show sales totals
             if 'sales_2024' in df.columns and 'sales_2025' in df.columns:
-                st.metric("Total Sales 2024", f"฿{df['sales_2024'].sum():,.0f}")
-                st.metric("Total Sales 2025", f"฿{df['sales_2025'].sum():,.0f}")
+                col1, col2 = st.columns(2)
+                col1.metric("Total Sales 2024", f"฿{df['sales_2024'].sum():,.0f}")
+                col2.metric("Total Sales 2025", f"฿{df['sales_2025'].sum():,.0f}")
+                
+                # =====================================================
+                # CUSTOMER SWITCHING x SALES SUMMARY
+                # =====================================================
+                st.markdown("---")
+                st.markdown("## 🔄 Customer Switching x Sales Summary")
+                
+                # Group by move_type
+                switching_sales = df.groupby('move_type').agg({
+                    'customers': 'sum',
+                    'sales_2024': 'sum',
+                    'sales_2025': 'sum',
+                    'total_sales': 'sum'
+                }).reset_index()
+                
+                # Calculate percentages
+                total_customers = switching_sales['customers'].sum()
+                total_sales = switching_sales['total_sales'].sum()
+                switching_sales['% Customers'] = (switching_sales['customers'] / total_customers * 100).round(1)
+                switching_sales['% Sales'] = (switching_sales['total_sales'] / total_sales * 100).round(1)
+                
+                # Format display
+                display_switching = switching_sales.copy()
+                display_switching['Customers'] = display_switching['customers'].apply(lambda x: f"{x:,}")
+                display_switching['Sales 2024'] = display_switching['sales_2024'].apply(lambda x: f"฿{x:,.0f}")
+                display_switching['Sales 2025'] = display_switching['sales_2025'].apply(lambda x: f"฿{x:,.0f}")
+                display_switching['Total Sales'] = display_switching['total_sales'].apply(lambda x: f"฿{x:,.0f}")
+                display_switching['% Customers'] = display_switching['% Customers'].apply(lambda x: f"{x}%")
+                display_switching['% Sales'] = display_switching['% Sales'].apply(lambda x: f"{x}%")
+                
+                # Show table
+                st.dataframe(
+                    display_switching[['move_type', 'Customers', '% Customers', 'Sales 2024', 'Sales 2025', 'Total Sales', '% Sales']].rename(columns={'move_type': 'Movement Type'}),
+                    use_container_width=True,
+                    hide_index=True
+                )
+                
+                # =====================================================
+                # BRAND-LEVEL SWITCHING x SALES
+                # =====================================================
+                st.markdown("---")
+                st.markdown("## 📊 Brand Switching x Sales Detail")
+                
+                # Group by brand_2024 -> brand_2025
+                brand_switching = df.groupby(['brand_2024', 'brand_2025', 'move_type']).agg({
+                    'customers': 'sum',
+                    'sales_2024': 'sum',
+                    'sales_2025': 'sum',
+                    'total_sales': 'sum'
+                }).reset_index()
+                
+                # Sort by total_sales descending
+                brand_switching = brand_switching.sort_values('total_sales', ascending=False)
+                
+                # Format for display
+                brand_switching['Customers'] = brand_switching['customers'].apply(lambda x: f"{x:,}")
+                brand_switching['Sales 2024'] = brand_switching['sales_2024'].apply(lambda x: f"฿{x:,.0f}")
+                brand_switching['Sales 2025'] = brand_switching['sales_2025'].apply(lambda x: f"฿{x:,.0f}")
+                brand_switching['Total Sales'] = brand_switching['total_sales'].apply(lambda x: f"฿{x:,.0f}")
+                
+                st.dataframe(
+                    brand_switching[['brand_2024', 'brand_2025', 'move_type', 'Customers', 'Sales 2024', 'Sales 2025', 'Total Sales']].rename(columns={
+                        'brand_2024': 'From Brand (2024)',
+                        'brand_2025': 'To Brand (2025)',
+                        'move_type': 'Movement'
+                    }).head(50),
+                    use_container_width=True,
+                    hide_index=True,
+                    height=500
+                )
             else:
                 st.error("❌ sales_2024 หรือ sales_2025 ไม่มีใน df!")
         
