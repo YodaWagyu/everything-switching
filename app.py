@@ -262,7 +262,7 @@ st.sidebar.markdown("""
 
 analysis_mode = st.sidebar.radio(
     "Select Mode",
-    ["Brand/Product Switch", "Cross-Category Switch", "💰 Sales Analysis (Testing)"],
+    ["Brand/Product Switch", "Cross-Category Switch", "[SALES] Sales Analysis (Testing)"],
     key="analysis_mode_selector",
     label_visibility="collapsed",
     horizontal=False  # Vertical layout for 3 options
@@ -337,7 +337,7 @@ st.sidebar.markdown("---")
 available_categories = bigquery_client.get_categories()
 
 # Define is_sales_mode at global scope for accessibility in query building
-is_sales_mode = analysis_mode == "💰 Sales Analysis (Testing)"
+is_sales_mode = analysis_mode == "[SALES] Sales Analysis (Testing)"
 
 if analysis_mode == "Cross-Category Switch":
     # =====================================================
@@ -412,15 +412,15 @@ else:
     # =====================================================
     # BRAND/PRODUCT SWITCH FILTERS (Original)
     # =====================================================
-    # This handles both "Brand/Product Switch" and "💰 Sales Analysis (Testing)" modes
+    # This handles both "Brand/Product Switch" and "[SALES] Sales Analysis (Testing)" modes
     # They share the same filters but Sales Analysis mode will use different query with sales columns
     
-    is_sales_mode = analysis_mode == "💰 Sales Analysis (Testing)"
+    is_sales_mode = analysis_mode == "[SALES] Sales Analysis (Testing)"
     
     if is_sales_mode:
         st.sidebar.markdown("""
             <div style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); padding: 10px 15px; border-radius: 8px; margin-bottom: 15px;">
-                <div style="color: white; font-weight: 700; font-size: 14px;">💰 Sales Analysis Mode</div>
+                <div style="color: white; font-weight: 700; font-size: 14px;">[SALES] Sales Analysis Mode</div>
                 <div style="color: rgba(255,255,255,0.8); font-size: 12px;">Testing customer movement with sales data</div>
             </div>
         """, unsafe_allow_html=True)
@@ -1767,7 +1767,7 @@ if run_analysis or st.session_state.query_executed:
     </div>
 """, unsafe_allow_html=True)
     switching_tab_label = f"{item_label} Switching"
-    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs(["Summary", switching_tab_label, "Loyalty", "Charts", "📊 Sales Analysis", "Raw", "Export"])
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs(["Summary", switching_tab_label, "Loyalty", "Charts", "[SALES] Analysis", "Raw", "Export"])
     with tab1:
         st.markdown(f"### {item_label} Movement Summary")
         display_summary = visualizations.create_summary_table_display(summary_df_display)
@@ -2197,7 +2197,7 @@ if run_analysis or st.session_state.query_executed:
     
     # Tab 5: Sales Analysis (NEW)
     with tab5:
-        st.markdown("### 📊 Sales Analysis (Testing)")
+        st.markdown("### [SALES] Sales Analysis (Testing)")
         st.caption("Compare customer movement with sales value to understand revenue impact.")
         
         # Check if sales columns exist in data
