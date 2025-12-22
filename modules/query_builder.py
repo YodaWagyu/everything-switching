@@ -200,12 +200,18 @@ def build_switching_query(
     COALESCE(SUM(sales_2024), 0) AS sales_2024,
     COALESCE(SUM(sales_2025), 0) AS sales_2025,
     COALESCE(SUM(sales_2024), 0) + COALESCE(SUM(sales_2025), 0) AS total_sales"""
+        # With sales: columns are 1-6 (non-agg), 7 (customers), 8-10 (sales agg), 11 (move_type)
+        # GROUP BY must include move_type (CASE expression), use column 11
+        group_by_clause = "GROUP BY 1, 2, 3, 4, 5, 6, 11"
     else:
         # No sales columns
         sales_primary_col = ""
         sales_2024_col = ""
         sales_2025_col = ""
         sales_agg_cols = ""
+        # Without sales: columns are 1-6 (non-agg), 7 (customers), 8 (move_type)
+        # GROUP BY must include move_type (CASE expression), use column 8
+        group_by_clause = "GROUP BY 1, 2, 3, 4, 5, 6, 8"
     
     query = f"""
 DECLARE period1_start_date DATE DEFAULT '{period1_start}';
@@ -321,7 +327,7 @@ classify AS (
       ELSE 'unknown'
     END AS move_type
   FROM customer_flow
-  GROUP BY 1, 2, 3, 4, 5, 6, 8
+  {group_by_clause}
 )
 
 SELECT * FROM classify
