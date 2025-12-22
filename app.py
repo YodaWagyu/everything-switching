@@ -1690,12 +1690,15 @@ if run_analysis or st.session_state.query_executed:
                 
                 # --- WINNER METRICS ---
                 if winner_name and winner_name != 'N/A':
+                    # Filter rows involving winner
                     winner_rows = df_display[
                         (df_display['prod_2024'] == winner_name) | (df_display['prod_2025'] == winner_name)
                     ]
                     if len(winner_rows) > 0:
-                        w_sales_24 = winner_rows['sales_2024'].sum()
-                        w_sales_25 = winner_rows['sales_2025'].sum()
+                        # Correct Logic: Only count sales if the customer was WITH the brand in that year
+                        w_sales_24 = winner_rows[winner_rows['prod_2024'] == winner_name]['sales_2024'].sum()
+                        w_sales_25 = winner_rows[winner_rows['prod_2025'] == winner_name]['sales_2025'].sum()
+                        
                         winner_total_sales = w_sales_24 + w_sales_25
                         winner_sales_fmt = f"฿{winner_total_sales:,.0f}"
                         
@@ -1708,12 +1711,15 @@ if run_analysis or st.session_state.query_executed:
                 
                 # --- LOSER METRICS ---
                 if loser_name and loser_name != 'N/A':
+                    # Filter rows involving loser
                     loser_rows = df_display[
                         (df_display['prod_2024'] == loser_name) | (df_display['prod_2025'] == loser_name)
                     ]
                     if len(loser_rows) > 0:
-                        l_sales_24 = loser_rows['sales_2024'].sum()
-                        l_sales_25 = loser_rows['sales_2025'].sum()
+                        # Correct Logic: Only count sales if the customer was WITH the brand in that year
+                        l_sales_24 = loser_rows[loser_rows['prod_2024'] == loser_name]['sales_2024'].sum()
+                        l_sales_25 = loser_rows[loser_rows['prod_2025'] == loser_name]['sales_2025'].sum()
+                        
                         loser_total_sales = l_sales_24 + l_sales_25
                         loser_sales_fmt = f"฿{loser_total_sales:,.0f}"
                         
