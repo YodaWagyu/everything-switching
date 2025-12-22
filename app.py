@@ -244,6 +244,9 @@ if 'query_executed' not in st.session_state:
 if 'cross_category_executed' not in st.session_state:
     st.session_state.cross_category_executed = False
 
+if 'sales_analysis_executed' not in st.session_state:
+    st.session_state.sales_analysis_executed = False
+
 if 'previous_analysis_mode' not in st.session_state:
     st.session_state.previous_analysis_mode = None
 
@@ -259,10 +262,10 @@ st.sidebar.markdown("""
 
 analysis_mode = st.sidebar.radio(
     "Select Mode",
-    ["Brand/Product Switch", "Cross-Category Switch"],
+    ["Brand/Product Switch", "Cross-Category Switch", "💰 Sales Analysis (Testing)"],
     key="analysis_mode_selector",
     label_visibility="collapsed",
-    horizontal=True
+    horizontal=False  # Vertical layout for 3 options
 )
 
 # Clear session state when mode changes to prevent stale data (WARN-02 fix)
@@ -270,8 +273,8 @@ if st.session_state.previous_analysis_mode != analysis_mode:
     if st.session_state.previous_analysis_mode is not None:
         # Mode changed - clear relevant session state
         keys_to_clear = [
-            'results_df', 'cross_category_df',
-            'gb_processed', 'cross_category_gb_processed'
+            'results_df', 'cross_category_df', 'sales_analysis_df',
+            'gb_processed', 'cross_category_gb_processed', 'sales_gb_processed'
         ]
         for key in keys_to_clear:
             if key in st.session_state:
@@ -279,6 +282,7 @@ if st.session_state.previous_analysis_mode != analysis_mode:
         # Reset execution flags to False (don't delete, re-initialize)
         st.session_state.query_executed = False
         st.session_state.cross_category_executed = False
+        st.session_state.sales_analysis_executed = False
     st.session_state.previous_analysis_mode = analysis_mode
 
 st.sidebar.markdown("---")
@@ -331,6 +335,9 @@ st.sidebar.markdown("---")
 # =====================================================
 
 available_categories = bigquery_client.get_categories()
+
+# Define is_sales_mode at global scope for accessibility in query building
+is_sales_mode = analysis_mode == "💰 Sales Analysis (Testing)"
 
 if analysis_mode == "Cross-Category Switch":
     # =====================================================
@@ -405,6 +412,19 @@ else:
     # =====================================================
     # BRAND/PRODUCT SWITCH FILTERS (Original)
     # =====================================================
+    # This handles both "Brand/Product Switch" and "💰 Sales Analysis (Testing)" modes
+    # They share the same filters but Sales Analysis mode will use different query with sales columns
+    
+    is_sales_mode = analysis_mode == "💰 Sales Analysis (Testing)"
+    
+    if is_sales_mode:
+        st.sidebar.markdown("""
+            <div style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); padding: 10px 15px; border-radius: 8px; margin-bottom: 15px;">
+                <div style="color: white; font-weight: 700; font-size: 14px;">💰 Sales Analysis Mode</div>
+                <div style="color: rgba(255,255,255,0.8); font-size: 12px;">Testing customer movement with sales data</div>
+            </div>
+        """, unsafe_allow_html=True)
+    
     with st.sidebar.expander("🔍 Product Filters", expanded=True):
         selected_categories = st.multiselect("Category", available_categories, default=[available_categories[0]] if available_categories else [])
 
@@ -939,7 +959,8 @@ if run_analysis or st.session_state.query_executed:
             primary_threshold, 
             barcode_mapping_text if barcode_mapping_text and barcode_mapping_text.strip() else None,
             store_filter_type,
-            store_opening_cutoff
+            store_opening_cutoff,
+            include_sales=is_sales_mode  # Only include sales columns in Sales Analysis mode
         )
         
         utils.show_debug_query(query_all_brands)

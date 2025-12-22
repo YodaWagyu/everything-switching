@@ -66,7 +66,8 @@ def build_switching_query(
     primary_threshold: float = 0.60,
     barcode_mapping: Optional[str] = None,
     store_filter_type: str = "All Store",
-    store_opening_cutoff: Optional[str] = None
+    store_opening_cutoff: Optional[str] = None,
+    include_sales: bool = False  # NEW: Only include sales columns when True
 ) -> str:
     """
     Build the complete switching analysis SQL query
@@ -186,6 +187,26 @@ def build_switching_query(
       a.Date BETWEEN period2_start_date AND period2_end_date
     )"""
     
+    # Conditional sales columns based on include_sales parameter
+    if include_sales:
+        # Include sales in primary_identification
+        sales_primary_col = ",\n    sales_item AS primary_sales"
+        # Include sales in customer_flow
+        sales_2024_col = ",\n    MAX(CASE WHEN Year = 2024 THEN primary_sales END) AS sales_2024"
+        sales_2025_col = ",\n    MAX(CASE WHEN Year = 2025 THEN primary_sales END) AS sales_2025"
+        # Include sales in classify
+        sales_agg_cols = """,
+    -- Sales aggregates
+    COALESCE(SUM(sales_2024), 0) AS sales_2024,
+    COALESCE(SUM(sales_2025), 0) AS sales_2025,
+    COALESCE(SUM(sales_2024), 0) + COALESCE(SUM(sales_2025), 0) AS total_sales"""
+    else:
+        # No sales columns
+        sales_primary_col = ""
+        sales_2024_col = ""
+        sales_2025_col = ""
+        sales_agg_cols = ""
+    
     query = f"""
 DECLARE period1_start_date DATE DEFAULT '{period1_start}';
 DECLARE period1_end_date   DATE DEFAULT '{period1_end}';
@@ -252,8 +273,7 @@ primary_identification AS (
     CASE
       WHEN share_item >= PRIMARY_THRESHOLD THEN Brand
       ELSE 'MIXED'
-    END AS primary_brand,
-    sales_item AS primary_sales  -- Add sales for this primary item
+    END AS primary_brand{sales_primary_col}
   FROM cust_item_stats
   QUALIFY ROW_NUMBER() OVER(
     PARTITION BY Year, CustomerCode
@@ -271,13 +291,11 @@ customer_flow AS (
     -- Period 1 (2024)
     MAX(CASE WHEN Year = 2024 THEN primary_item END) AS item_2024,
     MAX(CASE WHEN Year = 2024 THEN primary_barcode END) AS barcode_2024,
-    MAX(CASE WHEN Year = 2024 THEN primary_brand END) AS brand_2024,
-    MAX(CASE WHEN Year = 2024 THEN primary_sales END) AS sales_2024,
+    MAX(CASE WHEN Year = 2024 THEN primary_brand END) AS brand_2024{sales_2024_col},
     -- Period 2 (2025)
     MAX(CASE WHEN Year = 2025 THEN primary_item END) AS item_2025,
     MAX(CASE WHEN Year = 2025 THEN primary_barcode END) AS barcode_2025,
-    MAX(CASE WHEN Year = 2025 THEN primary_brand END) AS brand_2025,
-    MAX(CASE WHEN Year = 2025 THEN primary_sales END) AS sales_2025
+    MAX(CASE WHEN Year = 2025 THEN primary_brand END) AS brand_2025{sales_2025_col}
   FROM primary_identification
   GROUP BY CustomerCode
 ),
@@ -294,11 +312,7 @@ classify AS (
     COALESCE(brand_2024, 'NEW_TO_CATEGORY') AS brand_2024,
     COALESCE(brand_2025, 'LOST_FROM_CATEGORY') AS brand_2025,
     -- Counts and move type
-    COUNT(*) AS customers,
-    -- Sales aggregates
-    COALESCE(SUM(sales_2024), 0) AS sales_2024,
-    COALESCE(SUM(sales_2025), 0) AS sales_2025,
-    COALESCE(SUM(sales_2024), 0) + COALESCE(SUM(sales_2025), 0) AS total_sales,
+    COUNT(*) AS customers{sales_agg_cols},
     CASE
       WHEN item_2024 IS NULL AND item_2025 IS NOT NULL THEN 'new_to_category'
       WHEN item_2024 IS NOT NULL AND item_2025 IS NULL THEN 'lost_from_category'
@@ -307,7 +321,7 @@ classify AS (
       ELSE 'unknown'
     END AS move_type
   FROM customer_flow
-  GROUP BY 1, 2, 3, 4, 5, 6, 11
+  GROUP BY 1, 2, 3, 4, 5, 6, 8
 )
 
 SELECT * FROM classify
