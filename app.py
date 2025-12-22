@@ -1647,6 +1647,7 @@ if run_analysis or st.session_state.query_executed:
         
         # Sales KPIs for Sales Analysis Mode
         has_sales_data = is_sales_mode and 'sales_2024' in df_display.columns and 'sales_2025' in df_display.columns
+        st.warning(f"DEBUG KPI: has_sales_data={has_sales_data}, is_sales_mode={is_sales_mode}, df_display_cols={list(df_display.columns)}")
         if has_sales_data:
             total_sales_2024 = df_display['sales_2024'].sum()
             total_sales_2025 = df_display['sales_2025'].sum()
@@ -1724,6 +1725,43 @@ if run_analysis or st.session_state.query_executed:
             </div>
             """, unsafe_allow_html=True)
     
+    # =====================================================
+    # SALES + CUSTOMER MOVEMENT SUMMARY (Sales Mode Only)
+    # =====================================================
+    if is_sales_mode and 'sales_2024' in df_display.columns:
+        st.markdown("---")
+        st.markdown("### 💰 Sales + Customer Movement Summary")
+        
+        # Aggregate by move_type
+        sales_by_movement = df_display.groupby('move_type').agg({
+            'customers': 'sum',
+            'sales_2024': 'sum',
+            'sales_2025': 'sum',
+            'total_sales': 'sum'
+        }).reset_index()
+        
+        # Format for display
+        sales_by_movement['sales_2024_fmt'] = sales_by_movement['sales_2024'].apply(lambda x: f"฿{x:,.0f}")
+        sales_by_movement['sales_2025_fmt'] = sales_by_movement['sales_2025'].apply(lambda x: f"฿{x:,.0f}")
+        sales_by_movement['total_sales_fmt'] = sales_by_movement['total_sales'].apply(lambda x: f"฿{x:,.0f}")
+        sales_by_movement['customers_fmt'] = sales_by_movement['customers'].apply(lambda x: f"{x:,}")
+        
+        # Display table
+        display_df = sales_by_movement[['move_type', 'customers_fmt', 'sales_2024_fmt', 'sales_2025_fmt', 'total_sales_fmt']].copy()
+        display_df.columns = ['Movement Type', 'Customers', 'Sales 2024', 'Sales 2025', 'Total Sales']
+        st.dataframe(display_df, use_container_width=True, hide_index=True)
+        
+        # Summary totals
+        total_customers = sales_by_movement['customers'].sum()
+        total_sales_2024 = sales_by_movement['sales_2024'].sum()
+        total_sales_2025 = sales_by_movement['sales_2025'].sum()
+        grand_total = sales_by_movement['total_sales'].sum()
+        
+        col1, col2, col3, col4 = st.columns(4)
+        col1.metric("Total Customers", f"{total_customers:,}")
+        col2.metric("Total Sales 2024", f"฿{total_sales_2024:,.0f}")
+        col3.metric("Total Sales 2025", f"฿{total_sales_2025:,.0f}")
+        col4.metric("Grand Total Sales", f"฿{grand_total:,.0f}")
     # Sankey Title with margin separation
     st.markdown('<div style="margin-top: 32px;"></div>', unsafe_allow_html=True)
     st.markdown('<div style="text-align: center; font-size: 16px; font-weight: 600; color: #374151; margin-bottom: 8px;">Customer Flow (Sankey)</div>', unsafe_allow_html=True)
