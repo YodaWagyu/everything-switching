@@ -969,6 +969,11 @@ if run_analysis or st.session_state.query_executed:
         
         utils.show_debug_query(query_all_brands)
         df, gb_processed = bigquery_client.execute_query(query_all_brands)
+        
+        # DEBUG: Show actual columns from query
+        st.warning(f"DEBUG: is_sales_mode={is_sales_mode}")
+        st.warning(f"DEBUG: Columns from query: {list(df.columns)}")
+        
         st.session_state.results_df = df
         st.session_state.gb_processed = gb_processed
         st.session_state.query_executed = True
