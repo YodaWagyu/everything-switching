@@ -187,47 +187,55 @@ def create_sankey_diagram(labels: List[str], sources: List[int], targets: List[i
     return fig
 
 
-def create_competitive_heatmap(heatmap_df: pd.DataFrame, show_percentage: bool = False) -> go.Figure:
-    """Create heatmap with option to show raw numbers or percentages
+def create_competitive_heatmap(heatmap_df: pd.DataFrame, show_percentage: bool = False, is_currency: bool = False) -> go.Figure:
+    """Create heatmap with option to show raw numbers, percentages, or currency
     
     Args:
         heatmap_df: DataFrame with source as index, target as columns
-        show_percentage: If True, show row-wise percentages. If False, show raw numbers.
+        show_percentage: If True, show row-wise percentages. If False, show raw numbers/currency.
+        is_currency: If True, format values as currency (THB)
     """
     
     if show_percentage:
-        # Calculate row-wise percentages (each row sums to 100%)
-        row_totals = heatmap_df.sum(axis=1)
-        row_totals = row_totals.replace(0, 1)  # Avoid division by zero
-        display_df = heatmap_df.div(row_totals, axis=0) * 100
-        text_labels = display_df.round(1).astype(str) + '%'
-        text_template = '%{text}'
-        hover_template = 'From: %{y}<br>To: %{x}<br>Share: %{z:.1f}%<extra></extra>'
+        # Calculate row percentages
+        # Add small epsilon to avoid division by zero
+        row_sums = heatmap_df.sum(axis=1)
+        heatmap_data = heatmap_df.div(row_sums.replace(0, 1), axis=0) * 100
+        # If row sum was 0, result is 0
+        heatmap_data = heatmap_data.fillna(0)
+        
+        text_template = "%{z:.1f}%"
+        hovertemplate = "From %{y} to %{x}<br>Percentage: %{z:.1f}%<extra></extra>"
+        colorscale = 'Blues'
+    elif is_currency:
+        heatmap_data = heatmap_df
+        # Helper for currency abbreviations could be added, but relying on standard format
+        text_template = "฿%{z:,.0f}"
+        hovertemplate = "From %{y} to %{x}<br>Sales: ฿%{z:,.0f}<extra></extra>"
+        colorscale = 'Greens' # Use Green for money
     else:
-        # Show raw numbers
-        display_df = heatmap_df
-        text_labels = heatmap_df.values
-        text_template = '%{text:,}'
-        hover_template = 'From: %{y}<br>To: %{x}<br>Customers: %{z:,}<extra></extra>'
-    
+        heatmap_data = heatmap_df
+        text_template = "%{z:,}"
+        hovertemplate = "From %{y} to %{x}<br>Customers: %{z:,}<extra></extra>"
+        colorscale = 'Viridis'
+
     fig = go.Figure(data=go.Heatmap(
-        z=display_df.values, 
-        x=heatmap_df.columns, 
-        y=heatmap_df.index,
-        colorscale='Blues', 
-        text=text_labels, 
+        z=heatmap_data.values,
+        x=heatmap_data.columns,
+        y=heatmap_data.index,
+        colorscale=colorscale,
         texttemplate=text_template,
-        textfont={"size": 12},
-        hovertemplate=hover_template
+        hovertemplate=hovertemplate
     ))
+
     fig.update_layout(
-        title='',
-        height=500,
-        font=dict(family="Arial", size=13, color="#000000"),
-        paper_bgcolor='white',
-        plot_bgcolor='white',
-        margin=dict(l=10, r=60, t=10, b=10)
+        title='Competitive Switching Matrix',
+        xaxis_title='To Brand (2025)',
+        yaxis_title='From Brand (2024)',
+        height=600,
+        margin=dict(l=50, r=50, t=50, b=50)
     )
+    
     return fig
 
 

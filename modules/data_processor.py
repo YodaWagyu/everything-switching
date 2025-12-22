@@ -214,14 +214,19 @@ def prepare_sankey_data(df: pd.DataFrame) -> Tuple[List, List, List, List, List]
     return all_labels, sources, targets, values, sales_values
 
 
-def prepare_heatmap_data(df: pd.DataFrame) -> pd.DataFrame:
+def prepare_heatmap_data(df: pd.DataFrame, value_col: str = 'customers') -> pd.DataFrame:
     """Prepare data for competitive matrix heatmap"""
     # Replace labels for display
     df_display = df.copy()
     df_display['prod_2024'] = df_display['prod_2024'].replace({'NEW_TO_CATEGORY': 'NEW CUSTOMERS', 'LOST_FROM_CATEGORY': 'Gone'})
     df_display['prod_2025'] = df_display['prod_2025'].replace({'NEW_TO_CATEGORY': 'NEW CUSTOMERS', 'LOST_FROM_CATEGORY': 'Gone'})
     
-    return df_display.pivot_table(index='prod_2024', columns='prod_2025', values='customers', fill_value=0, aggfunc='sum')
+    # If using sales, ensure column exists, else fallback to customers
+    agg_col = value_col
+    if agg_col != 'customers' and agg_col not in df_display.columns:
+        agg_col = 'customers'
+    
+    return df_display.pivot_table(index='prod_2024', columns='prod_2025', values=agg_col, fill_value=0, aggfunc='sum')
 
 
 def prepare_waterfall_data(df: pd.DataFrame, brand: str) -> Dict:
