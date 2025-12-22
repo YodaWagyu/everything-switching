@@ -65,8 +65,16 @@ def filter_dataframe_by_brands(df: pd.DataFrame, brands: List[str], mode: str = 
     )
     filtered_df.loc[should_rename_2025_to_others, 'prod_2025'] = 'OTHERS'
     
-    # Step 3: Aggregate by grouping (sum customers for OTHERS flows)
-    filtered_df = filtered_df.groupby(['prod_2024', 'prod_2025', 'move_type'], as_index=False)['customers'].sum()
+    # Step 3: Aggregate by grouping (sum customers and sales for OTHERS flows)
+    agg_dict = {'customers': 'sum'}
+    if 'sales_2024' in filtered_df.columns:
+        agg_dict['sales_2024'] = 'sum'
+    if 'sales_2025' in filtered_df.columns:
+        agg_dict['sales_2025'] = 'sum'
+    if 'total_sales' in filtered_df.columns:
+        agg_dict['total_sales'] = 'sum'
+    
+    filtered_df = filtered_df.groupby(['prod_2024', 'prod_2025', 'move_type'], as_index=False).agg(agg_dict)
     
     # Step 4: Filter out unwanted OTHERS flows to reduce confusion
     # Keep OTHERS only when it flows TO focused brands (Switch In)
