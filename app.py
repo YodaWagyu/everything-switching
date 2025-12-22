@@ -946,6 +946,10 @@ if run_analysis or st.session_state.query_executed:
         # Query at Product level (Brand/Product view toggle is post-query)
         # If brands selected in sidebar, filter at query level (saves data)
         # If no brands, get all and user can filter client-side later
+        
+        # Debug: Show sales mode status
+        st.info(f"🔧 Debug: is_sales_mode = {is_sales_mode}, analysis_mode = {analysis_mode}")
+        
         query_all_brands = query_builder.build_switching_query(
             period1_start.strftime("%Y-%m-%d"), 
             period1_end.strftime("%Y-%m-%d"), 
