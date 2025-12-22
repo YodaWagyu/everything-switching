@@ -1350,9 +1350,16 @@ if run_analysis or st.session_state.query_executed:
             # Prepare df_working
             df_working = df.copy()
             if not is_product_switch_mode:
-                df_working = df_working.groupby(['brand_2024', 'brand_2025', 'move_type']).agg({
-                    'customers': 'sum'
-                }).reset_index()
+                # Include sales columns if they exist
+                agg_dict = {'customers': 'sum'}
+                if 'sales_2024' in df_working.columns:
+                    agg_dict['sales_2024'] = 'sum'
+                if 'sales_2025' in df_working.columns:
+                    agg_dict['sales_2025'] = 'sum'
+                if 'total_sales' in df_working.columns:
+                    agg_dict['total_sales'] = 'sum'
+                
+                df_working = df_working.groupby(['brand_2024', 'brand_2025', 'move_type']).agg(agg_dict).reset_index()
                 df_working = df_working.rename(columns={
                     'brand_2024': 'prod_2024',
                     'brand_2025': 'prod_2025'
@@ -1543,9 +1550,16 @@ if run_analysis or st.session_state.query_executed:
                     df_display = brand_filter.filter_dataframe_by_brands(df_barcode_filtered, products_in_selected_brands, 'filtered')
                 else:
                     # Brand mode: need to aggregate barcode-filtered data to brand level first
-                    df_agg = df_barcode_filtered.groupby(['brand_2024', 'brand_2025', 'move_type']).agg({
-                        'customers': 'sum'
-                    }).reset_index()
+                    # Include sales columns if they exist
+                    agg_dict = {'customers': 'sum'}
+                    if 'sales_2024' in df_barcode_filtered.columns:
+                        agg_dict['sales_2024'] = 'sum'
+                    if 'sales_2025' in df_barcode_filtered.columns:
+                        agg_dict['sales_2025'] = 'sum'
+                    if 'total_sales' in df_barcode_filtered.columns:
+                        agg_dict['total_sales'] = 'sum'
+                    
+                    df_agg = df_barcode_filtered.groupby(['brand_2024', 'brand_2025', 'move_type']).agg(agg_dict).reset_index()
                     df_agg = df_agg.rename(columns={'brand_2024': 'prod_2024', 'brand_2025': 'prod_2025'})
                     df_display = brand_filter.filter_dataframe_by_brands(df_agg, selected_brands, 'filtered')
             else:
@@ -1553,9 +1567,16 @@ if run_analysis or st.session_state.query_executed:
                 if is_product_switch_mode:
                     df_display = df_barcode_filtered
                 else:
-                    df_display = df_barcode_filtered.groupby(['brand_2024', 'brand_2025', 'move_type']).agg({
-                        'customers': 'sum'
-                    }).reset_index()
+                    # Include sales columns if they exist
+                    agg_dict = {'customers': 'sum'}
+                    if 'sales_2024' in df_barcode_filtered.columns:
+                        agg_dict['sales_2024'] = 'sum'
+                    if 'sales_2025' in df_barcode_filtered.columns:
+                        agg_dict['sales_2025'] = 'sum'
+                    if 'total_sales' in df_barcode_filtered.columns:
+                        agg_dict['total_sales'] = 'sum'
+                    
+                    df_display = df_barcode_filtered.groupby(['brand_2024', 'brand_2025', 'move_type']).agg(agg_dict).reset_index()
                     df_display = df_display.rename(columns={'brand_2024': 'prod_2024', 'brand_2025': 'prod_2025'})
             
             if len(df_display) == 0:
