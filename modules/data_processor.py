@@ -139,7 +139,10 @@ def calculate_brand_summary(df: pd.DataFrame, item_label: str = 'Brand') -> pd.D
         
         # Total In = Stayed + Switch In + New Customer
         total_in = stayed + switch_in + new_customer
-        net_movement = total_in - total_out
+        
+        # Correct Net Movement Calculation: Period 2 Total - Period 1 Total
+        # or (Switch In + New Customer) - (Switch Out + Gone)
+        net_movement = (switch_in + new_customer) - (switch_out + gone)
         
         period2_total = stayed + switch_in + new_customer
         

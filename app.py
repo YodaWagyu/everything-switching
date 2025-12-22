@@ -1868,13 +1868,27 @@ if run_analysis or st.session_state.query_executed:
         st.markdown("### 📊 Brand Switching x Sales Detail")
         
         
+        
         # Determine columns to group by (prod_2024 or brand_2024)
         group_cols = ['prod_2024', 'prod_2025', 'move_type']
+        source_df = df_display
+        
         if 'brand_2024' in df_display.columns and 'brand_2025' in df_display.columns:
+            # Create a temporary copy to manipulate move_type
+            source_df = df_display.copy()
+            
+            # FIX: If Brand 2024 == Brand 2025, force move_type to 'stayed'
+            # (unless it's NEW_TO_CATEGORY or LOST_FROM_CATEGORY)
+            is_same_brand = (source_df['brand_2024'] == source_df['brand_2025'])
+            is_real_brand = (~source_df['brand_2024'].isin(['NEW_TO_CATEGORY', 'LOST_FROM_CATEGORY']))
+            
+            # Update 'switched' to 'stayed' where brands match
+            source_df.loc[is_same_brand & is_real_brand, 'move_type'] = 'stayed'
+            
             group_cols = ['brand_2024', 'brand_2025', 'move_type']
             
         # Group by brand/product -> brand/product
-        brand_switching = df_display.groupby(group_cols).agg({
+        brand_switching = source_df.groupby(group_cols).agg({
             'customers': 'sum',
             'sales_2024': 'sum',
             'sales_2025': 'sum',
